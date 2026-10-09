@@ -610,11 +610,13 @@ FRONT = -math.pi / 2
 
 def hair_cap(bm, hairline=0.018, nape=-0.11, side_cut=None, scale=CAP):
     """Hair shell over the skull. Open only at the face: below the hairline at the front,
-    and at the cheeks/jaw, so nothing bald shows from the side, back or top."""
+    and at the cheeks/jaw, so nothing bald shows from the side, back or top.
+    hairline can be a function of x (meters across the forehead) for parted bangs."""
     def cut(co):
         r = co - HEAD_C
         front = r.y < -0.02
-        face = front and r.z < hairline and abs(r.x) < 0.085
+        hl = hairline(r.x) if callable(hairline) else hairline   # parted bangs: a shaped hairline
+        face = front and r.z < hl and abs(r.x) < 0.085
         jaw = r.y < 0.01 and r.z < -0.035
         bottom = r.z < nape
         # cropped sides (pixie): a diagonal line behind the ear, lower toward the back
@@ -672,15 +674,16 @@ def fringe_lock(bm, x_root, x_tip, tip_z, width, tip=0.6):
          off0=-0.008, off1=0.0075, steps=6)
 
 
-def fringe_base(bm, z0, z1=1.568):
-    """Hair-colored layer hugging the forehead under the bangs, from z0 up past the hair cap's
-    face opening, so no skin shows between swept or parted locks. It sits just above the face
-    decals and just below the bang locks."""
-    nx, nz = 10, 4
+def fringe_base(bm, edge, z1=1.568):
+    """Hair-colored layer hugging the forehead under the bangs, up past the hair cap's face
+    opening, so no skin shows between swept or parted locks. Its bottom edge follows edge(x)
+    (just above the bang tips) so it never peeks out below the locks as a flat band."""
+    nx, nz = 12, 4
+    xs = np.linspace(-0.092, 0.092, nx + 1)
     rows = []
     for j in range(nz + 1):
-        z = z0 + (z1 - z0) * j / nz
-        rows.append([bm.verts.new((x, head_front_y(x, z, 0.0068), z)) for x in np.linspace(-0.092, 0.092, nx + 1)])
+        rows.append([bm.verts.new((x, head_front_y(x, z, 0.0068), z))
+                     for x in xs for z in [min(edge(x), z1 - 0.004) + (z1 - min(edge(x), z1 - 0.004)) * j / nz]])
     for a, b in zip(rows, rows[1:]):
         for i in range(nx):
             bm.faces.new((a[i], a[i + 1], b[i + 1], b[i]))
@@ -690,6 +693,12 @@ def fringe_base(bm, z0, z1=1.568):
 BANGS = ("Straight", "Choppy", "Middle", "Left", "Right", "Micro")
 
 
+# Choppy: alternating longer/shorter points, visibly textured but still an even overall line
+CHOPPY = ((-0.082, 1.489), (-0.059, 1.503), (-0.036, 1.486), (-0.012, 1.499),
+          (0.012, 1.484), (0.036, 1.501), (0.059, 1.487), (0.082, 1.498))
+SIDE_TIP = (1.535, 1.465)    # side part: lock length at the part side -> far side
+
+
 def bangs(bm, kind):
     if kind == "Straight":    # full blunt fringe, one level line just above the brows
         for x in np.linspace(-0.075, 0.075, 6):
@@ -697,10 +706,9 @@ def bangs(bm, kind):
     elif kind == "Micro":     # very short blunt fringe high on the forehead
         for x in np.linspace(-0.075, 0.075, 6):
             fringe_lock(bm, x * 0.6, x * 1.04, 1.535, 0.036, tip=1.0)
-    elif kind == "Choppy":    # textured but even: small length differences, soft points
-        lengths = (1.492, 1.500, 1.494, 1.502, 1.495, 1.499, 1.491)
-        for x, z in zip(np.linspace(-0.08, 0.08, 7), lengths):
-            fringe_lock(bm, x * 0.6, x * 1.06, z, 0.032, tip=0.45)
+    elif kind == "Choppy":
+        for x, z in CHOPPY:
+            fringe_lock(bm, x * 0.6, x * 1.06, z, 0.029, tip=0.3)
     elif kind == "Middle":    # middle part: curtains sweeping out to the sides, longer at the edges
         for x, z in ((-0.085, 1.44), (-0.06, 1.47), (-0.035, 1.50), (0.035, 1.50), (0.06, 1.47), (0.085, 1.44)):
             fringe_lock(bm, x * 0.25, x, z, 0.036, tip=0.45)
@@ -708,7 +716,26 @@ def bangs(bm, kind):
         s = 1 if kind == "Left" else -1      # character's left is +X
         for k, x in enumerate(np.linspace(0.075, -0.085, 7)):
             t = k / 6
-            fringe_lock(bm, s * 0.045, s * x, 1.535 - 0.07 * t, 0.034 + 0.006 * t, tip=0.5)
+            fringe_lock(bm, s * 0.045, s * x, SIDE_TIP[0] + (SIDE_TIP[1] - SIDE_TIP[0]) * t, 0.034 + 0.006 * t, tip=0.5)
+
+
+def bang_edge(kind):
+    """Bottom edge of the forehead layer for each bang style: tucked just above the lock tips."""
+    if kind == "Micro":
+        return lambda x: 1.545
+    if kind == "Straight":
+        return lambda x: 1.516
+    if kind == "Choppy":
+        return lambda x: max(z for _, z in CHOPPY) + 0.010
+    if kind == "Middle":      # a soft inverted V: the part shows a little forehead, like a real part
+        return lambda x: 1.532 - 0.45 * abs(x)
+    if kind in ("Left", "Right"):
+        s = 1 if kind == "Left" else -1
+        def side(x):
+            t = min(1, max(0, (0.075 - s * x) / 0.16))   # 0 at the part side, 1 across the forehead
+            return SIDE_TIP[0] + (SIDE_TIP[1] - SIDE_TIP[0]) * t + 0.016
+        return side
+    return lambda x: 1.497    # styles that draw their own fringe
 
 
 def side_locks(bm, tip_z, width=0.05, tip=0.7, angle=58):
@@ -758,9 +785,15 @@ def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut
             name = (f"Hair_{base}_{kind}_{length}" if kind else f"Hair_{base}_{length}") + (f"_{suffix}" if suffix else "")
 
             def build(bm, kind=kind, li=li):
-                hair_cap(bm, hairline=0.035 if kind == "Micro" else hairline, nape=nape, side_cut=side_cut, scale=cap_scale)
-                # forehead under the bangs stays hair-colored (micro bangs keep the forehead below them)
-                fringe_base(bm, 1.528 if kind == "Micro" else 1.497)
+                if kind == "Micro":
+                    line = 0.035
+                elif kind in ("Middle", "Left", "Right"):   # open the cap up along the part; the layer below fills its steps
+                    line = lambda x, edge=bang_edge(kind): min(edge(x) + 0.016, 1.556) - HEAD_C.z
+                else:
+                    line = hairline
+                hair_cap(bm, hairline=line, nape=nape, side_cut=side_cut, scale=cap_scale)
+                # forehead under the bangs stays hair-colored, shaped to each bang style
+                fringe_base(bm, bang_edge(kind))
                 if kind:
                     bangs(bm, kind)
                 extra(bm, li)
