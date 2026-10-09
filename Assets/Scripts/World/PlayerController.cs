@@ -8,7 +8,7 @@ namespace DreamWorld.World
     // Elden Ring-style third-person controls (keyboard + mouse, same keys as Elden Ring on PC):
     //   WASD move (jog)         Space: tap = roll (i-frames), hold = sprint      F: jump
     //   Left click: attack (3-hit combo)   Shift + left click: heavy attack      Right click: guard
-    //   Q: lock on / off (strafe around the target)   E: interact   R: eat a snack
+    //   Q: lock on / off (strafe around the target)   E: interact   1-4: quick items (InventoryUI)
     // Rolling, sprinting, jumping, attacking and guarding all cost stamina (PlayerStats).
     // Getting hit hard staggers you for a moment. The model rolls/punches through IdleMotion.
     [RequireComponent(typeof(CharacterController))]
@@ -125,7 +125,6 @@ namespace DreamWorld.World
                 if (heavy) HeavyAttack(); else LightAttack();
             }
             if (Input.GetKeyDown(KeyCode.Q)) ToggleLockOn();
-            if (Input.GetKeyDown(KeyCode.R) && stats != null) stats.EatSnack();
             if (stats != null) stats.GuardReduction = Input.GetMouseButton(1) && action == Action.None ? 0.75f : 0f;
         }
 

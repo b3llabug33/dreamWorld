@@ -17,8 +17,11 @@ namespace DreamWorld.Gameplay
         public int carried;                // coins on you: lost when you die
         public int banked;                 // coins in your home computer: safe
         public float food = 100f;
-        public int snacks = 3;             // a starter pack; eat with R, buy more in town
+        public int snacks = 3;             // old saves kept snacks as a number; moved into the bag on load
         public int deaths;
+        public ItemStack[] bag;            // 28 slots you carry
+        public ItemStack[] storage;        // 56 slots in your home computer
+        public string[] hotbar = new string[4];   // item ids on the 1-4 quick slots
     }
 
     // A player's bars, level and money. Health/stamina/magic grow with the points spent on them;
@@ -68,8 +71,28 @@ namespace DreamWorld.Gameplay
 
         void Awake()
         {
-            if (progress.points == null || progress.points.Length != 5) progress.points = new int[5];
+            Prepare();
             FillBars();
+        }
+
+        // Makes sure every saved array is there and the right size, and moves old-style snacks into the bag.
+        void Prepare()
+        {
+            if (progress.points == null || progress.points.Length != 5) progress.points = new int[5];
+            progress.bag = Inventory.Fit(progress.bag, Inventory.BagSize);
+            progress.storage = Inventory.Fit(progress.storage, Inventory.StorageSize);
+            if (progress.hotbar == null || progress.hotbar.Length != 4)
+            {
+                var old = progress.hotbar;
+                progress.hotbar = new string[4];
+                for (int i = 0; old != null && i < old.Length && i < 4; i++) progress.hotbar[i] = old[i];
+            }
+            if (progress.snacks > 0)
+            {
+                Inventory.Add(progress.bag, "snack", progress.snacks);
+                progress.snacks = 0;
+                if (string.IsNullOrEmpty(progress.hotbar[0])) progress.hotbar[0] = "snack";
+            }
         }
 
         public void FillBars()
@@ -83,7 +106,7 @@ namespace DreamWorld.Gameplay
         public void Load(PlayerProgress saved)
         {
             progress = saved ?? new PlayerProgress();
-            if (progress.points == null || progress.points.Length != 5) progress.points = new int[5];
+            Prepare();
             FillBars();
             Changed?.Invoke();
         }
@@ -154,12 +177,30 @@ namespace DreamWorld.Gameplay
             Changed?.Invoke();
         }
 
-        public bool EatSnack()
+        // ---------- items ----------
+
+        public ItemStack[] Bag => progress.bag;
+        public ItemStack[] Storage => progress.storage;
+
+        // Puts items in the bag; returns how many fit.
+        public int AddItem(string id, int count = 1)
         {
-            if (progress.snacks <= 0 || progress.food >= MaxFood - 1f) return false;
-            progress.snacks--;
-            Eat(35f);
-            health = Mathf.Min(MaxHealth, health + 15f);
+            int added = Inventory.Add(progress.bag, id, count);
+            Changed?.Invoke();
+            return added;
+        }
+
+        // Uses one of an item from the bag (food fills the food bar, potions heal). False if it can't be used now.
+        public bool UseItem(string id)
+        {
+            var def = Items.Get(id);
+            if (def == null || !def.Usable || Dead || Inventory.Count(progress.bag, id) == 0) return false;
+            bool helps = (def.food > 0 && progress.food < MaxFood - 1f) || (def.heal > 0 && health < MaxHealth - 0.5f);
+            if (!helps) return false;
+            Inventory.Remove(progress.bag, id, 1);
+            if (def.food > 0) Eat(def.food);
+            if (def.heal > 0) health = Mathf.Min(MaxHealth, health + def.heal);
+            Changed?.Invoke();
             return true;
         }
 

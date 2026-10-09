@@ -15,11 +15,15 @@ The town square and paths are safe; everywhere else (including homes) has monste
 - First monster: shroomling (telegraphed hop attack, drops XP + coins, respawns)
 - Snack stand in town (10 coins), progress saved per character (Cloud Save online, local offline)
 
+## Inventory (done, 2026-10-09)
+- 28-slot bag (I / Tab), click to move/stack/swap, right click to use; 1-4 quick slots on the HUD
+- Items: snack, glow jelly (heal), spore cap + dream shard (shroomling drops, sell them)
+- Snack stand is a shop (buy + sell), home computer has 56-slot item storage; all saved per character
+
 ## Milestone 2: the town comes alive
 - NPCs with dialogue in the town square; a bounty board (kill X, collect Y) paying coins + XP
 - First quest chain; quest log UI
 - Shops: buy and sell (sell monster drops, buy food/gear)
-- Inventory + item drops from monsters
 
 ## Milestone 3: combat depth
 - Weapons (and real swing animations), magic spells that use the magic bar

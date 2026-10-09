@@ -100,6 +100,10 @@ namespace DreamWorld.Gameplay
             lockMarker.gameObject.AddComponent<Outline>().effectColor = TerminalUI.Accent;
             lockMarker.gameObject.SetActive(false);
 
+            var inventory = gameObject.AddComponent<InventoryUI>();
+            inventory.titleFont = titleFont;
+            inventory.bodyFont = bodyFont;
+
             BuildLevelPanel();
             BuildBankPanel();
             BuildPausePanel();
@@ -197,8 +201,10 @@ namespace DreamWorld.Gameplay
             TerminalUI.Place((RectTransform)take100.transform, new Vector2(0.5f, 1), new Vector2(-165, -312), new Vector2(300, 60));
             var takeAll = ui.Button(bankPanel, "take all", 32, () => { if (stats != null) stats.Withdraw(stats.progress.banked); SaveNow(); });
             TerminalUI.Place((RectTransform)takeAll.transform, new Vector2(0.5f, 1), new Vector2(165, -312), new Vector2(300, 60));
+            var storage = ui.Button(bankPanel, "item storage", 32, () => { SetPanel(bankPanel, false); InventoryUI.Instance?.OpenStorage(); });
+            TerminalUI.Place((RectTransform)storage.transform, new Vector2(0.5f, 0), new Vector2(-125, 44), new Vector2(230, 58));
             var close = ui.Button(bankPanel, "close", 32, () => SetPanel(bankPanel, false));
-            TerminalUI.Place((RectTransform)close.transform, new Vector2(0.5f, 0), new Vector2(0, 44), new Vector2(220, 58));
+            TerminalUI.Place((RectTransform)close.transform, new Vector2(0.5f, 0), new Vector2(125, 44), new Vector2(230, 58));
         }
 
         void BuildPausePanel()
@@ -267,13 +273,14 @@ namespace DreamWorld.Gameplay
         }
 
         bool AnyPanel => levelPanel.gameObject.activeSelf || bankPanel.gameObject.activeSelf || pausePanel.gameObject.activeSelf;
+        public bool MenuOpen => levelPanel != null && AnyPanel;   // the bag (InventoryUI) checks this
 
         void SetPanel(RectTransform panel, bool open)
         {
             if (open) CloseAll();
             panel.gameObject.SetActive(open);
-            ThirdPersonCamera.CursorFree = AnyPanel;
-            if (player != null) player.InputEnabled = !AnyPanel && (stats == null || !stats.Dead);
+            ThirdPersonCamera.CursorFree = AnyPanel || InventoryUI.IsOpen;
+            if (player != null) player.InputEnabled = !AnyPanel && !InventoryUI.IsOpen && (stats == null || !stats.Dead);
         }
 
         void CloseAll()
@@ -303,7 +310,7 @@ namespace DreamWorld.Gameplay
             SetBar(stamina, stats.stamina, stats.MaxStamina, Mathf.Min(900f, 3.6f * stats.MaxStamina + 40f));
             SetBar(food, p.food, stats.MaxFood, 200f);
             SetBar(xp, p.xp, stats.XpToNext, 300f);
-            foodLabel.text = (stats.Starving ? "starving! " : "food  ") + $"snacks x{p.snacks} [R]";
+            foodLabel.text = stats.Starving ? "starving! eat something (1-4 / I)" : "food";
             foodLabel.color = stats.Starving ? DangerColor : TerminalUI.Dim;
             levelLabel.text = $"lv {p.level}   {p.xp}/{stats.XpToNext} xp" + (p.unspent > 0 ? $"   +{p.unspent} point{(p.unspent > 1 ? "s" : "")} [L]" : "");
             coinsLabel.text = $"coins {p.carried}    bank {p.banked}";
@@ -337,19 +344,19 @@ namespace DreamWorld.Gameplay
 
         void UpdatePrompt()
         {
-            var near = !stats.Dead && !AnyPanel ? Interactable.Nearest(stats.transform.position) : null;
+            var near = !stats.Dead && !AnyPanel && !InventoryUI.IsOpen ? Interactable.Nearest(stats.transform.position) : null;
             promptLabel.text = near != null ? $"[E] {near.Prompt(stats)}" : "";
             if (near != null && Input.GetKeyDown(KeyCode.E)) near.Interact(stats);
         }
 
         void UpdatePanels()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetKeyDown(KeyCode.Escape) && !InventoryUI.IsOpen)
             {
                 if (AnyPanel) { CloseAll(); SetPanel(pausePanel, false); }
                 else SetPanel(pausePanel, true);
             }
-            if (Input.GetKeyDown(KeyCode.L) && !stats.Dead) SetPanel(levelPanel, !levelPanel.gameObject.activeSelf);
+            if (Input.GetKeyDown(KeyCode.L) && !stats.Dead && !InventoryUI.IsOpen) SetPanel(levelPanel, !levelPanel.gameObject.activeSelf);
 
             if (levelPanel.gameObject.activeSelf)
             {

@@ -14,6 +14,16 @@ namespace DreamWorld.Gameplay
         public float damage = 12f;
         public int xpReward = 25;
         public Vector2Int coinReward = new Vector2Int(6, 12);
+
+        [Serializable]
+        public class Drop { public string item; public int min = 1, max = 1; [Range(0, 1)] public float chance = 1f; }
+        // What it leaves behind (goes straight into the killer's bag).
+        public Drop[] drops =
+        {
+            new Drop { item = "spore_cap", min = 1, max = 2, chance = 1f },
+            new Drop { item = "glow_jelly", chance = 0.08f },
+            new Drop { item = "dream_shard", chance = 0.06f },
+        };
         public float sightRange = 9f;
         public float leashRange = 14f;     // gives up if dragged this far from home
         public float moveSpeed = 2.3f;
@@ -197,6 +207,15 @@ namespace DreamWorld.Gameplay
                 {
                     killer.AddXp(xpReward);
                     killer.AddCoins(UnityEngine.Random.Range(coinReward.x, coinReward.y + 1));
+                    foreach (var drop in drops)
+                    {
+                        if (UnityEngine.Random.value > drop.chance) continue;
+                        int n = UnityEngine.Random.Range(drop.min, drop.max + 1);
+                        int got = killer.AddItem(drop.item, n);
+                        var def = Items.Get(drop.item);
+                        if (got > 0) GameHUD.Instance?.Toast($"+{got} {def.name}");
+                        if (got < n) GameHUD.Instance?.Toast("your bag is full");
+                    }
                 }
                 Killed?.Invoke(this, killer);
             }

@@ -1,20 +1,11 @@
 namespace DreamWorld.Gameplay
 {
-    // A food stall in town: buy a snack (eat it with R to refill food).
+    // A food stall in town: buy snacks and glow jelly, sell what you find (monster drops).
     public class SnackStand : Interactable
     {
-        public int price = 10;
+        public string[] stock = { "snack", "glow_jelly" };
 
-        public override string Prompt(PlayerStats player) => $"buy a snack ({price} coins)";
-
-        public override void Interact(PlayerStats player)
-        {
-            if (player.SpendCoins(price))
-            {
-                player.progress.snacks++;
-                GameHUD.Instance?.Toast($"bought a snack  ({player.progress.snacks} now, R to eat)");
-            }
-            else GameHUD.Instance?.Toast("not enough coins");
-        }
+        public override string Prompt(PlayerStats player) => "browse the snack stand (buy + sell)";
+        public override void Interact(PlayerStats player) => InventoryUI.Instance?.OpenShop(stock);
     }
 }
