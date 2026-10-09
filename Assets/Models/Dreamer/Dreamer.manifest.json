@@ -10,6 +10,31 @@
    ]
   },
   {
+   "name": "Eyes_Almond",
+   "submeshes": [
+    {
+     "texture": "EyesAlmond",
+     "tint": false
+    },
+    {
+     "texture": "EyesAlmond",
+     "tint": false
+    },
+    {
+     "texture": "EyesAlmond",
+     "tint": true
+    },
+    {
+     "texture": "EyesAlmond",
+     "tint": false
+    },
+    {
+     "texture": "EyesAlmond",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Eyes_Round",
    "submeshes": [
     {
@@ -35,76 +60,101 @@
    ]
   },
   {
-   "name": "Eyes_Dot",
+   "name": "Eyes_Glossy",
    "submeshes": [
     {
-     "texture": "EyesDot",
+     "texture": "EyesGlossy",
      "tint": false
     },
     {
-     "texture": "EyesDot",
+     "texture": "EyesGlossy",
      "tint": false
     },
     {
-     "texture": "EyesDot",
+     "texture": "EyesGlossy",
      "tint": true
     },
     {
-     "texture": "EyesDot",
+     "texture": "EyesGlossy",
      "tint": false
     },
     {
-     "texture": "EyesDot",
+     "texture": "EyesGlossy",
      "tint": false
     }
    ]
   },
   {
-   "name": "Eyes_Bean",
+   "name": "Eyes_Doe",
    "submeshes": [
     {
-     "texture": "EyesBean",
+     "texture": "EyesDoe",
      "tint": false
     },
     {
-     "texture": "EyesBean",
+     "texture": "EyesDoe",
      "tint": false
     },
     {
-     "texture": "EyesBean",
+     "texture": "EyesDoe",
      "tint": true
     },
     {
-     "texture": "EyesBean",
+     "texture": "EyesDoe",
      "tint": false
     },
     {
-     "texture": "EyesBean",
+     "texture": "EyesDoe",
      "tint": false
     }
    ]
   },
   {
-   "name": "Eyes_Sleepy",
+   "name": "Eyes_Sparkly",
    "submeshes": [
     {
-     "texture": "EyesSleepy",
+     "texture": "EyesSparkly",
      "tint": false
     },
     {
-     "texture": "EyesSleepy",
+     "texture": "EyesSparkly",
      "tint": false
     },
     {
-     "texture": "EyesSleepy",
+     "texture": "EyesSparkly",
      "tint": true
     },
     {
-     "texture": "EyesSleepy",
+     "texture": "EyesSparkly",
      "tint": false
     },
     {
-     "texture": "EyesSleepy",
+     "texture": "EyesSparkly",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Toon",
+   "submeshes": [
+    {
+     "texture": "EyesToon",
+     "tint": false
+    },
+    {
+     "texture": "EyesToon",
+     "tint": false
+    },
+    {
+     "texture": "EyesToon",
+     "tint": true
+    },
+    {
+     "texture": "EyesToon",
+     "tint": false
+    },
+    {
+     "texture": "EyesToon",
      "tint": false
     }
    ]

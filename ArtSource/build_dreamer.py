@@ -468,93 +468,15 @@ FACE_Z0 = 1.395                      # decal bottom edge
 FACE_PX = 128                        # texels per layer (1.25 mm each)
 EYE_Y = 66                           # eye center row (z = 1.462)
 EYE_X = 30                           # eye center offset from the middle column
-EYE_STYLES = ("Round", "Dot", "Bean", "Sleepy")
-EYE_LAYERS = 5                       # face, eye base, iris (tinted), pupil+shine, closed (blink)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import eye_designs  # noqa: E402  (the face designs live in their own module, shared with face_drafts.py)
+
+EYE_STYLES = tuple(eye_designs.FACES)   # first one is the default face
+EYE_LAYERS = 5                          # face, eye base, iris (tinted), pupil+shine, closed (blink)
 
 
 def draw_eyes(style):
-    """Stylized cartoon eyes (not anime): simple rounded shapes with a clean outline.
-    Five 128x128 layers side by side:
-      0 face   - brows, nose, mouth, blush (always shown)
-      1 base   - eye whites + outline
-      2 iris   - grayscale, tinted by the eye color in Unity
-      3 top    - pupil and shine
-      4 closed - the blink pose, hidden until Unity's blink swaps it in"""
-    L = [np.zeros((FACE_PX, FACE_PX, 4), np.float32) for _ in range(EYE_LAYERS)]
-
-    def put(layer, x, y, c):
-        x, y = int(round(x)), int(round(y))
-        if 0 <= x < FACE_PX and 0 <= y < FACE_PX:
-            L[layer][y, x] = (*c, 1)
-
-    def ellipse(layer, cx, cy, rx, ry, color, clip=None):
-        for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
-            for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
-                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1 and (clip is None or clip(x, y)):
-                    put(layer, x, y, color)
-
-    def ring(layer, cx, cy, rx, ry, width, color, clip=None):
-        for y in range(int(cy - ry) - 2, int(cy + ry) + 3):
-            for x in range(int(cx - rx) - 2, int(cx + rx) + 3):
-                d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-                inner = ((x - cx) / max(1, rx - width)) ** 2 + ((y - cy) / max(1, ry - width)) ** 2
-                if d <= 1 and inner > 1 and (clip is None or clip(x, y)):
-                    put(layer, x, y, color)
-
-    line = (0.16, 0.11, 0.18)
-    white = (0.99, 0.98, 1.0)
-    pupil = (0.10, 0.07, 0.14)
-    blush = (0.97, 0.62, 0.68)
-    mouth = (0.55, 0.28, 0.32)
-
-    for side in (-1, 1):
-        cx, cy = 64 + side * EYE_X, EYE_Y
-        if style == "Dot":
-            # small tall dark eyes with a shine: iris layer tinted (dark gray = deep color)
-            ellipse(2, cx, cy, 5.5, 8, (0.32, 0.32, 0.32))
-            ellipse(3, cx - 1.5 * side, cy + 3, 1.8, 2.2, white)
-            put(3, cx + 1.5 * side, cy - 4, white)
-        else:
-            rx, ry, iris_r, lid = {"Round": (10, 11, 7.5, None), "Bean": (8, 13, 7, None),
-                                   "Sleepy": (10, 10, 7, 3)}[style]
-            clip = (lambda x, y, cy=cy, lid=lid: y <= cy + lid) if lid is not None else None
-            ellipse(1, cx, cy, rx, ry, white, clip)
-            ring(1, cx, cy, rx, ry, 1.6, line, clip)
-            ellipse(2, cx, cy - 1, iris_r, iris_r * 1.1, (0.75, 0.75, 0.75), clip)
-            ring(2, cx, cy - 1, iris_r, iris_r * 1.1, 1.2, (0.45, 0.45, 0.45), clip)
-            ellipse(3, cx, cy - 1, iris_r * 0.45, iris_r * 0.5, pupil, clip)
-            ellipse(3, cx - 3 * side, cy + 3 - (4 if lid is not None else 0), 2.2, 2.2, white, clip)
-            put(3, cx + 3 * side, cy - 5, white)
-            # slightly heavier top edge (a soft lid line), straight across for sleepy eyes
-            for dx in range(-rx, rx + 1):
-                if lid is not None:
-                    y = cy + lid
-                else:
-                    y = cy + ry * math.sqrt(max(0, 1 - (dx / rx) ** 2))
-                put(1, cx + dx, y, line)
-                put(1, cx + dx, y - 1, line)
-        # closed eye: a soft upward-curved line (relaxed, happy)
-        for dx in range(-8, 9):
-            y = cy - 2 + (dx / 8) ** 2 * 4
-            put(4, cx + dx, y, line)
-            put(4, cx + dx, y + 1, line)
-        # cartoon brow: short rounded stroke
-        for dx in range(-7, 8):
-            y = cy + 19 + (1 - (dx / 7) ** 2) * 2
-            for k in range(2):
-                put(0, cx + dx, y + k, (0.30, 0.22, 0.26))
-
-    # rosy round blush
-    for side in (-1, 1):
-        ellipse(0, 64 + side * 40, 40, 6, 3, blush)
-    # nose: a tiny shadow
-    put(0, 63, 33, (0.85, 0.63, 0.58))
-    put(0, 64, 32, (0.85, 0.63, 0.58))
-    # mouth: simple small smile
-    for dx in range(-5, 6):
-        put(0, 64 + dx, 15 - (1 - (dx / 5) ** 2) * 2, mouth)
-
-    TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", np.concatenate(L, axis=1))
+    TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", eye_designs.draw(eye_designs.FACES[style]))
 
 
 def build_eye_layers(bm):
@@ -1390,11 +1312,11 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 
 LOOKS = {
-    "grunge": {"Skin_Body", "Eyes_Sleepy", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeansLow", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
-    "girly": {"Skin_Body", "Eyes_Round", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
-    "twilight": {"Skin_Body", "Eyes_Bean", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
-    "baggy": {"Skin_Body", "Eyes_Dot", "Hair_Pigtails", "Top_Oversized", "Bottom_CargoLow", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
-    "y2k": {"Skin_Body", "Eyes_Round", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeansHigh", "Shoes_Platforms", "Headwear_Halo"},
+    "grunge": {"Skin_Body", "Eyes_Toon", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeansLow", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
+    "girly": {"Skin_Body", "Eyes_Almond", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
+    "twilight": {"Skin_Body", "Eyes_Doe", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
+    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Pigtails", "Top_Oversized", "Bottom_CargoLow", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "y2k": {"Skin_Body", "Eyes_Almond", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeansHigh", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)
@@ -1403,6 +1325,6 @@ for s in EYE_STYLES:
     preview(f"eyes_{s}.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=0, z=1.47, ortho=0.36, res=(360, 360))
     preview(f"eyes_{s}_q.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=35, z=1.47, ortho=0.36, res=(360, 360))
 for g in ("Round", "CatEye", "Slim", "Pixel", "Shutter"):
-    preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Round", "Hair_Pixie", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
+    preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Almond", "Hair_Pixie", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
 
 print("DONE", len(rig.children), "meshes")
