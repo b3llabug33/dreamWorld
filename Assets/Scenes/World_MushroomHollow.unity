@@ -5457,7 +5457,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Managing.NetworkManager
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 0}
+  _spawnablePrefabs: {fileID: 11400000, guid: dca7c49b5ac9ea64bbff1ded8a5313ff, type: 2}
   _refreshDefaultPrefabs: 0
   _runInBackground: 1
   _dontDestroyOnLoad: 0
@@ -19487,7 +19487,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09ee5e446f9f4a840a0b15690868668b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.Rendering.PSXCamera
-  targetHeight: 300
+  targetHeight: 400
   colorLevels: 32
   ditherStrength: 1
   effectEnabled: 1

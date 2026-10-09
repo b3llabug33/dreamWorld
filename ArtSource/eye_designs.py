@@ -452,10 +452,11 @@ def draw_extra(style):
         stud(68, 27)
     elif style == "NoseRing":
         ring(68, 25, 2.2)
-    elif style == "Septum":
-        for dx in range(-2, 3):
-            put(64 + dx, 23 - abs(dx) * 0.5 + 0.5, SILVER)
-        put(64, 22, (1, 1, 1))
+    elif style == "Septum":         # just the lower half of a hoop, as if it comes out of the nose
+        for a in range(190, 351, 8):
+            x, y = 64 + 2.6 * math.cos(math.radians(a)), 25 + 2.6 * math.sin(math.radians(a))
+            put(x, y, SILVER if y < 23.5 else SHADOW)
+        put(63, 22.4, (1, 1, 1))
     elif style == "LipRing":
         ring(68, 8, 2.2)
     elif style == "BrowPiercing":

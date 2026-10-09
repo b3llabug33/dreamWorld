@@ -386,6 +386,15 @@ def box_uv(obj, tile, origin=(0, 0, 0)):
     me = obj.data
     uv = me.uv_layers.new(name="UVMap") if not me.uv_layers else me.uv_layers[0]
     o = Vector(origin)
+    if obj.name.startswith("sleeve"):
+        # Sleeves wrap around the arm instead: v runs along the arm (scaled to roughly match the
+        # body's height when the arm hangs down), so stripes go around the sleeve like on the shirt.
+        for li, loop in enumerate(me.loops):
+            co = me.vertices[loop.vertex_index].co
+            around = math.atan2(co.z - 1.28, co.y) * 0.035
+            v = 1.28 - (abs(co.x) - 0.10) * 0.95 - o.z
+            uv.data[li].uv = (around / tile, v / tile)
+        return
     for poly in me.polygons:
         n = poly.normal
         ax = max(range(3), key=lambda i: abs(n[i]))

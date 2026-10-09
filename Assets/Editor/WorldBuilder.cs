@@ -135,7 +135,7 @@ namespace DreamWorld.EditorTools
             camGo.transform.position = new Vector3(0, 2, -18);
             var psx = camGo.AddComponent<PSXCamera>();
             psx.postShader = Shader.Find("Hidden/DreamWorld/PSXPost");
-            psx.targetHeight = 300;
+            psx.targetHeight = 400;
             var follow = camGo.AddComponent<ThirdPersonCamera>();
             follow.target = player.transform;
             controller.cameraTransform = camGo.transform;

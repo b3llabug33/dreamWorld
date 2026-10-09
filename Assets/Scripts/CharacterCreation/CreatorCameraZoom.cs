@@ -14,7 +14,7 @@ namespace DreamWorld.CharacterCreation
         public Vector3 nearPosition = new Vector3(0, 1.47f, -1.05f);
         public float nearFov = 28f;
         [Tooltip("PSX render height at full zoom; a little sharper so the face reads.")]
-        public int nearRenderHeight = 480;
+        public int nearRenderHeight = 600;
         public float scrollStep = 0.12f;
         public float keySpeed = 1.2f;
         public float smoothing = 10f;
