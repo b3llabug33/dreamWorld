@@ -396,23 +396,23 @@ def join(name, parts, tile=0.2, uv_origin=(0, 0, 0), keep_uv=False):
 HEAD_C = Vector((0, 0, 1.485))
 HEAD_R = Vector((0.106, 0.114, 0.135))   # widest half-sizes (used by hats)
 
-# Sculpted anime head, as horizontal rings from the crown down to the chin:
-# (height above HEAD_C, half-width, front depth, back depth). The back of the jaw pulls in
-# fast while the front stays forward, which gives a jawline and a small pointed chin.
+# Sculpted head, as horizontal rings from the crown down to the chin:
+# (height above HEAD_C, half-width, front depth, back depth). A natural, slightly
+# stylized human head: full cheeks, a soft rounded jaw and chin.
 HEAD_PROFILE = [
-    (0.125, 0.045, 0.050, 0.056),
-    (0.100, 0.080, 0.086, 0.096),
-    (0.065, 0.099, 0.105, 0.112),
-    (0.025, 0.105, 0.112, 0.116),
-    (-0.015, 0.104, 0.112, 0.113),
-    (-0.045, 0.097, 0.108, 0.104),   # cheekbones
-    (-0.070, 0.084, 0.102, 0.088),
-    (-0.090, 0.064, 0.095, 0.064),   # jaw angle
-    (-0.106, 0.040, 0.088, 0.036),
-    (-0.117, 0.018, 0.081, 0.014),
+    (0.125, 0.050, 0.055, 0.060),
+    (0.100, 0.083, 0.088, 0.098),
+    (0.065, 0.100, 0.105, 0.112),
+    (0.025, 0.105, 0.110, 0.115),
+    (-0.015, 0.104, 0.110, 0.112),
+    (-0.045, 0.101, 0.107, 0.104),
+    (-0.070, 0.094, 0.102, 0.090),   # full cheeks
+    (-0.090, 0.082, 0.096, 0.072),   # soft, rounded jaw
+    (-0.106, 0.064, 0.090, 0.050),
+    (-0.118, 0.042, 0.083, 0.030),
 ]
 HEAD_TOP = 0.135
-CHIN = Vector((0, -0.074, -0.122))      # chin tip, relative to HEAD_C
+CHIN = Vector((0, -0.066, -0.127))      # rounded chin, relative to HEAD_C
 
 
 def head_ring(dz):
@@ -468,16 +468,17 @@ FACE_Z0 = 1.395                      # decal bottom edge
 FACE_PX = 128                        # texels per layer (1.25 mm each)
 EYE_Y = 66                           # eye center row (z = 1.462)
 EYE_X = 30                           # eye center offset from the middle column
-EYE_STYLES = ("Sparkle", "Soft", "Sharp", "Sleepy")
+EYE_STYLES = ("Round", "Dot", "Bean", "Sleepy")
 EYE_LAYERS = 5                       # face, eye base, iris (tinted), pupil+shine, closed (blink)
 
 
 def draw_eyes(style):
-    """Five 128x128 layers side by side:
+    """Stylized cartoon eyes (not anime): simple rounded shapes with a clean outline.
+    Five 128x128 layers side by side:
       0 face   - brows, nose, mouth, blush (always shown)
-      1 base   - whites + lash lines of the open eye
+      1 base   - eye whites + outline
       2 iris   - grayscale, tinted by the eye color in Unity
-      3 top    - pupil and highlights
+      3 top    - pupil and shine
       4 closed - the blink pose, hidden until Unity's blink swaps it in"""
     L = [np.zeros((FACE_PX, FACE_PX, 4), np.float32) for _ in range(EYE_LAYERS)]
 
@@ -486,91 +487,72 @@ def draw_eyes(style):
         if 0 <= x < FACE_PX and 0 <= y < FACE_PX:
             L[layer][y, x] = (*c, 1)
 
-    lash = (0.12, 0.08, 0.16)
-    lash_soft = (0.38, 0.26, 0.36)
-    white = (0.98, 0.97, 1.0)
-    pupil = (0.10, 0.07, 0.18)
-    blush = (0.97, 0.60, 0.68)
-    mouth = (0.62, 0.30, 0.36)
-    lip = (0.92, 0.66, 0.66)
+    def ellipse(layer, cx, cy, rx, ry, color, clip=None):
+        for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+            for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1 and (clip is None or clip(x, y)):
+                    put(layer, x, y, color)
 
-    # style shape: half-width, half-height, lid peak, outer corner lift (+ cat, - droopy), lid drop (sleepy)
-    hw, hh, peak, lift, drop = {
-        "Sparkle": (14, 16, 16, 1, 0),
-        "Soft":    (14, 16, 15, -4, 0),
-        "Sharp":   (15, 12, 12, 6, 0),
-        "Sleepy":  (14, 15, 15, -1, 7),
-    }[style]
+    def ring(layer, cx, cy, rx, ry, width, color, clip=None):
+        for y in range(int(cy - ry) - 2, int(cy + ry) + 3):
+            for x in range(int(cx - rx) - 2, int(cx + rx) + 3):
+                d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+                inner = ((x - cx) / max(1, rx - width)) ** 2 + ((y - cy) / max(1, ry - width)) ** 2
+                if d <= 1 and inner > 1 and (clip is None or clip(x, y)):
+                    put(layer, x, y, color)
 
-    def lid(x):
-        """Upper lid line height at x (x>0 = outer side): arched, tilted by `lift`."""
-        return peak - drop - ((x - 1) / (hw + 1)) ** 2 * 8 + lift * max(0, x) / hw
+    line = (0.16, 0.11, 0.18)
+    white = (0.99, 0.98, 1.0)
+    pupil = (0.10, 0.07, 0.14)
+    blush = (0.97, 0.62, 0.68)
+    mouth = (0.55, 0.28, 0.32)
 
-    def eye(cx, outer):
-        cy = EYE_Y
-        for dx in range(-hw - 1, hw + 2):
-            x = dx * outer                      # x measured toward this eye's outer corner
-            top = lid(dx)
-            bottom = -hh + ((dx - 2) / (hw + 1)) ** 2 * 6
-            for dy in range(-hh - 1, hh + 1):
-                inside = (dx / (hw + 0.5)) ** 2 + (dy / (hh + 0.5)) ** 2 <= 1.15 and bottom <= dy <= top
-                if inside:
-                    put(1, cx + x, cy + dy, white)
-                    # iris: tall oval touching the upper lid, dark top -> light bottom
-                    ix, iy = dx / 9.5, (dy + 1) / 14.0
-                    if ix * ix + iy * iy <= 1:
-                        edge = ix * ix + iy * iy > 0.78
-                        g = 0.30 if edge else 0.38 if dy > top - 4 else 0.62 if dy > -3 else 0.95
-                        put(2, cx + x, cy + dy, (g, g, g))
-                        if (dx / 4.2) ** 2 + ((dy - 1) / 6.8) ** 2 <= 1:
-                            put(3, cx + x, cy + dy, pupil)
-            # upper lash line: thick, thicker toward the outer corner
-            t = 3 if dx < hw / 3 else 4
-            for k in range(t):
-                put(1, cx + x, cy + round(top) + k, lash)
-            # lower lash: short soft line on the outer half
-            if dx > 0:
-                put(1, cx + x, cy + round(bottom) - 1, lash_soft)
-            # closed eye for blinking: a gentle downward curve at mid-height
-            closed_y = -2 - ((dx) / (hw + 1)) ** 2 * -4 + lift * max(0, dx) / hw * 0.5
-            for k in range(3 if abs(dx) < hw - 1 else 2):
-                put(4, cx + x, cy + round(closed_y) + k, lash)
-        # outer flick
-        for k in range(4):
-            put(1, cx + (hw + 1 + k) * outer, cy + round(lid(hw)) + 1 + k * (1 if lift >= 0 else -1) * 0.6, lash)
-            put(4, cx + (hw + 1 + k) * outer, cy - 1 + k * 0.5, lash)
-        # highlights
-        for (hx, hy, r) in ((-4, 6, 3.2), (4, -7, 1.6)):
-            for yy in range(-3, 4):
-                for xx in range(-3, 4):
-                    if xx * xx + yy * yy <= r * r:
-                        put(3, cx + (hx + xx) * outer, cy + hy + yy - drop * 0.6, white)
-        if style == "Sparkle":
-            for d in (-2, -1, 0, 1, 2):
-                put(3, cx + 5 * outer + d, cy + 1, white)
-                put(3, cx + 5 * outer, cy + 1 + d, white)
-        # brow: thin soft arc well above the eye (usually under the bangs)
-        for dx in range(-8, 10):
-            put(0, cx + dx * outer, cy + 25 - (dx / 9) ** 2 * 3 + (lift * 0.3 if dx > 0 else 0), lash_soft)
-            put(0, cx + dx * outer, cy + 26 - (dx / 9) ** 2 * 3 + (lift * 0.3 if dx > 0 else 0), lash_soft)
+    for side in (-1, 1):
+        cx, cy = 64 + side * EYE_X, EYE_Y
+        if style == "Dot":
+            # small tall dark eyes with a shine: iris layer tinted (dark gray = deep color)
+            ellipse(2, cx, cy, 5.5, 8, (0.32, 0.32, 0.32))
+            ellipse(3, cx - 1.5 * side, cy + 3, 1.8, 2.2, white)
+            put(3, cx + 1.5 * side, cy - 4, white)
+        else:
+            rx, ry, iris_r, lid = {"Round": (10, 11, 7.5, None), "Bean": (8, 13, 7, None),
+                                   "Sleepy": (10, 10, 7, 3)}[style]
+            clip = (lambda x, y, cy=cy, lid=lid: y <= cy + lid) if lid is not None else None
+            ellipse(1, cx, cy, rx, ry, white, clip)
+            ring(1, cx, cy, rx, ry, 1.6, line, clip)
+            ellipse(2, cx, cy - 1, iris_r, iris_r * 1.1, (0.75, 0.75, 0.75), clip)
+            ring(2, cx, cy - 1, iris_r, iris_r * 1.1, 1.2, (0.45, 0.45, 0.45), clip)
+            ellipse(3, cx, cy - 1, iris_r * 0.45, iris_r * 0.5, pupil, clip)
+            ellipse(3, cx - 3 * side, cy + 3 - (4 if lid is not None else 0), 2.2, 2.2, white, clip)
+            put(3, cx + 3 * side, cy - 5, white)
+            # slightly heavier top edge (a soft lid line), straight across for sleepy eyes
+            for dx in range(-rx, rx + 1):
+                if lid is not None:
+                    y = cy + lid
+                else:
+                    y = cy + ry * math.sqrt(max(0, 1 - (dx / rx) ** 2))
+                put(1, cx + dx, y, line)
+                put(1, cx + dx, y - 1, line)
+        # closed eye: a soft upward-curved line (relaxed, happy)
+        for dx in range(-8, 9):
+            y = cy - 2 + (dx / 8) ** 2 * 4
+            put(4, cx + dx, y, line)
+            put(4, cx + dx, y + 1, line)
+        # cartoon brow: short rounded stroke
+        for dx in range(-7, 8):
+            y = cy + 19 + (1 - (dx / 7) ** 2) * 2
+            for k in range(2):
+                put(0, cx + dx, y + k, (0.30, 0.22, 0.26))
 
-    eye(64 - EYE_X, -1)   # image left = character's right eye
-    eye(64 + EYE_X, +1)
-
-    # blush: three soft diagonal strokes under each eye
-    for cx in (64 - 40, 64 + 40):
-        for k in (-4, 0, 4):
-            for d in range(3):
-                put(0, cx + k + d, 38 + d, blush)
-    # nose: two shadow pixels, lit from the right
-    put(0, 62, 36, (0.86, 0.64, 0.60))
-    put(0, 62, 35, (0.86, 0.64, 0.60))
-    # mouth: small soft "w"-ish smile and a hint of lower lip
-    for x, y in ((57, 13), (58, 12), (59, 12), (60, 12), (61, 13), (62, 13), (63, 12), (64, 12),
-                 (65, 12), (66, 12), (67, 13), (68, 13), (69, 12), (70, 12), (71, 13)):
-        put(0, x, y, mouth)
-    for x in range(61, 68):
-        put(0, x, 10, lip)
+    # rosy round blush
+    for side in (-1, 1):
+        ellipse(0, 64 + side * 40, 40, 6, 3, blush)
+    # nose: a tiny shadow
+    put(0, 63, 33, (0.85, 0.63, 0.58))
+    put(0, 64, 32, (0.85, 0.63, 0.58))
+    # mouth: simple small smile
+    for dx in range(-5, 6):
+        put(0, 64 + dx, 15 - (1 - (dx / 5) ** 2) * 2, mouth)
 
     TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", np.concatenate(L, axis=1))
 
@@ -683,7 +665,7 @@ def hair_cap(bm):
     def cut(co):
         r = co - HEAD_C
         front = r.y < -0.02
-        face = front and r.z < 0.045 and abs(r.x) < 0.085
+        face = front and r.z < 0.018 and abs(r.x) < 0.085   # hairline sits just above the brows
         jaw = r.y < 0.01 and r.z < -0.035
         bottom = r.z < -0.11
         return face or jaw or bottom
@@ -758,12 +740,12 @@ def side_locks(bm, tip_z, width=0.04, tip=0.3):
 
 
 def hang(bm, bottom_z, count=11, width=0.075, tip=0.3, start=-35, end=215, root_z=1.615, rnd=None,
-         jitter=0.0, flare=0.015, curl=0.0):
+         jitter=0.0, flare=0.015, curl=0.0, thick=0.018):
     """A curtain of locks around the sides and back, hanging to bottom_z."""
     for k in range(count):
         th = math.radians(start + (end - start) * k / (count - 1))
         z1 = bottom_z + (rnd.uniform(-jitter, jitter) if rnd else 0)
-        lock(bm, th, root_z, th, z1, width, tip=tip, flare=flare, curl=curl, steps=6, off0=-0.008)
+        lock(bm, th, root_z, th, z1, width, tip=tip, flare=flare, curl=curl, steps=6, off0=-0.008, thick=thick)
 
 
 def tail(bm, root, tip_drop, out, thickness=0.05, back=0.0, n=8):
@@ -785,14 +767,21 @@ def hair_style(name, extra, kind="spiky"):
     return join(name, [part(name.lower(), "Head", build, hair_mat)], **HAIR_UV)
 
 
+def under_layer(bm, bottom_z):
+    """Hair-colored inner curtain behind the locks, so gaps never show the neck or scalp."""
+    loft(bm, [((0, 0.035, 1.52), 0.105, 0.10), ((0, 0.05, 1.40), 0.112, 0.085),
+              ((0, 0.06, bottom_z), 0.10, 0.06)], 12, cap_start=False, cap_end=False)
+
+
 def wolf_extra(bm):
-    """Shaggy long wolf cut: choppy short layers flicking out at the crown, a mid layer,
-    then long thin uneven ends."""
+    """Shaggy long wolf cut: full choppy layers flicking out at the crown, a fluffy mid
+    layer, then long uneven (but still full) ends."""
     rnd = random.Random(11)
-    side_locks(bm, 1.38, width=0.036, tip=0.2)
-    hang(bm, 1.40, count=14, width=0.05, tip=0.15, start=-40, end=220, root_z=1.62, rnd=rnd, jitter=0.03, flare=0.035)
-    hang(bm, 1.25, count=11, width=0.055, tip=0.15, start=-30, end=210, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.04)
-    hang(bm, 1.08, count=10, width=0.05, tip=0.12, start=-15, end=195, root_z=1.50, rnd=rnd, jitter=0.07, flare=0.03)
+    under_layer(bm, 1.16)
+    side_locks(bm, 1.36, width=0.05, tip=0.45)
+    hang(bm, 1.40, count=13, width=0.08, tip=0.5, start=-40, end=220, root_z=1.62, rnd=rnd, jitter=0.03, flare=0.035)
+    hang(bm, 1.26, count=11, width=0.085, tip=0.45, start=-30, end=210, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.045)
+    hang(bm, 1.10, count=10, width=0.08, tip=0.4, start=-15, end=195, root_z=1.50, rnd=rnd, jitter=0.06, flare=0.035)
 
 
 def build_hair():
@@ -806,8 +795,8 @@ def build_hair():
                                             hang(bm, 0.98, count=11, width=0.08, tip=1.0, start=-20, end=200)), "blunt"),
         hair_style("Hair_Twintails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
             tail(bm, (0.115 * sx, 0.03, 1.60), 0.62, 0.07 * sx, 0.055, back=0.03) for sx in (1, -1)])),
-        hair_style("Hair_Pigtails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
-            tail(bm, (0.11 * sx, 0.06, 1.41), 0.42, 0.04 * sx, 0.045) for sx in (1, -1)])),
+        hair_style("Hair_Pigtails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.405, count=10, width=0.07, tip=0.95, start=-25, end=205), [
+            tail(bm, (0.10 * sx, 0.075, 1.425), 0.40, 0.035 * sx, 0.048, back=0.015) for sx in (1, -1)])),
         hair_style("Hair_Ponytail", lambda bm: (side_locks(bm, 1.44), hang(bm, 1.38, count=9, width=0.07, tip=0.5),
                                                 tail(bm, (0, 0.13, 1.57), 0.45, 0.0, 0.055, back=0.04))),
         hair_style("Hair_Buns", lambda bm: (side_locks(bm, 1.40), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
@@ -1380,10 +1369,10 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 LOOKS = {
     "grunge": {"Skin_Body", "Eyes_Sleepy", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeans", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
-    "girly": {"Skin_Body", "Eyes_Sparkle", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
-    "twilight": {"Skin_Body", "Eyes_Soft", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
-    "baggy": {"Skin_Body", "Eyes_Sharp", "Hair_Pigtails", "Top_Oversized", "Bottom_Cargo", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
-    "y2k": {"Skin_Body", "Eyes_Sparkle", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeans", "Shoes_Platforms", "Headwear_Halo"},
+    "girly": {"Skin_Body", "Eyes_Round", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
+    "twilight": {"Skin_Body", "Eyes_Bean", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
+    "baggy": {"Skin_Body", "Eyes_Dot", "Hair_Pigtails", "Top_Oversized", "Bottom_Cargo", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "y2k": {"Skin_Body", "Eyes_Round", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeans", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)
@@ -1392,6 +1381,6 @@ for s in EYE_STYLES:
     preview(f"eyes_{s}.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=0, z=1.47, ortho=0.36, res=(360, 360))
     preview(f"eyes_{s}_q.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=35, z=1.47, ortho=0.36, res=(360, 360))
 for g in ("Round", "CatEye", "Slim", "Pixel", "Shutter"):
-    preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Sparkle", "Hair_Pixie", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
+    preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Round", "Hair_Pixie", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
 
 print("DONE", len(rig.children), "meshes")

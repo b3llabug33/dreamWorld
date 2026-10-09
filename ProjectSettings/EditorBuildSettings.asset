@@ -8,5 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/CharacterCreation.unity
     guid: 40b5ca0d12c722b489d0e2c034686d65
+  - enabled: 1
+    path: Assets/Scenes/World_MushroomHollow.unity
+    guid: 8c0583ea9d0420b47896b74d6dd087ee
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

@@ -117,6 +117,10 @@ namespace DreamWorld.EditorTools
             PlayerPrefs.DeleteKey("dreamWorld.character");   // old saves point at old slot layouts
             EditorSceneManager.MarkSceneDirty(root.scene);
             EditorSceneManager.SaveScene(root.scene);
+
+            // The world scenes spawn this same character (her saved look loads in Awake).
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs")) AssetDatabase.CreateFolder("Assets", "Prefabs");
+            PrefabUtility.SaveAsPrefabAsset(root, "Assets/Prefabs/Dreamer.prefab");
             Debug.Log($"[Dreamer] rebuilt: {manifest.pieces.Length} pieces");
         }
 

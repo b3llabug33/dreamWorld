@@ -14,6 +14,8 @@ namespace DreamWorld.CharacterCreation
     {
         public CharacterAppearance appearance;
         public CharacterTurntable turntable;
+        [Tooltip("Scene loaded by READY.")]
+        public string worldScene = "World_MushroomHollow";
         CreatorCameraZoom zoom;
 
         [Header("Fonts (fall back to Unity's built-in font)")]
@@ -263,8 +265,9 @@ namespace DreamWorld.CharacterCreation
         {
             CharacterSave.Save(appearance);
             statusLabel.text = "saved_ok :)";
-            // TODO: load the next scene (house / world) once it exists.
             Debug.Log("[dreamWorld] Character saved.");
+            if (Application.CanStreamedLevelBeLoaded(worldScene))
+                UnityEngine.SceneManagement.SceneManager.LoadScene(worldScene);
         }
 
         // ---------- small UI helpers ----------

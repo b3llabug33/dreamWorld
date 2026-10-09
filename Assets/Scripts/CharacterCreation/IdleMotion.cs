@@ -28,9 +28,17 @@ namespace DreamWorld.CharacterCreation
         public float elbowBend = 9f;
         public float armSway = 2.5f;
 
+        [Header("Walking (driven by PlayerController)")]
+        [Range(0, 1)] public float moveAmount;   // 0 = standing, ~0.5 = walk, 1 = run
+        public float stridePhase;                // advances with distance traveled
+        public float legSwing = 30f;
+        public float kneeBend = 40f;
+        public float armWalkSwing = 24f;
+        public float bob = 0.03f;
+
         Transform hips, spine, chest, neck, head;
-        Transform[] upperArms, lowerArms;
-        Quaternion[] baseUpper, baseLower;
+        Transform[] upperArms, lowerArms, upperLegs, lowerLegs;
+        Quaternion[] baseUpper, baseLower, baseUpperLeg, baseLowerLeg;
         Quaternion baseHips, baseSpine, baseChest, baseNeck, baseHead;
         Vector3 baseHipsPos;
         float seed;
@@ -40,10 +48,14 @@ namespace DreamWorld.CharacterCreation
             hips = Bone("Hips"); spine = Bone("Spine"); chest = Bone("Chest"); neck = Bone("Neck"); head = Bone("Head");
             upperArms = new[] { Bone("UpperArm.L"), Bone("UpperArm.R") };
             lowerArms = new[] { Bone("LowerArm.L"), Bone("LowerArm.R") };
+            upperLegs = new[] { Bone("UpperLeg.L"), Bone("UpperLeg.R") };
+            lowerLegs = new[] { Bone("LowerLeg.L"), Bone("LowerLeg.R") };
             baseHips = hips.localRotation; baseSpine = spine.localRotation; baseChest = chest.localRotation;
             baseNeck = neck.localRotation; baseHead = head.localRotation; baseHipsPos = hips.localPosition;
             baseUpper = new[] { upperArms[0].localRotation, upperArms[1].localRotation };
             baseLower = new[] { lowerArms[0].localRotation, lowerArms[1].localRotation };
+            baseUpperLeg = new[] { upperLegs[0].localRotation, upperLegs[1].localRotation };
+            baseLowerLeg = new[] { lowerLegs[0].localRotation, lowerLegs[1].localRotation };
             seed = Random.value * 10f;
         }
 
@@ -68,16 +80,29 @@ namespace DreamWorld.CharacterCreation
         {
             float t = Time.time + seed;
             float breath = Mathf.Sin(t * Mathf.PI * 2f * breathsPerMinute / 60f);
-            float sway = Mathf.Sin(t * Mathf.PI * 2f / swaySeconds);
+            float m = moveAmount;
+            float still = 1f - Mathf.Clamp01(m * 2f);                 // idle sway fades out while walking
+            float sway = Mathf.Sin(t * Mathf.PI * 2f / swaySeconds) * still;
+            float stride = Mathf.Sin(stridePhase);
             float slow = Mathf.Sin(t * 0.37f) * 0.6f + Mathf.Sin(t * 0.61f) * 0.4f;   // wandering, not robotic
 
             // weight shift: hips roll and slide a little, the spine leans back the other way
-            hips.localPosition = baseHipsPos + hips.parent.InverseTransformDirection(transform.right) * (sway * hipShift);
+            hips.localPosition = baseHipsPos
+                + hips.parent.InverseTransformDirection(transform.right) * (sway * hipShift)
+                + hips.parent.InverseTransformDirection(transform.up) * (Mathf.Abs(Mathf.Cos(stridePhase)) - 0.5f) * bob * m;
             Turn(hips, baseHips, Vector3.forward, sway * hipDegrees);
             Turn(spine, baseSpine, Vector3.forward, -sway * hipDegrees * 0.6f);
 
-            // breathing lifts the chest
-            Turn(chest, baseChest, Vector3.right, -breath * chestDegrees);
+            // breathing lifts the chest; leaning forward a little when running
+            Turn(chest, baseChest, Vector3.right, -breath * chestDegrees + m * 6f);
+
+            // legs: swing forward/back in opposite phase, knees bend on the back swing
+            for (int i = 0; i < 2; i++)
+            {
+                float phase = stridePhase + i * Mathf.PI;
+                Turn(upperLegs[i], baseUpperLeg[i], Vector3.right, -Mathf.Sin(phase) * legSwing * m);
+                Turn(lowerLegs[i], baseLowerLeg[i], Vector3.right, Mathf.Max(0, Mathf.Cos(phase)) * kneeBend * m);
+            }
 
             // head: slow look-around plus a tiny counter to the sway
             Turn(neck, baseNeck, Vector3.forward, -sway * hipDegrees * 0.4f);
@@ -94,7 +119,9 @@ namespace DreamWorld.CharacterCreation
                 float side = i == 0 ? 1f : -1f;
                 Turn(upperArms[i], baseUpper[i], Vector3.forward, side * (breath * shoulderLift * 0.5f) - sway * armSway * 0.5f);
                 Quaternion afterUpper = upperArms[i].localRotation;
-                Turn(upperArms[i], afterUpper, Vector3.right, Mathf.Sin(t * 0.8f + i) * armSway * 0.4f);
+                // arms swing opposite to the legs while walking
+                float armWalk = (i == 0 ? 1f : -1f) * stride * armWalkSwing * m;
+                Turn(upperArms[i], afterUpper, Vector3.right, Mathf.Sin(t * 0.8f + i) * armSway * 0.4f * still + armWalk);
                 Turn(lowerArms[i], baseLower[i], Vector3.right, -elbowBend - Mathf.Sin(t * 0.9f + i * 1.3f) * 2f);
             }
         }

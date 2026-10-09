@@ -10,76 +10,76 @@
    ]
   },
   {
-   "name": "Eyes_Sparkle",
+   "name": "Eyes_Round",
    "submeshes": [
     {
-     "texture": "EyesSparkle",
+     "texture": "EyesRound",
      "tint": false
     },
     {
-     "texture": "EyesSparkle",
+     "texture": "EyesRound",
      "tint": false
     },
     {
-     "texture": "EyesSparkle",
+     "texture": "EyesRound",
      "tint": true
     },
     {
-     "texture": "EyesSparkle",
+     "texture": "EyesRound",
      "tint": false
     },
     {
-     "texture": "EyesSparkle",
+     "texture": "EyesRound",
      "tint": false
     }
    ]
   },
   {
-   "name": "Eyes_Soft",
+   "name": "Eyes_Dot",
    "submeshes": [
     {
-     "texture": "EyesSoft",
+     "texture": "EyesDot",
      "tint": false
     },
     {
-     "texture": "EyesSoft",
+     "texture": "EyesDot",
      "tint": false
     },
     {
-     "texture": "EyesSoft",
+     "texture": "EyesDot",
      "tint": true
     },
     {
-     "texture": "EyesSoft",
+     "texture": "EyesDot",
      "tint": false
     },
     {
-     "texture": "EyesSoft",
+     "texture": "EyesDot",
      "tint": false
     }
    ]
   },
   {
-   "name": "Eyes_Sharp",
+   "name": "Eyes_Bean",
    "submeshes": [
     {
-     "texture": "EyesSharp",
+     "texture": "EyesBean",
      "tint": false
     },
     {
-     "texture": "EyesSharp",
+     "texture": "EyesBean",
      "tint": false
     },
     {
-     "texture": "EyesSharp",
+     "texture": "EyesBean",
      "tint": true
     },
     {
-     "texture": "EyesSharp",
+     "texture": "EyesBean",
      "tint": false
     },
     {
-     "texture": "EyesSharp",
+     "texture": "EyesBean",
      "tint": false
     }
    ]

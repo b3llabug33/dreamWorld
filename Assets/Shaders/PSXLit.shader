@@ -26,6 +26,7 @@ Shader "DreamWorld/PSX Lit"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_fog
+            #pragma multi_compile_fwdbase
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
 
@@ -77,6 +78,14 @@ Shader "DreamWorld/PSX Lit"
                 float3 n = UnityObjectToWorldNormal(v.normal);
                 float ndl = saturate(dot(n, normalize(_WorldSpaceLightPos0.xyz)));
                 float3 lit = ShadeSH9(float4(n, 1)) + _LightColor0.rgb * ndl;
+                #ifdef VERTEXLIGHT_ON
+                // up to 4 nearby point lights (lamps, glowing mushrooms), lit per vertex like the PS1
+                float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                lit += Shade4PointLights(unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
+                                         unity_LightColor[0].rgb, unity_LightColor[1].rgb,
+                                         unity_LightColor[2].rgb, unity_LightColor[3].rgb,
+                                         unity_4LightAtten0, worldPos, n);
+                #endif
                 // Softness pulls the shading toward full brightness: faces/skin read cleaner,
                 // closer to flat anime coloring, without losing the PS1 vertex lighting entirely.
                 lit = lerp(lit, max(lit, 1), _Softness);

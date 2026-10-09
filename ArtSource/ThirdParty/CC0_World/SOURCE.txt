@@ -1,0 +1,9 @@
+CC0 environment textures from ambientCG (https://ambientcg.com, CC0 1.0), downscaled to 128x128.
+  Grass   <- Grass004          https://ambientcg.com/view?id=Grass004
+  Paving  <- PavingStones138   https://ambientcg.com/view?id=PavingStones138
+  Bark    <- Bark012           https://ambientcg.com/view?id=Bark012
+  Siding  <- WoodSiding008     https://ambientcg.com/view?id=WoodSiding008
+  Planks  <- Planks037A        https://ambientcg.com/view?id=Planks037A
+  Thatch  <- ThatchedRoof001A  https://ambientcg.com/view?id=ThatchedRoof001A
+  Rock    <- Rock030           https://ambientcg.com/view?id=Rock030
+  Dirt    <- Ground037         https://ambientcg.com/view?id=Ground037

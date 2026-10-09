@@ -1,0 +1,274 @@
+{
+ "props": [
+  {
+   "name": "Tree_Round",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Bark",
+     "unlit": false
+    },
+    {
+     "texture": "Leaves",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Tree_Pine",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Bark",
+     "unlit": false
+    },
+    {
+     "texture": "LeavesDusk",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Bush",
+   "collider": "none",
+   "submeshes": [
+    {
+     "texture": "Leaves",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Rock_A",
+   "collider": "box",
+   "submeshes": [
+    {
+     "texture": "Rock",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Rock_B",
+   "collider": "box",
+   "submeshes": [
+    {
+     "texture": "Rock",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Mushroom_Purple",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Stem",
+     "unlit": false
+    },
+    {
+     "texture": "CapPurple",
+     "unlit": true
+    }
+   ]
+  },
+  {
+   "name": "Mushroom_Blue",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Stem",
+     "unlit": false
+    },
+    {
+     "texture": "CapBlue",
+     "unlit": true
+    }
+   ]
+  },
+  {
+   "name": "Mushroom_Pink",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Stem",
+     "unlit": false
+    },
+    {
+     "texture": "CapPink",
+     "unlit": true
+    }
+   ]
+  },
+  {
+   "name": "Mushroom_Cluster",
+   "collider": "none",
+   "submeshes": [
+    {
+     "texture": "Stem",
+     "unlit": false
+    },
+    {
+     "texture": "CapBlue",
+     "unlit": true
+    },
+    {
+     "texture": "CapPink",
+     "unlit": true
+    }
+   ]
+  },
+  {
+   "name": "Mushroom_House",
+   "collider": "box",
+   "submeshes": [
+    {
+     "texture": "Stem",
+     "unlit": false
+    },
+    {
+     "texture": "Planks",
+     "unlit": false
+    },
+    {
+     "texture": "WindowGlow",
+     "unlit": true
+    },
+    {
+     "texture": "CapPurple",
+     "unlit": true
+    },
+    {
+     "texture": "Rock",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Cottage",
+   "collider": "box",
+   "submeshes": [
+    {
+     "texture": "Siding",
+     "unlit": false
+    },
+    {
+     "texture": "Planks",
+     "unlit": false
+    },
+    {
+     "texture": "WindowGlow",
+     "unlit": true
+    },
+    {
+     "texture": "Thatch",
+     "unlit": false
+    },
+    {
+     "texture": "Rock",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Lamp_Post",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "IronDark",
+     "unlit": false
+    },
+    {
+     "texture": "LanternGlow",
+     "unlit": true
+    }
+   ]
+  },
+  {
+   "name": "Fence",
+   "collider": "box",
+   "submeshes": [
+    {
+     "texture": "Planks",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Bench",
+   "collider": "box",
+   "submeshes": [
+    {
+     "texture": "Planks",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Well",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Rock",
+     "unlit": false
+    },
+    {
+     "texture": "Planks",
+     "unlit": false
+    },
+    {
+     "texture": "Thatch",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Flowers",
+   "collider": "none",
+   "submeshes": [
+    {
+     "texture": "Leaves",
+     "unlit": false
+    },
+    {
+     "texture": "PetalGlow",
+     "unlit": true
+    }
+   ]
+  },
+  {
+   "name": "Signpost",
+   "collider": "trunk",
+   "submeshes": [
+    {
+     "texture": "Planks",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Hill",
+   "collider": "none",
+   "submeshes": [
+    {
+     "texture": "Grass",
+     "unlit": false
+    }
+   ]
+  },
+  {
+   "name": "Stage",
+   "collider": "none",
+   "submeshes": [
+    {
+     "texture": "Paving",
+     "unlit": false
+    },
+    {
+     "texture": "Leaves",
+     "unlit": false
+    }
+   ]
+  }
+ ]
+}
