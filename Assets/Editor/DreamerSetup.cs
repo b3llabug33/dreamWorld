@@ -195,6 +195,8 @@ namespace DreamWorld.EditorTools
             mat.SetFloat("_Cutoff", texture.StartsWith("Eyes") || texture == "Fishnet" ? 0.5f : 0f);
             // Skin and face get gentler shading so the face reads like flat anime coloring.
             mat.SetFloat("_Softness", texture == "Skin" || texture.StartsWith("Eyes") ? 0.7f : 0.15f);
+            // clothes and faces only get a hint of the PS1 affine warp (strong warp bends textures as the camera moves)
+            mat.SetFloat("_AffineStrength", texture.StartsWith("Eyes") ? 0f : 0.15f);
             EditorUtility.SetDirty(mat);
             return mat;
         }

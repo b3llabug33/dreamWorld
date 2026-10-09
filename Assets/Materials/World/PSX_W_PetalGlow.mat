@@ -30,7 +30,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AffineStrength: 0.4
+    - _AffineStrength: 0.12
     - _Cutoff: 0
     - _SnapStrength: 1
     - _Softness: 0.1

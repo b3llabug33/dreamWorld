@@ -39,6 +39,10 @@ Unity ignores this folder (it's outside `Assets/`). New drafts get added here as
 (round, glossy, doe, sparkly, toon) and round-2 picks J, N, G, M, L, K
 (upturned, starry, cat eye, monolid, pixel hex, puppy).
 
+`Faces/noses_drafts.png` (8 noses: dots, button, line, hook, triangle, nostrils, freckles, none) and
+`Faces/mouths_drafts.png` (15 mouths: smile, tiny, flat, smirk, smug, pout, cat, open, o, grin, tongue,
+fang, lips, wavy, kiss) are drafts on the soft-almond face; picks still open.
+
 `Faces/eye_sliders_default_big_smallwide_closehigh.png` shows the eye sliders: size, spacing,
 height (brows move with the eyes; mouth and blush stay put), plus a reset.
 
@@ -76,5 +80,7 @@ Blender previews show clothes in a neutral lilac; real colors come from the in-g
   `ArtSource/build_world.py`) so everything can be re-tuned and rebuilt in one go.
 - Third-party art is CC0 only (Screaming Brain Studios, Poly Haven, ambientCG, iPoly3D glasses);
   sources are listed in `ArtSource/ThirdParty/*/SOURCE.txt` / `LICENSE.txt`.
+- Hosting goal: public, so anyone on the internet can join (she wants to post it on TikTok). Not set
+  up yet. That means a public server (router port-forward or a cloud VPS), not Tailscale.
 - Multiplayer: FishNet (free for games). Small online test first (a few friends); the look syncs as
   the tiny CharacterSave JSON. Tested: host + client, and a headless server with two clients.

@@ -19,9 +19,16 @@ scene = bpy.context.scene
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import eye_designs  # noqa: E402
 
-# the current pick first for reference, then the new round of drafts
-DRAFTS = {"E  soft almond (current)": eye_designs.FACES["Almond"]}
-DRAFTS.update(eye_designs.DRAFTS_2)
+# which sheet to render: "eyes" (round-2 eye drafts), "noses" or "mouths"
+SET = sys.argv[sys.argv.index("--") + 2] if len(sys.argv) > sys.argv.index("--") + 2 else "eyes"
+base = eye_designs.FACES["Almond"]
+if SET == "noses":
+    DRAFTS = {f"{i + 1}  {n}": dict(base, nose=n) for i, n in enumerate(eye_designs.NOSES)}
+elif SET == "mouths":
+    DRAFTS = {f"{i + 1}  {m}": dict(base, mouth=m) for i, m in enumerate(eye_designs.MOUTHS)}
+else:   # the current pick first for reference, then the round-2 eye drafts
+    DRAFTS = {"E  soft almond (current)": base}
+    DRAFTS.update(eye_designs.DRAFTS_2)
 
 
 def draw(d):
@@ -78,14 +85,16 @@ scene.collection.objects.link(cam); scene.camera = cam
 scene.render.resolution_x = scene.render.resolution_y = 360
 
 shots = []
-for name, d in DRAFTS.items():
+close = SET in ("noses", "mouths")       # noses and mouths: tighter shot on the lower face
+cam.data.ortho_scale = 0.2 if close else 0.34
+for idx, (name, d) in enumerate(DRAFTS.items()):
     img.pixels = draw(d).ravel()
     img.update()
     for label, ang in (("front", 0), ("q", 30)):
         a = math.radians(ang)
-        cam.location = (math.sin(a) * -3, -math.cos(a) * 3, 1.47)
+        cam.location = (math.sin(a) * -3, -math.cos(a) * 3, 1.43 if close else 1.47)
         cam.rotation_euler = (math.radians(90), 0, math.radians(-ang))
-        path = os.path.join(out_dir, f"draft2_{name[0]}_{label}.png")
+        path = os.path.join(out_dir, f"{SET}_{idx:02d}_{label}.png")
         scene.render.filepath = path
         bpy.ops.render.render(write_still=True)
         shots.append(path)

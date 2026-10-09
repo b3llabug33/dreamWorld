@@ -206,7 +206,7 @@
   },
   {
    "name": "Well",
-   "collider": "trunk",
+   "collider": "round",
    "submeshes": [
     {
      "texture": "Rock",

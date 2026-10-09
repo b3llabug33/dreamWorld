@@ -315,12 +315,28 @@ namespace DreamWorld.EditorTools
             r.sharedMaterials = mats;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
+            // measure the prop in its own (unrotated, unscaled) space so colliders fit tightly
+            var savedRot = holder.rotation;
+            var savedScale = holder.localScale;
+            holder.rotation = Quaternion.identity;
+            holder.localScale = Vector3.one;
+            var local = r.bounds;
+            local.center -= holder.position;
+            holder.rotation = savedRot;
+            holder.localScale = savedScale;
+
             if (collider && p.collider == "box")
             {
-                var b = r.bounds;
                 var box = holder.gameObject.AddComponent<BoxCollider>();
-                box.center = holder.InverseTransformPoint(b.center);
-                box.size = new Vector3(b.size.x, b.size.y, b.size.z) / scale * 0.95f;
+                box.center = local.center;
+                box.size = local.size * 0.95f;
+            }
+            else if (collider && p.collider == "round")   // wells and other round solid props
+            {
+                var cap = holder.gameObject.AddComponent<CapsuleCollider>();
+                cap.radius = Mathf.Max(local.extents.x, local.extents.z) * 0.95f;
+                cap.height = Mathf.Max(local.size.y, cap.radius * 2);
+                cap.center = new Vector3(local.center.x, local.size.y / 2, local.center.z);
             }
             else if (collider && p.collider == "trunk")
             {
@@ -345,7 +361,8 @@ namespace DreamWorld.EditorTools
             mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{KitDir}/Textures/{texture}.png");
             mat.SetFloat("_Unlit", unlit ? 1 : 0);
             mat.SetFloat("_Softness", 0.1f);
-            mat.SetFloat("_AffineStrength", 0.4f);
+            // a touch of PS1 texture warp; more than this makes big faces bend with the camera
+            mat.SetFloat("_AffineStrength", texture == "Paving" ? 0f : 0.12f);
             EditorUtility.SetDirty(mat);
             return mat;
         }

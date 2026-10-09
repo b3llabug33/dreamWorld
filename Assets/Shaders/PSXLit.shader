@@ -10,7 +10,7 @@ Shader "DreamWorld/PSX Lit"
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
         _SnapStrength ("Vertex Snap", Range(0,1)) = 1
-        _AffineStrength ("Affine Warp", Range(0,1)) = 0.6
+        _AffineStrength ("Affine Warp", Range(0,1)) = 0.15
         [Toggle] _Unlit ("Unlit (ignore lights)", Float) = 0
         _Cutoff ("Alpha Cutoff (0 = off)", Range(0,1)) = 0
         _Softness ("Soft Shading", Range(0,1)) = 0

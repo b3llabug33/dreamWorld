@@ -339,7 +339,7 @@ def well():
         ("Rock", lambda bm: loft(bm, [(0, 0.75, 0.75), (0.8, 0.75, 0.75)], 10, cap_top=False, wobble=0.04)),
         ("Planks", lambda bm: [box(bm, (x - 0.07, -0.07, 0.5), (x + 0.07, 0.07, 2.1)) for x in (-0.7, 0.7)]),
         ("Thatch", lambda bm: prism(bm, [(-1.0, 1.95), (1.0, 1.95), (0, 2.55)], -0.75, 0.75)),
-    ], collider="trunk", tile=0.5)
+    ], collider="round", tile=0.5)
 
 
 def flowers():

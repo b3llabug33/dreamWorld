@@ -28,7 +28,7 @@ LIP = (0.92, 0.62, 0.64)
 
 BASE = dict(sp=34, hw=20, hu=15, hl=15, p=2.0, q=0.5, tilt=0.0, hood=0.0, shape="curve",
             iris=0.8, outline=2, lid=4, lashes=0, wing=0, lower=False, shine=3.6,
-            pupil="round", dot=False, mouth="smile", brow="soft", blush="round")
+            pupil="round", dot=False, mouth="smile", nose="dots", brow="soft", blush="round")
 
 # --- the faces in the game (first one is the default) -----------------------------------
 FACES = {
@@ -197,28 +197,8 @@ def draw(params):
             for k in (-4, 0, 4):
                 for j in range(3):
                     put(0, bx + k + j, by + j, BLUSH)
-    put(0, 63, 27, (0.85, 0.63, 0.58))
-    put(0, 64, 26, (0.85, 0.63, 0.58))
-    m = d["mouth"]
-    if m == "smile":
-        for dx in range(-5, 6):
-            put(0, 64 + dx, 13 - (1 - (dx / 5) ** 2) * 2, MOUTH)
-    elif m == "flat":
-        for dx in range(-4, 5):
-            put(0, 64 + dx, 12, MOUTH)
-    elif m == "smirk":
-        for dx in range(-5, 6):
-            put(0, 64 + dx, 13 - (1 - (dx / 5) ** 2) * 1.5 + dx * 0.18, MOUTH)
-    elif m == "pout":
-        for dx in range(-3, 4):
-            put(0, 64 + dx, 12 - (1 - (dx / 3) ** 2), MOUTH)
-        ellipse(0, 64, 10, 2.5, 1.0, LIP)
-    elif m == "cat":
-        for dx in range(-6, 7):
-            put(0, 64 + dx, 13 - abs(math.sin(dx / 6 * math.pi)) * 2, MOUTH)
-    elif m == "open":
-        ellipse(0, 64, 12, 4, 2.5, MOUTH)
-        ellipse(0, 64, 11, 2.5, 1.2, (0.92, 0.55, 0.60))
+    draw_nose(d["nose"], put, ellipse)
+    draw_mouth(d["mouth"], put, ellipse)
     return np.concatenate(L, axis=1)
 
 
@@ -226,3 +206,99 @@ def draw(params):
 for _draft, _name in (("J  upturned", "Upturned"), ("N  starry almond", "Starry"), ("G  cat eye", "CatEye"),
                       ("M  monolid", "Monolid"), ("L  pixel hex", "PixelHex"), ("K  puppy", "Puppy")):
     FACES[_name] = DRAFTS_2[_draft]
+
+
+# ---------------------------------------------------------------- noses and mouths
+# Drawn on the face layer around column 64: nose near row 27-34, mouth near row 8-16.
+
+SHADE = (0.85, 0.63, 0.58)
+SHADE_DARK = (0.72, 0.48, 0.45)
+TEETH = (0.98, 0.96, 0.94)
+TONGUE = (0.95, 0.52, 0.58)
+FRECKLE = (0.80, 0.55, 0.45)
+
+NOSES = ("dots", "button", "line", "hook", "triangle", "nostrils", "freckles", "none")
+MOUTHS = ("smile", "tiny", "flat", "smirk", "smug", "pout", "cat", "open", "o", "grin", "tongue",
+          "fang", "lips", "wavy", "kiss")
+
+
+def draw_nose(style, put, ellipse):
+    if style == "dots":            # two shadow pixels (the original)
+        put(0, 63, 27, SHADE); put(0, 64, 26, SHADE)
+    elif style == "button":        # small round tip with a highlight
+        ellipse(0, 64, 27, 2.6, 1.8, SHADE)
+        put(0, 63, 28, (0.97, 0.80, 0.74))
+    elif style == "line":          # simple vertical line
+        for y in range(26, 33):
+            put(0, 63, y, SHADE)
+    elif style == "hook":          # anime-style "L" shadow on the side
+        for y in range(27, 34):
+            put(0, 62, y, SHADE)
+        for x in range(62, 66):
+            put(0, x, 27, SHADE_DARK)
+    elif style == "triangle":      # small shaded triangle under the tip
+        for row, (x0, x1) in enumerate(((62, 66), (63, 65), (64, 64))):
+            for x in range(x0, x1 + 1):
+                put(0, x, 26 + row, SHADE)
+    elif style == "nostrils":
+        put(0, 62, 26, SHADE_DARK); put(0, 66, 26, SHADE_DARK)
+    elif style == "freckles":      # dots nose + freckles across the cheeks and nose bridge
+        put(0, 63, 27, SHADE); put(0, 64, 26, SHADE)
+        for x, y in ((46, 38), (50, 36), (53, 39), (57, 35), (60, 37), (68, 37), (71, 35),
+                     (75, 39), (78, 36), (82, 38), (56, 40), (72, 40)):
+            put(0, x, y, FRECKLE)
+    # "none": nothing
+
+
+def draw_mouth(style, put, ellipse):
+    def curve(half, y0, depth, tilt=0.0, color=MOUTH):
+        for dx in range(-half, half + 1):
+            put(0, 64 + dx, y0 - (1 - (dx / half) ** 2) * depth + dx * tilt, color)
+
+    if style == "smile":
+        curve(5, 13, 2)
+    elif style == "tiny":
+        curve(3, 12, 1)
+    elif style == "flat":
+        curve(4, 12, 0)
+    elif style == "smirk":
+        curve(5, 13, 1.5, 0.18)
+    elif style == "smug":          # one-sided curl up
+        for dx in range(-4, 6):
+            put(0, 64 + dx, 12 + max(0, dx - 2) * 0.7, MOUTH)
+    elif style == "pout":
+        curve(3, 12, 1)
+        ellipse(0, 64, 10, 2.5, 1.0, LIP)
+    elif style == "cat":           # ":3"
+        for dx in range(-6, 7):
+            put(0, 64 + dx, 13 - abs(math.sin(dx / 6 * math.pi)) * 2, MOUTH)
+    elif style == "open":
+        ellipse(0, 64, 12, 4, 2.5, MOUTH)
+        ellipse(0, 64, 11, 2.5, 1.2, TONGUE)
+    elif style == "o":
+        ellipse(0, 64, 12, 2.2, 2.4, MOUTH)
+        ellipse(0, 64, 12, 1.0, 1.2, (0.40, 0.18, 0.22))
+    elif style == "grin":          # wide smile showing teeth
+        for dx in range(-7, 8):
+            top = 14 - (1 - (dx / 7) ** 2) * 1.2
+            bottom = 14 - (1 - (dx / 7) ** 2) * 4.2
+            for y in range(int(bottom), int(top) + 1):
+                put(0, 64 + dx, y, TEETH)
+            put(0, 64 + dx, top, MOUTH)
+            put(0, 64 + dx, bottom, MOUTH)
+    elif style == "tongue":        # cheeky smile with the tongue poking out
+        curve(5, 13, 2)
+        ellipse(0, 65, 9.5, 2, 1.8, TONGUE)
+    elif style == "fang":          # small smile with one little fang (grunge/vampire)
+        curve(5, 13, 1.5)
+        put(0, 66, 11, TEETH); put(0, 66, 10, TEETH); put(0, 67, 11, TEETH)
+    elif style == "lips":          # filled lips (lipstick look)
+        ellipse(0, 64, 12.5, 5, 1.6, LIP)
+        ellipse(0, 64, 10.5, 4, 1.6, (0.86, 0.48, 0.55))
+        curve(4, 11.5, 0.6, color=MOUTH)
+    elif style == "wavy":          # nervous squiggle
+        for dx in range(-5, 6):
+            put(0, 64 + dx, 12 + math.sin(dx * 1.3) * 1.0, MOUTH)
+    elif style == "kiss":          # little pucker
+        ellipse(0, 64, 12, 2, 1.6, LIP)
+        put(0, 64, 12, MOUTH)
