@@ -346,7 +346,13 @@ namespace DreamWorld.Gameplay
         {
             var near = !stats.Dead && !AnyPanel && !InventoryUI.IsOpen ? Interactable.Nearest(stats.transform.position) : null;
             promptLabel.text = near != null ? $"[E] {near.Prompt(stats)}" : "";
-            if (near != null && Input.GetKeyDown(KeyCode.E)) near.Interact(stats);
+            // E: use whatever's nearby, otherwise open/close the bag
+            if (Input.GetKeyDown(KeyCode.E) && !stats.Dead && !AnyPanel)
+            {
+                if (InventoryUI.IsOpen) InventoryUI.Instance.Toggle();
+                else if (near != null) near.Interact(stats);
+                else InventoryUI.Instance?.Toggle();
+            }
         }
 
         void UpdatePanels()

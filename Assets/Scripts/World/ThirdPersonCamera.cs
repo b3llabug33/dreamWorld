@@ -20,6 +20,9 @@ namespace DreamWorld.World
 
         // Set by menus (pause, level up, banking): shows the cursor and stops mouse-look.
         public static bool CursorFree { get; set; }
+        // Inventory view: swing around in front of the player so you see her straight on, standing to
+        // the left of the bag panel (like a character screen).
+        public static bool Showcase { get; set; }
 
         PlayerController player;
         bool snap;
@@ -40,6 +43,23 @@ namespace DreamWorld.World
             bool free = CursorFree || !Application.isFocused;
             Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = free;
+
+            if (Showcase)
+            {
+                Vector3 facing = target.forward;
+                facing.y = 0f;
+                facing = facing.sqrMagnitude > 0.001f ? facing.normalized : Vector3.forward;
+                Vector3 chest = target.position + Vector3.up * 1.0f;
+                Vector3 cameraRight = Vector3.Cross(Vector3.up, -facing);   // the camera looks back at her
+                Vector3 spot = chest + facing * 2.6f + Vector3.up * 0.12f + cameraRight * 0.15f;
+                Vector3 aim = chest + cameraRight * 0.75f;                   // aim right of her, so she sits left of center
+                float k = 1f - Mathf.Exp(-6f * Time.unscaledDeltaTime);
+                transform.position = Vector3.Lerp(transform.position, spot, k);
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(aim - transform.position, Vector3.up), k);
+                // keep the orbit angle behind her, so closing the bag glides back to the normal view
+                yaw = Quaternion.LookRotation(facing).eulerAngles.y;
+                return;
+            }
 
             var lockOn = player != null ? player.LockTarget : null;
             if (lockOn != null)

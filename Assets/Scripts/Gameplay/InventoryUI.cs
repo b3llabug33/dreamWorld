@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace DreamWorld.Gameplay
 {
-    // The bag (I or Tab), the 1-4 quick-item hotbar, home storage and the shop, in the pixel-terminal style.
+    // The bag (E when nothing's nearby to use, or I / Tab), the 1-4 quick-item hotbar, home storage and the shop, in the pixel-terminal style.
     //   bag:      click an item to pick it, click another slot to move/swap/stack it there,
     //             right-click to use it (or send it across to storage while that's open)
     //   details:  use / drop, and 1-4 to put it on a quick slot (or press 1-4 while it's picked)
@@ -45,7 +45,11 @@ namespace DreamWorld.Gameplay
         static readonly Color PickedColor = new Color(0.98f, 0.66f, 0.78f, 1f);
 
         void Awake() => Instance = this;
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            ThirdPersonCamera.Showcase = false;
+        }
 
         void Start()
         {
@@ -121,7 +125,7 @@ namespace DreamWorld.Gameplay
                 TerminalUI.Place((RectTransform)assignButtons[k].transform, new Vector2(0, 0), new Vector2(190 + k * 62, 58),
                                  new Vector2(54, 44), new Vector2(0, 0.5f));
             }
-            var hint = ui.Label(bagPanel, "click: pick / place   right click: use   I / tab: close", 22, TerminalUI.Dim);
+            var hint = ui.Label(bagPanel, "click: pick / place   right click: use   E / I / tab: close", 22, TerminalUI.Dim);
             TerminalUI.Place(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 22), new Vector2(660, 30));
         }
 
@@ -193,6 +197,7 @@ namespace DreamWorld.Gameplay
             picked = -1;
             pickedFrom = null;
             ThirdPersonCamera.CursorFree = open || (GameHUD.Instance != null && GameHUD.Instance.MenuOpen);
+            ThirdPersonCamera.Showcase = open && side == Side.None;   // just the bag: look at her straight on
             if (player != null) player.InputEnabled = !open && !stats.Dead && (GameHUD.Instance == null || !GameHUD.Instance.MenuOpen);
             if (!open) Save();
             Refresh();
