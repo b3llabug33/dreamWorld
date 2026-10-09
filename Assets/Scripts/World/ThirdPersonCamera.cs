@@ -22,6 +22,10 @@ namespace DreamWorld.World
         public static bool CursorFree { get; set; }
 
         PlayerController player;
+        bool snap;
+
+        // Jump straight to the follow position next frame instead of gliding there (after a teleport).
+        public void SnapNext() => snap = true;
 
         void Start()
         {
@@ -64,10 +68,11 @@ namespace DreamWorld.World
                 d = Mathf.Max(minDistance * 0.5f, hit.distance - 0.1f);
             Vector3 desired = focus + rotation * Vector3.back * d;
 
-            transform.position = Vector3.Lerp(transform.position, desired, 1f - Mathf.Exp(-smoothing * Time.deltaTime));
+            transform.position = snap ? desired : Vector3.Lerp(transform.position, desired, 1f - Mathf.Exp(-smoothing * Time.deltaTime));
             Vector3 lookAt = lockOn != null ? Vector3.Lerp(focus, lockOn.Body.position + Vector3.up * 0.6f, 0.35f) : focus;
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookAt - transform.position, Vector3.up),
-                                                  1f - Mathf.Exp(-18f * Time.deltaTime));
+            var look = Quaternion.LookRotation(lookAt - transform.position, Vector3.up);
+            transform.rotation = snap ? look : Quaternion.Slerp(transform.rotation, look, 1f - Mathf.Exp(-18f * Time.deltaTime));
+            snap = false;
         }
 
         void OnDisable()

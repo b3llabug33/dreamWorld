@@ -36,6 +36,9 @@ namespace DreamWorld.World
         public float heavyDamage = 28f;
 
         public bool InputEnabled { get; set; } = true;   // menus turn this off
+        // Lets a script steer instead of the keyboard (recording clips, cutscenes later).
+        public bool UseScriptedInput { get; set; }
+        public Vector2 ScriptedInput { get; set; }
         public IDamageable LockTarget { get; private set; }
         public bool Busy => action != Action.None;
 
@@ -84,13 +87,14 @@ namespace DreamWorld.World
         void Update()
         {
             bool dead = stats != null && stats.Dead;
-            var input = InputEnabled && !dead ? new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")) : Vector2.zero;
+            var input = UseScriptedInput ? ScriptedInput
+                      : InputEnabled && !dead ? new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")) : Vector2.zero;
             Vector3 forward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(cameraTransform.right, Vector3.up).normalized;
             moveDir = forward * input.y + right * input.x;
             if (moveDir.sqrMagnitude > 1) moveDir.Normalize();
 
-            if (InputEnabled && !dead) ReadActions();
+            if (InputEnabled && !dead && !UseScriptedInput) ReadActions();
             if (LockTarget != null && (!LockTarget.Alive || Vector3.Distance(LockTarget.Body.position, transform.position) > 18f))
                 LockTarget = null;
 

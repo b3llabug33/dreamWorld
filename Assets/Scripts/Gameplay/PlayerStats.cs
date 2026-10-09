@@ -47,6 +47,9 @@ namespace DreamWorld.Gameplay
         public float GuardReduction { get; set; }   // 0 = not guarding, 0.75 = block 75%
         public float LastHitTime { get; private set; } = -99f;
         float lastStaminaUse = -99f;
+        float protectedUntil = -99f;
+        // A few seconds of safety after waking up at home, so nothing can camp your bed.
+        public bool Protected => Time.time < protectedUntil;
 
         // ---------- derived numbers (all formulas in one place) ----------
         int P(Attribute a) => progress.points[(int)a];
@@ -122,7 +125,7 @@ namespace DreamWorld.Gameplay
         // IDamageable: monsters (and later other players outside safe zones) hit you through this.
         public bool TakeDamage(float amount, GameObject source)
         {
-            if (Dead || Invulnerable || amount <= 0f) return false;
+            if (Dead || Invulnerable || Protected || amount <= 0f) return false;
             if (ZoneMap.IsSafe(transform.position)) return false;   // nothing can hurt you in a safe zone
             if (GuardReduction > 0f)
             {
@@ -235,6 +238,7 @@ namespace DreamWorld.Gameplay
             FillBars();
             progress.food = Mathf.Max(progress.food, 40f);
             LastHitTime = -99f;
+            protectedUntil = Time.time + 6f;
             Changed?.Invoke();
         }
     }

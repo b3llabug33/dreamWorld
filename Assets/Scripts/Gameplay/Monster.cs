@@ -29,6 +29,7 @@ namespace DreamWorld.Gameplay
         public Transform Body => transform;
         public bool Alive => Health > 0f;
         public MonsterSpawner Spawner { get; set; }
+        public bool WindingUp => state == State.Windup;
 
         enum State { Wander, Chase, Windup, Lunge, Recover, Dead }
         State state;

@@ -1,0 +1,12 @@
+CAROUSEL 1: how it started vs now (post the 6 images in post/ in order, 01 -> 06)
+
+Caption:
+how dreamWorld's faces and backdrop changed over the first few days of building it. the anime eyes felt uncanny and the tiny ones were honestly a little scary, so now there are 12 eye styles you can resize and move around. which version is your favorite?
+
+Hashtags:
+#indiedev #gamedev #ps1aesthetic #cozygames #howitstarted
+
+Pinned comment idea:
+follow along, i post every step of making this cozy PS1-style game
+
+Sound: soft lo-fi or a dreamy synth loop, low volume (carousels autoplay audio, keep it calm)

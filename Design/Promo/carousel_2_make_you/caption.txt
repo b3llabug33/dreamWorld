@@ -1,0 +1,12 @@
+CAROUSEL 2: "make you" character creator tour (post the 6 images in post/ in order)
+
+Caption:
+i'm making a cozy PS1-style game where you build your own character. the body, clothes and 87 hair variations are all modeled by Python scripts in Blender, then dressed up in a pixel terminal menu. still very early, what should i add to the creator next?
+
+Hashtags:
+#indiegame #charactercreator #ps1aesthetic #cozygames #gamedev
+
+Pinned comment idea:
+taking requests for hairstyles and outfits, drop them below
+
+Sound: dreamy y2k-style synth pop instrumental or a cute chiptune loop

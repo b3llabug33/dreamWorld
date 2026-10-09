@@ -147,7 +147,7 @@ namespace DreamWorld.EditorTools
             for (int tries = 0; tries < 200 && placed < 8; tries++)
             {
                 var pos = Scatter(rng, 11, 24, avoidPath: true);
-                if (Vector3.Distance(pos, homePos) < 6f || pos.magnitude > 30f) continue;
+                if (Vector3.Distance(pos, homePos) < 11f || pos.magnitude > 30f) continue;   // not right outside your door
                 var spot = new GameObject("Spot").transform;
                 spot.SetParent(monsters.transform);
                 spot.SetPositionAndRotation(pos, Quaternion.Euler(0, rng.Next(360), 0));
