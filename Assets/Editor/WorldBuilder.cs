@@ -18,7 +18,7 @@ using Random = System.Random;
 namespace DreamWorld.EditorTools
 {
     // dreamWorld > Build World: Mushroom Hollow  - (re)creates the first world area scene.
-    // dreamWorld > Build Creator Backdrop         - dresses the character creator with the same night look.
+    // dreamWorld > Build Creator Backdrop         - the creator/login stage: a forest overgrowing a giant old computer.
     // Props come from Assets/Models/World/WorldKit.fbx (made by ArtSource/build_world.py).
     public static class WorldBuilder
     {
@@ -201,53 +201,266 @@ namespace DreamWorld.EditorTools
         {
             LoadKit();
             var scene = EditorSceneManager.OpenScene(CreatorScene, OpenSceneMode.Single);
-            foreach (var name in new[] { "Floor", "Backdrop" })
-            {
-                var old = GameObject.Find(name);
-                if (old != null) UnityEngine.Object.DestroyImmediate(old);
-            }
-            var oldLight = GameObject.Find("Directional Light");
-            if (oldLight != null) UnityEngine.Object.DestroyImmediate(oldLight);
+            foreach (var go in scene.GetRootGameObjects())
+                if (go.name == "Floor" || go.name == "Backdrop" || go.name == "Moon Light" || go.name == "Directional Light")
+                    UnityEngine.Object.DestroyImmediate(go);
             NightAtmosphere(fogStart: 9, fogEnd: 34);
             var root = new GameObject("Backdrop").transform;
             var rng = new Random(7);
 
+            // An old giant computer the forest has grown over: she stands on a mossy CPU chip in a
+            // little circuit-board clearing, and the parts poke out of the grass, half-buried and tilted.
+            const float Floor = -0.16f;
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
             ground.transform.SetParent(root);
+            ground.transform.localPosition = new Vector3(0, Floor, 0);
             ground.transform.localScale = new Vector3(8, 1, 8);
             ground.GetComponent<Renderer>().sharedMaterial = TiledMaterial("Grass", 40);
             UnityEngine.Object.DestroyImmediate(ground.GetComponent<Collider>());
 
-            Place(root, "Stage", new Vector3(0, -0.12f, 0), 0, 0.85f, collider: false);
-            // a little glade behind her: glowing mushrooms, a lamp, the mushroom house, trees
-            var m1 = Place(root, "Mushroom_Purple", new Vector3(-2.6f, 0, 2.2f), 30, 1.5f, collider: false);
-            AddLight(m1.transform, new Vector3(0, 1.6f, 0), MushroomGlow["Mushroom_Purple"], 5, 1.3f);
-            var m2 = Place(root, "Mushroom_Blue", new Vector3(2.9f, 0, 3.4f), 200, 1.9f, collider: false);
-            AddLight(m2.transform, new Vector3(0, 1.6f, 0), MushroomGlow["Mushroom_Blue"], 5, 1.2f);
-            Place(root, "Mushroom_Pink", new Vector3(1.6f, 0, 1.6f), 80, 0.7f, collider: false);
-            Place(root, "Mushroom_Cluster", new Vector3(-1.5f, 0, 1.0f), 0, 1.2f, collider: false);
-            Place(root, "Mushroom_Cluster", new Vector3(2.0f, 0, 0.6f), 120, 0.9f, collider: false);
-            Place(root, "Flowers", new Vector3(-1.0f, 0, -0.6f), 0, 1.3f, collider: false);
-            Place(root, "Flowers", new Vector3(1.3f, 0, -0.4f), 90, 1.1f, collider: false);
-            Place(root, "Mushroom_House", new Vector3(5.5f, 0, 9), -150, 1.1f, collider: false);
-            var lamp = Place(root, "Lamp_Post", new Vector3(-4.2f, 0, 4.5f), 60, 1, collider: false);
-            AddLight(lamp.transform, new Vector3(0, 2.3f, 0), Warm, 7, 1.4f);
-            for (int i = 0; i < 26; i++)
+            var clearing = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            clearing.name = "Circuit Clearing";
+            clearing.transform.SetParent(root);
+            clearing.transform.localPosition = new Vector3(0, Floor + 0.01f, 0.4f);
+            clearing.transform.localScale = new Vector3(0.36f, 1, 0.36f);
+            clearing.GetComponent<Renderer>().sharedMaterial = CircuitMaterial(1);
+            UnityEngine.Object.DestroyImmediate(clearing.GetComponent<Collider>());
+
+            Tech(root, "cpu_1", new Vector3(0, Floor + 0.01f, 0.1f), Vector3.zero, 40);
+            AddPulseLight(root, new Vector3(0, 0.25f, 0.9f), 2.5f, 0.8f, 0.66f);              // under-glow off the chip
+
+            // overgrown parts: RAM sticks leaning like old pillars, a sunken graphics card, a CRT in the weeds
+            for (int i = 0; i < 3; i++)
             {
-                float a = Mathf.Lerp(Mathf.PI * 0.1f, Mathf.PI * 0.9f, (float)rng.NextDouble());
-                float r = 8 + (float)rng.NextDouble() * 14;
-                Place(root, rng.NextDouble() < 0.6 ? "Tree_Pine" : "Tree_Round", new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r + 2),
+                var ram = Tech(root, "ram_e_ddr4", new Vector3(-3.2f - i * 0.9f, Floor - 0.5f, 2.8f + i * 1.3f),
+                               new Vector3(i * 7 - 6, 20 + i * 15, 90 + (i - 1) * 9), 20);
+                GlowPulse(ram, i * 0.12f);
+            }
+            var gpu = Tech(root, "vga_pcie_b", new Vector3(4.2f, Floor - 0.9f, 5.0f), new Vector3(0, 165, 14), 18);
+            GlowPulse(gpu, 0.5f);
+            var cooler = Tech(root, "cpu_cooler_e", new Vector3(-1.2f, Floor - 0.6f, 8.0f), new Vector3(8, 200, -6), 22);
+            GlowPulse(cooler, 0.3f);
+            var tower = Tech(root, "pc_case_b_cover", new Vector3(7.5f, Floor - 0.8f, 11f), new Vector3(0, 210, 16), 8);
+            GlowPulse(tower, 0.8f);
+
+            // (Monitor_a's screen faces its +x, so yaw ~90 turns it toward the camera)
+            var crtLeft = Tech(root, "Monitor_a", new Vector3(-1.45f, Floor - 0.15f, 2.7f), new Vector3(-6, 76, 6), 2.6f);
+            ScreenOn(crtLeft, "Screen_Boot");
+            AddLight(crtLeft.transform, new Vector3(0.4f, 0.25f, 0), new Color(0.75f, 0.62f, 1f), 4, 0.9f);
+            var crtRight = Tech(root, "Monitor_a", new Vector3(1.55f, Floor - 0.2f, 2.9f), new Vector3(4, 106, -8), 2.2f);
+            ScreenOn(crtRight, "Screen_Stats");
+            AddLight(crtRight.transform, new Vector3(0.4f, 0.25f, 0), new Color(0.75f, 0.62f, 1f), 4, 0.8f);
+
+            var keys = Tech(root, "keyboard_d", new Vector3(-3.7f, Floor - 0.15f, 0.6f), new Vector3(10, 100, 0), 9);
+            GlowPulse(keys, 0.2f);
+            var phones = Tech(root, "headphone_b", new Vector3(3.1f, Floor - 0.1f, 1.1f), new Vector3(0, 60, -18), 5);
+            GlowPulse(phones, 0.65f);
+
+            // the forest wins: big glowing mushrooms, clusters and flowers crowd around every part
+            var m1 = Place(root, "Mushroom_Purple", new Vector3(-2.7f, Floor, 2.0f), 30, 1.5f, collider: false);
+            AddLight(m1.transform, new Vector3(0, 1.6f, 0), MushroomGlow["Mushroom_Purple"], 5, 1.3f);
+            var m2 = Place(root, "Mushroom_Blue", new Vector3(3.2f, Floor, 3.2f), 200, 1.9f, collider: false);
+            AddLight(m2.transform, new Vector3(0, 1.6f, 0), MushroomGlow["Mushroom_Blue"], 5, 1.2f);
+            var m3 = Place(root, "Mushroom_Pink", new Vector3(-3.4f, Floor, 9.0f), 80, 2.2f, collider: false);
+            AddLight(m3.transform, new Vector3(0, 1.4f, 0), MushroomGlow["Mushroom_Pink"], 4, 1.0f);
+            Place(root, "Mushroom_Pink", new Vector3(1.6f, Floor, 1.5f), 80, 0.6f, collider: false);
+            var lamp = Place(root, "Lamp_Post", new Vector3(-4.6f, Floor, 5.0f), 60, 1, collider: false);
+            AddLight(lamp.transform, new Vector3(0, 2.3f, 0), Warm, 7, 1.2f);
+            Place(root, "Mushroom_House", new Vector3(5.5f, Floor, 9), -150, 1.1f, collider: false);
+
+            var spots = new[]
+            {
+                new Vector3(-1.5f, 0, 1.0f), new Vector3(2.0f, 0, 0.7f), new Vector3(-3.0f, 0, 2.6f), new Vector3(-4.1f, 0, 4.3f),
+                new Vector3(-3.4f, 0, 0.0f), new Vector3(3.6f, 0, 4.3f), new Vector3(4.8f, 0, 5.6f), new Vector3(0.9f, 0, 2.1f),
+                new Vector3(-3.9f, 0, 1.7f), new Vector3(3.0f, 0, 0.5f), new Vector3(-0.6f, 0, 7.6f), new Vector3(-2.0f, 0, 8.2f),
+            };
+            for (int i = 0; i < spots.Length; i++)
+            {
+                var p = spots[i] + new Vector3(0, Floor, 0);
+                string kind = i % 3 == 0 ? "Mushroom_Cluster" : i % 3 == 1 ? "Flowers" : "Bush";
+                Place(root, kind, p, rng.Next(360), 0.9f + (float)rng.NextDouble() * 0.5f, collider: false);
+            }
+            // flowers around the edges of the clearing
+            for (int i = 0; i < 8; i++)
+            {
+                float a = i / 8f * Mathf.PI * 2 + 0.3f;
+                Place(root, "Flowers", new Vector3(Mathf.Cos(a) * 1.9f, Floor, 0.4f + Mathf.Sin(a) * 1.9f), rng.Next(360), 0.9f, collider: false);
+            }
+
+            // trees all around, a few ruined parts peeking out between them
+            for (int i = 0; i < 30; i++)
+            {
+                float a = Mathf.Lerp(Mathf.PI * 0.08f, Mathf.PI * 0.92f, (float)rng.NextDouble());
+                float r = 7 + (float)rng.NextDouble() * 15;
+                Place(root, rng.NextDouble() < 0.6 ? "Tree_Pine" : "Tree_Round", new Vector3(Mathf.Cos(a) * r, Floor, Mathf.Sin(a) * r + 2),
                       rng.Next(360), 0.9f + (float)rng.NextDouble() * 0.5f, collider: false);
             }
-            for (int i = 0; i < 6; i++)
-                Place(root, "Bush", new Vector3(-6 + i * 2.4f + (float)rng.NextDouble(), 0, 5.5f + (float)rng.NextDouble() * 2), rng.Next(360), 1, collider: false);
+            for (int i = 0; i < 8; i++)
+                Place(root, "Bush", new Vector3(-7 + i * 2.1f + (float)rng.NextDouble(), Floor, 6.5f + (float)rng.NextDouble() * 2), rng.Next(360), 1.1f, collider: false);
+            var ruinA = Tech(root, "ram_e_ddr4", new Vector3(-9f, Floor - 1.2f, 15f), new Vector3(0, 30, 75), 40);
+            GlowPulse(ruinA, 0.4f);
+            var ruinB = Tech(root, "Monitor_a", new Vector3(10f, Floor - 0.6f, 16f), new Vector3(-8, 110, 12), 7);
+            ScreenOn(ruinB, "Screen_Boot");
+
+            // key + rim lights on her, slowly shifting pink / violet / cyan
+            AddPulseLight(root, new Vector3(-1.8f, 1.8f, -1.4f), 5, 0.8f, 0f);
+            AddPulseLight(root, new Vector3(1.7f, 2.1f, 1.3f), 5, 0.9f, 0.33f);
 
             var cam = Camera.main;
             cam.clearFlags = CameraClearFlags.Skybox;
             cam.farClipPlane = 80;
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[World] creator backdrop built");
+        }
+
+        // ---------------------------------------------------------------- computer parts
+        // Parts from the Ultimate Pc Computer Pack, copied in by ArtSource/import_tech_assets.py.
+
+        const string TechDir = "Assets/ThirdParty/AssetStore/PCParts";
+        const string CircuitDir = "Assets/ThirdParty/AssetStore/Circuit";
+        const string ScreenDir = "Assets/Models/Tech/Textures";
+
+        // FBX material name -> (texture in TechDir/Textures, tint, glow strength)
+        static readonly Dictionary<string, (string texture, Color tint, float glow)> TechSkins =
+            new Dictionary<string, (string, Color, float)>
+        {
+            { "Monitor_a", ("Monitor_a", new Color(0.72f, 0.68f, 0.92f), 0.6f) },
+            { "pc_case_b_body", ("pc_case_b_body", new Color(0.40f, 0.32f, 0.78f), 1.2f) },
+            { "pc_case_b_cover", ("pc_case_b_cover", new Color(0.46f, 0.36f, 0.86f), 1.2f) },
+            { "pc_case_b_wire", ("pc_case_b_wire", Color.white, 1f) },
+            { "cpu_1_9", ("cpu_a__i", new Color(0.80f, 0.72f, 1f), 0.8f) },
+            { "cpu_cooler_e", ("cpu_cooler_e_2", new Color(0.62f, 0.58f, 0.80f), 1.6f) },
+            { "headphone_b", ("headphone_b_1", new Color(0.55f, 0.48f, 0.80f), 1.4f) },
+            { "Keyboard_d", ("Keyboard_d_2", new Color(0.45f, 0.40f, 0.70f), 1.5f) },
+            { "motherboard_pcie_a", ("motherboard_pcie_a", new Color(0.72f, 0.62f, 0.95f), 0.9f) },
+            { "ram_a__g", ("ram_a__f", new Color(0.62f, 0.56f, 0.85f), 1.6f) },
+            { "vga_pcie_b", ("vga_pcie_b", new Color(0.62f, 0.52f, 0.95f), 1.5f) },
+        };
+
+        // Places a computer part so its bottom sits at position.y and it's centered on position.x/z.
+        static GameObject Tech(Transform parent, string model, Vector3 position, Vector3 euler, float scale)
+        {
+            var source = AssetDatabase.LoadAssetAtPath<GameObject>($"{TechDir}/{model}.fbx");
+            var holder = new GameObject(model).transform;
+            holder.SetParent(parent);
+            holder.localRotation = Quaternion.Euler(euler);
+            holder.localScale = Vector3.one * scale;
+            var copy = UnityEngine.Object.Instantiate(source, holder);
+            copy.name = model + "_mesh";
+            copy.transform.localPosition = Vector3.zero;
+
+            var renderers = copy.GetComponentsInChildren<MeshRenderer>();
+            foreach (var r in renderers)
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                    if (mats[i] != null && TechSkins.ContainsKey(mats[i].name)) mats[i] = TechMaterial(mats[i].name);
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                if (r.name.Contains("_fan_")) SpinFan(r);
+            }
+            var b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+            copy.transform.position += position - new Vector3(b.center.x, b.min.y, b.center.z);
+            return holder.gameObject;
+        }
+
+        static Material TechMaterial(string name)
+        {
+            var skin = TechSkins[name];
+            var dir = TechDir + "/Materials";
+            EnsureFolder(dir);
+            var path = $"{dir}/PSX_T_{name}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TechDir}/Textures/{skin.texture}_AlbedoTransparency.png");
+            mat.color = skin.tint;
+            var glow = AssetDatabase.LoadAssetAtPath<Texture2D>($"{TechDir}/Textures/{skin.texture}_Emission.png");
+            mat.SetTexture("_EmissionMap", glow);
+            mat.SetColor("_EmissionColor", glow != null ? new Color(1f, 0.55f, 0.95f) * skin.glow : Color.black);
+            mat.SetFloat("_AffineStrength", 0.12f);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        // Fans spin around their thinnest axis, through the middle of the fan mesh.
+        static void SpinFan(MeshRenderer fan)
+        {
+            var bounds = fan.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var size = bounds.size;
+            var axis = size.x <= size.y && size.x <= size.z ? Vector3.right : size.y <= size.z ? Vector3.up : Vector3.forward;
+            var spin = fan.gameObject.AddComponent<Spin>();
+            spin.localAxis = axis;
+            spin.localPivot = bounds.center;
+            spin.degreesPerSecond = 200f + fan.name.Length * 13f;
+        }
+
+        // RGB glow that slowly cycles colors on every renderer of a part.
+        static void GlowPulse(GameObject part, float offset)
+        {
+            foreach (var r in part.GetComponentsInChildren<MeshRenderer>())
+            {
+                var pulse = r.gameObject.AddComponent<RGBPulse>();
+                pulse.glowRenderer = r;
+                pulse.offset = offset;
+                pulse.glowStrength = 1.4f;
+            }
+        }
+
+        static void AddPulseLight(Transform parent, Vector3 position, float range, float intensity, float offset)
+        {
+            AddLight(parent, position, Color.white, range, intensity);
+            var light = parent.GetChild(parent.childCount - 1);
+            light.name = "RGB Light";
+            light.gameObject.AddComponent<RGBPulse>().offset = offset;
+        }
+
+        // Puts one of the terminal screens (ArtSource/make_screens.py) on a CRT monitor.
+        static void ScreenOn(GameObject monitor, string screen)
+        {
+            EnsureFolder(MatDir);
+            var path = $"{MatDir}/PSX_{screen}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{ScreenDir}/{screen}.png");
+            mat.SetFloat("_Unlit", 1);
+            mat.SetFloat("_AffineStrength", 0f);
+            EditorUtility.SetDirty(mat);
+            foreach (var r in monitor.GetComponentsInChildren<MeshRenderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                    if (i == 1) mats[i] = mat;   // Monitor_a's materials are [body, screen]
+                r.sharedMaterials = mats;
+            }
+        }
+
+        static Material CircuitMaterial(float tiles)
+        {
+            EnsureFolder(CircuitDir);
+            var path = $"{CircuitDir}/PSX_Circuit_Tiled{tiles}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{CircuitDir}/Circuit_Twilight.png");
+            mat.mainTextureScale = new Vector2(tiles, tiles);
+            mat.SetTexture("_EmissionMap", AssetDatabase.LoadAssetAtPath<Texture2D>($"{CircuitDir}/Circuit_Glow.png"));
+            mat.SetColor("_EmissionColor", new Color(0.9f, 0.6f, 1f) * 0.9f);
+            mat.SetFloat("_AffineStrength", 0f);   // big ground quads would warp too much
+            EditorUtility.SetDirty(mat);
+            return mat;
         }
 
         // ---------------------------------------------------------------- helpers

@@ -2,6 +2,7 @@
 //  - Vertex snapping: vertices snap to the low-res pixel grid, which gives the PS1 "wobble".
 //  - Affine texture mapping: textures warp slightly on big polygons, like the PS1 (no perspective correction).
 //  - Per-vertex (Gouraud) lighting from the main directional light + ambient.
+//  - Optional glow (emission map x color): screens, RGB fans and LEDs stay bright in the dark.
 // _Color is kept as the tint so CharacterAppearance's MaterialPropertyBlock still works.
 Shader "DreamWorld/PSX Lit"
 {
@@ -14,6 +15,8 @@ Shader "DreamWorld/PSX Lit"
         [Toggle] _Unlit ("Unlit (ignore lights)", Float) = 0
         _Cutoff ("Alpha Cutoff (0 = off)", Range(0,1)) = 0
         _Softness ("Soft Shading", Range(0,1)) = 0
+        _EmissionMap ("Glow Map", 2D) = "white" {}
+        [HDR] _EmissionColor ("Glow Color (black = off)", Color) = (0,0,0,1)
     }
     SubShader
     {
@@ -38,6 +41,8 @@ Shader "DreamWorld/PSX Lit"
             float _Unlit;
             float _Cutoff;
             float _Softness;
+            sampler2D _EmissionMap;
+            fixed4 _EmissionColor;
             // Set globally by PSXCamera: xy = low-res render size. Falls back to 320x240.
             float4 _PSXResolution;
 
@@ -103,6 +108,7 @@ Shader "DreamWorld/PSX Lit"
                 // Pixels below the cutoff are skipped entirely: used by the face decal's transparent texels.
                 clip(col.a - _Cutoff);
                 col.rgb *= i.light;
+                col.rgb += tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb;
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }

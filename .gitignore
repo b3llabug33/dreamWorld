@@ -31,3 +31,7 @@ crashlytics-build.properties
 
 # Game builds (Windows client, Linux server)
 /Builds/
+
+# Asset Store content (made by ArtSource/import_tech_assets.py; not redistributable)
+/Assets/ThirdParty/AssetStore/
+/Assets/ThirdParty/AssetStore.meta

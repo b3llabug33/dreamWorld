@@ -117,6 +117,8 @@ namespace DreamWorld.Account
         static string Friendly(string message, bool creating)
         {
             var m = message.ToLowerInvariant();
+            if (m.Contains("provider is not available") || m.Contains("permission_denied"))
+                return "online accounts are switched off in the Unity dashboard (turn on Username & Password)";
             if (m.Contains("password") && (m.Contains("requirement") || m.Contains("invalid") && creating))
                 return "password needs 8-30 characters with an uppercase, a lowercase, a number and a symbol";
             if (creating && (m.Contains("exist") || m.Contains("taken") || m.Contains("conflict") || m.Contains("already")))
