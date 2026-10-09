@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using DreamWorld.CharacterCreation;
+using DreamWorld.Gameplay;
 using DreamWorld.Net;
 using DreamWorld.Rendering;
 using FishNet.Component.Spawning;
@@ -116,6 +117,43 @@ namespace DreamWorld.EditorTools
                 Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r), rng.Next(360), 0.9f + (float)rng.NextDouble() * 0.5f);
             }
 
+            // safe zones: the town square and the paths (no PvP, monsters stay out); everything else is wild
+            SafeZone(root, "town square", new Vector3(0, 0, 4), new Vector3(16, 0, 16), 0);
+            SafeStrip(root, "the path", new Vector3(0, 0, -16.5f), new Vector3(0, 0, 2), 3.4f);
+            SafeStrip(root, "the path", new Vector3(0, 0, 6), new Vector3(0, 0, 15.5f), 3.4f);
+            SafeStrip(root, "the path", new Vector3(-2.5f, 0, 4), new Vector3(-6.8f, 0, 5.6f), 2.8f);
+            SafeStrip(root, "the path", new Vector3(2.5f, 0, 4.5f), new Vector3(6.8f, 0, 8.2f), 2.8f);
+
+            // town: a snack stand (food) by the well
+            BuildSnackStand(root, new Vector3(3.8f, 0, 6.6f), -140);
+
+            // home: your cottage and home computer (bank + where you wake up). Homes are not safe zones.
+            var homePos = new Vector3(12.5f, 0, -10f);
+            Place(root, "Cottage", homePos + new Vector3(2.2f, 0, -2.2f), -45);
+            var homeZone = new GameObject("Zone_home").AddComponent<Zone>();
+            homeZone.kind = ZoneKind.Home;
+            homeZone.displayName = "home";
+            homeZone.transform.SetParent(root);
+            homeZone.transform.SetPositionAndRotation(homePos + new Vector3(1, 3, -1), Quaternion.Euler(0, -45, 0));
+            homeZone.transform.localScale = new Vector3(9, 8, 9);
+            BuildHomeComputer(root, homePos, -135);
+
+            // monsters out in the wilds (solo for now)
+            var shroomling = BuildShroomlingPrefab();
+            var monsters = new GameObject("Shroomlings").AddComponent<MonsterSpawner>();
+            monsters.transform.SetParent(root);
+            monsters.prefab = shroomling;
+            int placed = 0;
+            for (int tries = 0; tries < 200 && placed < 8; tries++)
+            {
+                var pos = Scatter(rng, 11, 24, avoidPath: true);
+                if (Vector3.Distance(pos, homePos) < 6f || pos.magnitude > 30f) continue;
+                var spot = new GameObject("Spot").transform;
+                spot.SetParent(monsters.transform);
+                spot.SetPositionAndRotation(pos, Quaternion.Euler(0, rng.Next(360), 0));
+                placed++;
+            }
+
             // player + camera
             var player = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));
             player.name = "Player";
@@ -125,6 +163,8 @@ namespace DreamWorld.EditorTools
             var cc = player.AddComponent<CharacterController>();
             cc.height = 1.6f; cc.radius = 0.25f; cc.center = new Vector3(0, 0.82f, 0);
             var controller = player.AddComponent<PlayerController>();
+            player.AddComponent<PlayerStats>();
+            player.AddComponent<PlayerLife>();
 
             var camGo = new GameObject("Main Camera", typeof(Camera));
             camGo.tag = "MainCamera";
@@ -143,6 +183,9 @@ namespace DreamWorld.EditorTools
             var hud = new GameObject("WorldHUD").AddComponent<WorldHUD>();
             hud.titleFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/PixelifySans.ttf");
             hud.bodyFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/VT323-Regular.ttf");
+            var gameHud = new GameObject("GameHUD").AddComponent<GameHUD>();
+            gameHud.titleFont = hud.titleFont;
+            gameHud.bodyFont = hud.bodyFont;
 
             // multiplayer: solo keeps the offline Player above; host/join/server spawn NetDreamers
             var netPrefab = BuildNetPlayerPrefab();
@@ -186,12 +229,114 @@ namespace DreamWorld.EditorTools
             var cc = go.AddComponent<CharacterController>();
             cc.height = 1.6f; cc.radius = 0.25f; cc.center = new Vector3(0, 0.82f, 0);
             go.AddComponent<PlayerController>();
+            go.AddComponent<PlayerStats>();
+            go.AddComponent<PlayerLife>();
             go.AddComponent<NetworkObject>();
             go.AddComponent<NetworkTransform>();   // owner-driven position/rotation, synced to everyone
             go.AddComponent<NetPlayer>();
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, NetPlayerPrefab);
             UnityEngine.Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        // ---------------------------------------------------------------- gameplay pieces
+
+        static void SafeZone(Transform parent, string name, Vector3 center, Vector3 size, float yaw)
+        {
+            var zone = new GameObject("Zone_" + name).AddComponent<Zone>();
+            zone.kind = ZoneKind.Safe;
+            zone.displayName = name;
+            zone.transform.SetParent(parent);
+            zone.transform.SetPositionAndRotation(center + Vector3.up * 3f, Quaternion.Euler(0, yaw, 0));
+            zone.transform.localScale = new Vector3(size.x, 8f, size.z);
+        }
+
+        // A safe strip along a path from a to b.
+        static void SafeStrip(Transform parent, string name, Vector3 a, Vector3 b, float width)
+        {
+            var d = b - a;
+            float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+            SafeZone(parent, name, (a + b) / 2, new Vector3(width, 0, d.magnitude + 0.8f), yaw);
+        }
+
+        static GameObject Block(Transform parent, string name, Vector3 localPos, Vector3 size, string texture)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = size;
+            go.GetComponent<Renderer>().sharedMaterial = PropMaterial(texture, false);
+            return go;
+        }
+
+        static void BuildSnackStand(Transform parent, Vector3 pos, float yaw)
+        {
+            var stand = new GameObject("SnackStand").transform;
+            stand.SetParent(parent);
+            stand.SetPositionAndRotation(pos, Quaternion.Euler(0, yaw, 0));
+            Block(stand, "Counter", new Vector3(0, 0.5f, 0), new Vector3(1.6f, 1f, 0.7f), "Planks");
+            Block(stand, "PostL", new Vector3(-0.75f, 1.35f, 0.3f), new Vector3(0.08f, 1.7f, 0.08f), "Planks");
+            Block(stand, "PostR", new Vector3(0.75f, 1.35f, 0.3f), new Vector3(0.08f, 1.7f, 0.08f), "Planks");
+            var awning = Block(stand, "Awning", new Vector3(0, 2.2f, 0.05f), new Vector3(1.9f, 0.12f, 1.1f), "CapPink");
+            awning.transform.localRotation = Quaternion.Euler(-12, 0, 0);
+            Block(stand, "Snack1", new Vector3(-0.35f, 1.08f, -0.1f), new Vector3(0.22f, 0.16f, 0.22f), "CapBlue");
+            Block(stand, "Snack2", new Vector3(0.05f, 1.08f, -0.05f), new Vector3(0.2f, 0.2f, 0.2f), "CapPurple");
+            Block(stand, "Snack3", new Vector3(0.4f, 1.08f, -0.12f), new Vector3(0.24f, 0.14f, 0.24f), "CapPink");
+            AddLight(stand, new Vector3(0, 1.9f, -0.6f), Warm, 4f, 0.9f);
+            var shop = stand.gameObject.AddComponent<SnackStand>();
+            shop.range = 2.4f;
+        }
+
+        static void BuildHomeComputer(Transform parent, Vector3 pos, float yaw)
+        {
+            var home = new GameObject("HomeComputer").transform;
+            home.SetParent(parent);
+            home.SetPositionAndRotation(pos, Quaternion.Euler(0, yaw, 0));
+            Block(home, "Desk", new Vector3(0, 0.38f, 0), new Vector3(1.2f, 0.76f, 0.6f), "Planks");
+            Block(home, "Monitor", new Vector3(0, 1.0f, 0.05f), new Vector3(0.62f, 0.48f, 0.42f), "IronDark");
+            var screen = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            screen.name = "Screen";
+            UnityEngine.Object.DestroyImmediate(screen.GetComponent<Collider>());
+            screen.transform.SetParent(home, false);
+            screen.transform.localPosition = new Vector3(0, 1.0f, -0.165f);
+            screen.transform.localScale = new Vector3(0.5f, 0.38f, 1);
+            screen.GetComponent<Renderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/PSX_Screen_Boot.mat");
+            AddLight(home, new Vector3(0, 1.0f, -0.7f), new Color(0.75f, 0.62f, 1f), 3.5f, 1.0f);
+            var spawn = new GameObject("WakeUpSpot").transform;
+            spawn.SetParent(home, false);
+            spawn.localPosition = new Vector3(0, 0.05f, -1.4f);
+            spawn.localRotation = Quaternion.Euler(0, 180, 0);
+            var pc = home.gameObject.AddComponent<HomeComputer>();
+            pc.spawnPoint = spawn;
+        }
+
+        // The first monster: a hopping mushroom about knee-to-waist high.
+        static Monster BuildShroomlingPrefab()
+        {
+            var root = new GameObject("Shroomling");
+            var col = root.AddComponent<CapsuleCollider>();
+            col.radius = 0.35f;
+            col.height = 0.9f;
+            col.center = new Vector3(0, 0.45f, 0);
+            var body = Place(root.transform, "Mushroom_Purple", Vector3.zero, 0, 0.42f, collider: false);
+            body.name = "Body";
+            foreach (var x in new[] { -0.07f, 0.07f })   // little black eyes on the stem
+            {
+                var eye = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                eye.name = "Eye";
+                UnityEngine.Object.DestroyImmediate(eye.GetComponent<Collider>());
+                eye.transform.SetParent(body.transform, false);
+                eye.transform.localPosition = new Vector3(x, 0.62f, -0.17f);
+                eye.transform.localScale = new Vector3(0.05f, 0.09f, 0.03f);
+                eye.GetComponent<Renderer>().sharedMaterial = PropMaterial("IronDark", false);
+            }
+            AddLight(body.transform, new Vector3(0, 1.2f, 0), MushroomGlow["Mushroom_Purple"], 2.5f, 0.8f);
+            var monster = root.AddComponent<Monster>();
+            monster.body = body.transform;
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, "Assets/Prefabs/Shroomling.prefab");
+            UnityEngine.Object.DestroyImmediate(root);
+            return prefab.GetComponent<Monster>();
         }
 
         // ---------------------------------------------------------------- creator backdrop

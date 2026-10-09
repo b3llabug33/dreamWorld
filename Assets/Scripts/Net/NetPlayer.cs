@@ -27,9 +27,10 @@ namespace DreamWorld.Net
             controller = GetComponent<PlayerController>();
             body = GetComponent<CharacterController>();
             motion = GetComponentInChildren<IdleMotion>();
-            // only the owner moves this character; everyone else just follows the network
+            // only the owner moves this character (and has bars, saving, a HUD); everyone else follows the network
             controller.enabled = false;
             body.enabled = false;
+            SetOwnerOnly(false);
             look.OnChange += (previous, next, asServer) => ApplyLook(next);
         }
 
@@ -42,6 +43,7 @@ namespace DreamWorld.Net
 
             body.enabled = true;
             controller.enabled = true;
+            SetOwnerOnly(true);
             var cam = FindAnyObjectByType<ThirdPersonCamera>();
             if (cam != null)
             {
@@ -49,6 +51,12 @@ namespace DreamWorld.Net
                 controller.cameraTransform = cam.transform;
             }
             SendLook(CharacterSave.SavedJson);
+        }
+
+        void SetOwnerOnly(bool on)
+        {
+            foreach (var c in new Behaviour[] { GetComponent<DreamWorld.Gameplay.PlayerStats>(), GetComponent<DreamWorld.Gameplay.PlayerLife>() })
+                if (c != null) c.enabled = on;
         }
 
         [ServerRpc]

@@ -36,6 +36,12 @@ namespace DreamWorld.CharacterCreation
         public float armWalkSwing = 24f;
         public float bob = 0.03f;
 
+        [Header("Combat poses (driven by PlayerController)")]
+        [Range(-0.4f, 1)] public float attack;   // <0 wind-up, 0..1 strike + follow-through
+        public int attackArm;                    // 0 = left, 1 = right, 2 = both (heavy)
+        [Range(0, 1)] public float guard;        // arms up in front of the face
+        [Range(0, 1)] public float tuck;         // curled up (rolling)
+
         Transform hips, spine, chest, neck, head;
         Transform[] upperArms, lowerArms, upperLegs, lowerLegs;
         Quaternion[] baseUpper, baseLower, baseUpperLeg, baseLowerLeg;
@@ -123,6 +129,42 @@ namespace DreamWorld.CharacterCreation
                 float armWalk = (i == 0 ? 1f : -1f) * stride * armWalkSwing * m;
                 Turn(upperArms[i], afterUpper, Vector3.right, Mathf.Sin(t * 0.8f + i) * armSway * 0.4f * still + armWalk);
                 Turn(lowerArms[i], baseLower[i], Vector3.right, -elbowBend - Mathf.Sin(t * 0.9f + i * 1.3f) * 2f);
+            }
+            CombatPose();
+        }
+
+        // Layered on top of everything above: punches, guard, and the tucked roll.
+        void CombatPose()
+        {
+            if (attack == 0f && guard == 0f && tuck == 0f) return;
+            for (int i = 0; i < 2; i++)
+            {
+                bool swinging = attack != 0f && (attackArm == 2 || attackArm == i);
+                float raise = guard * 75f + tuck * 40f;
+                float bend = guard * 95f + tuck * 70f;
+                if (swinging)
+                {
+                    // wind-up pulls the arm back and bends it; the strike throws it straight forward
+                    raise += attack > 0 ? attack * 95f : attack * 60f;
+                    bend += attack > 0 ? -attack * 30f : -attack * 90f;
+                }
+                Quaternion up = upperArms[i].localRotation;
+                Turn(upperArms[i], up, Vector3.right, -raise);
+                Quaternion low = lowerArms[i].localRotation;
+                Turn(lowerArms[i], low, Vector3.right, -bend);
+            }
+            // the body twists into a swing and curls into a roll
+            Quaternion chestNow = chest.localRotation;
+            float twist = attackArm == 2 ? 0f : (attackArm == 1 ? 1f : -1f) * attack * 22f;
+            Turn(chest, chestNow, Vector3.up, twist);
+            Quaternion chestBent = chest.localRotation;
+            Turn(chest, chestBent, Vector3.right, tuck * 35f + Mathf.Max(0f, attack) * (attackArm == 2 ? 18f : 8f));
+            for (int i = 0; i < 2; i++)
+            {
+                Quaternion u = upperLegs[i].localRotation;
+                Turn(upperLegs[i], u, Vector3.right, -tuck * 70f);
+                Quaternion l = lowerLegs[i].localRotation;
+                Turn(lowerLegs[i], l, Vector3.right, tuck * 110f);
             }
         }
     }

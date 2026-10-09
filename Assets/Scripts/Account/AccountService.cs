@@ -223,14 +223,61 @@ namespace DreamWorld.Account
         {
             if (Mode == AccountMode.Online)
             {
-                try { await CloudSaveService.Instance.Data.Player.DeleteAsync(OnlinePrefix + slot, new Unity.Services.CloudSave.Models.Data.Player.DeleteOptions()); }
+                try
+                {
+                    await CloudSaveService.Instance.Data.Player.DeleteAsync(OnlinePrefix + slot, new Unity.Services.CloudSave.Models.Data.Player.DeleteOptions());
+                    await CloudSaveService.Instance.Data.Player.DeleteAsync(ProgressPrefix + slot, new Unity.Services.CloudSave.Models.Data.Player.DeleteOptions());
+                }
                 catch (Exception e) { Debug.LogWarning("[dreamWorld] cloud delete failed: " + e.Message); }
             }
             else
             {
                 PlayerPrefs.DeleteKey(OfflinePrefix + slot);
+                PlayerPrefs.DeleteKey(OfflineProgressPrefix + slot);
                 PlayerPrefs.Save();
             }
+        }
+
+        // ---------- progress (level, stats, coins) per character ----------
+        // Saved separately from the look. Without a character slot (e.g. testing the world scene
+        // straight from the editor) it goes to a local "dev" save.
+
+        const string ProgressPrefix = "progress_";
+        const string OfflineProgressPrefix = "dreamWorld.local.progress_";
+
+        public static async Task<string> LoadProgress()
+        {
+            int slot = CurrentSlot;
+            if (Mode == AccountMode.Online && slot >= 0)
+            {
+                try
+                {
+                    var key = ProgressPrefix + slot;
+                    var items = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { key },
+                        new Unity.Services.CloudSave.Models.Data.Player.LoadOptions());
+                    return items.TryGetValue(key, out var item) ? item.Value.GetAsString() : null;
+                }
+                catch (Exception e) { Debug.LogWarning("[dreamWorld] cloud progress load failed: " + e.Message); return null; }
+            }
+            var local = OfflineProgressPrefix + (slot >= 0 ? slot.ToString() : "dev");
+            return PlayerPrefs.HasKey(local) ? PlayerPrefs.GetString(local) : null;
+        }
+
+        public static async Task SaveProgress(string json)
+        {
+            int slot = CurrentSlot;
+            if (Mode == AccountMode.Online && slot >= 0)
+            {
+                try
+                {
+                    await CloudSaveService.Instance.Data.Player.SaveAsync(new Dictionary<string, object> { { ProgressPrefix + slot, json } },
+                        new Unity.Services.CloudSave.Models.Data.Player.SaveOptions());
+                }
+                catch (Exception e) { Debug.LogWarning("[dreamWorld] cloud progress save failed: " + e.Message); }
+                return;
+            }
+            PlayerPrefs.SetString(OfflineProgressPrefix + (slot >= 0 ? slot.ToString() : "dev"), json);
+            PlayerPrefs.Save();
         }
     }
 }
