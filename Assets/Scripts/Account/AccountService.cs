@@ -78,9 +78,22 @@ namespace DreamWorld.Account
         }
 
         // Returns null on success, or a short message to show the player.
+        // Usernames: 3-20 characters, letters required, numbers and . - @ _ optional.
+        // (Unique per game: the account server refuses a name someone already has.)
+        public static string CheckUsername(string username)
+        {
+            if (username.Length < 3 || username.Length > 20) return "username needs 3-20 characters";
+            foreach (char c in username)
+                if (!char.IsLetterOrDigit(c) && c != '.' && c != '-' && c != '@' && c != '_')
+                    return "username can only use letters, numbers and . - @ _";
+            return null;
+        }
+
         public static async Task<string> SignIn(string username, string password, bool createAccount)
         {
             username = username.Trim();
+            var nameError = CheckUsername(username);
+            if (nameError != null) return nameError;
             var initError = await Init();
             if (initError != null) return initError;
             try
@@ -106,8 +119,8 @@ namespace DreamWorld.Account
             var m = message.ToLowerInvariant();
             if (m.Contains("password") && (m.Contains("requirement") || m.Contains("invalid") && creating))
                 return "password needs 8-30 characters with an uppercase, a lowercase, a number and a symbol";
-            if (m.Contains("username") && creating && (m.Contains("exist") || m.Contains("taken") || m.Contains("conflict")))
-                return "that username is taken";
+            if (creating && (m.Contains("exist") || m.Contains("taken") || m.Contains("conflict") || m.Contains("already")))
+                return "that username is taken, try another";
             if (m.Contains("username") && creating)
                 return "username needs 3-20 characters: letters, numbers, . - @ _";
             if (m.Contains("invalid") || m.Contains("not found") || m.Contains("unauthorized"))

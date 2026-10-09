@@ -90,7 +90,7 @@ namespace DreamWorld.Account
             loginStatus = ui.Label(loginPanel, "", 30, TerminalUI.Accent);
             loginStatus.horizontalOverflow = HorizontalWrapMode.Wrap;
             TerminalUI.Place(loginStatus.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -462), new Vector2(560, 70));
-            var hint = ui.Label(loginPanel, "new? pick a username and password, then press sign up\npassword: 8+ characters with A-Z, a-z, 0-9 and a symbol",
+            var hint = ui.Label(loginPanel, "username: 3-20 letters, like bellabug (numbers optional)\npassword: 8+ characters with A-Z, a-z, 0-9 and a symbol",
                                 24, TerminalUI.Dim);
             TerminalUI.Place(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(600, 60));
         }
