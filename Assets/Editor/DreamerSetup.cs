@@ -18,7 +18,7 @@ namespace DreamWorld.EditorTools
 
         [Serializable] class Submesh { public string texture; public bool tint; }
         [Serializable] class Piece { public string name; public Submesh[] submeshes; }
-        [Serializable] class Manifest { public Piece[] pieces; }
+        [Serializable] class Manifest { public Piece[] pieces; public string[] patterns; }
 
         static Color C(float r, float g, float b) => new Color(r, g, b);
 
@@ -42,6 +42,25 @@ namespace DreamWorld.EditorTools
             C(0.98f, 0.70f, 0.55f), C(0.90f, 0.48f, 0.32f), C(0.62f, 0.60f, 0.72f), C(0.15f, 0.32f, 0.40f),
             // denim washes: light, mid, dark, black
             C(0.62f, 0.72f, 0.86f), C(0.36f, 0.46f, 0.68f), C(0.18f, 0.22f, 0.38f), C(0.22f, 0.22f, 0.25f) };
+        // Extras: blush pinks, freckle/mole browns, ink, metals, pastels. ExtraStart picks each style's first color.
+        static readonly Color[] ExtraColors = {
+            C(0.97f, 0.60f, 0.68f), C(0.90f, 0.42f, 0.52f), C(1.00f, 0.78f, 0.66f), C(0.62f, 0.42f, 0.32f),
+            C(0.30f, 0.20f, 0.18f), C(0.15f, 0.13f, 0.18f), C(0.86f, 0.86f, 0.92f), C(1.00f, 0.82f, 0.35f),
+            C(0.72f, 0.62f, 0.90f), C(0.55f, 0.75f, 1.00f), C(0.62f, 0.45f, 0.58f), C(1.00f, 1.00f, 1.00f) };
+        static readonly Dictionary<string, int> ExtraStart = new Dictionary<string, int>
+        {
+            { "Blush", 0 }, { "BlushLines", 1 }, { "HeartBlush", 0 }, { "Freckles", 3 }, { "Mole", 4 }, { "Sparkles", 7 },
+            { "UnderEye", 10 }, { "TearTattoo", 5 }, { "Bandaid", 2 }, { "NoseStud", 6 }, { "NoseRing", 6 },
+            { "Septum", 6 }, { "LipRing", 6 }, { "BrowPiercing", 6 },
+        };
+        // Which styles get the "pattern" option (pieces with their own print/plaid/denim are left alone).
+        static readonly Dictionary<OutfitCategory, string[]> PatternBases = new Dictionary<OutfitCategory, string[]>
+        {
+            { OutfitCategory.Top, new[] { "Tee", "LongSleeve", "Tank", "Crop", "Sweater", "Hoodie", "Oversized", "Cardigan", "Sailor", "SlipDress" } },
+            { OutfitCategory.Bottom, new[] { "Skirt", "Pleated", "RuffleSkirt", "LongSkirt", "Cargo" } },
+            { OutfitCategory.Legwear, new[] { "KneeSocks", "ThighHighs", "Tights", "FrillySocks", "LegWarmers" } },
+        };
+
         static readonly Color[] Accessories = {
             C(0.15f, 0.13f, 0.18f), C(0.97f, 0.96f, 0.94f), C(1.00f, 0.82f, 0.35f), C(0.96f, 0.66f, 0.76f),
             C(0.80f, 0.20f, 0.25f), C(0.72f, 0.62f, 0.90f), C(0.60f, 0.88f, 0.80f) };
@@ -102,11 +121,29 @@ namespace DreamWorld.EditorTools
                 Slot(OutfitCategory.Neck, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Glasses, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Headwear, styles, Accessories, 0, 2, optional: true),
+                Slot(OutfitCategory.Brows, styles, HairColors, 1, 0, optional: true),
+                Slot(OutfitCategory.Extra1, styles, ExtraColors, 1, 0, optional: true),   // blush on by default
+                Slot(OutfitCategory.Extra2, styles, ExtraColors, 0, 0, optional: true),
+                Slot(OutfitCategory.Extra3, styles, ExtraColors, 0, 0, optional: true),
             };
+            // movable face pieces: how far each can slide (face-texture uv) and grow
+            Movable(appearance, OutfitCategory.Nose, new Vector2(0.08f, 0.08f), new Vector2(0.6f, 1.6f));
+            Movable(appearance, OutfitCategory.Mouth, new Vector2(0.10f, 0.08f), new Vector2(0.6f, 1.6f));
+            Movable(appearance, OutfitCategory.Brows, new Vector2(0.08f, 0.12f), new Vector2(0.7f, 1.4f));
+            foreach (var c in new[] { OutfitCategory.Extra1, OutfitCategory.Extra2, OutfitCategory.Extra3 })
+            {
+                var extra = Movable(appearance, c, new Vector2(0.40f, 0.40f), new Vector2(0.5f, 1.8f));
+                extra.customAllowed = true;
+                extra.baseColors = extra.BaseNames.ConvertAll(b => ExtraStart.TryGetValue(b, out var k) ? k : 0);
+            }
+            appearance.GetSlot(OutfitCategory.Brows).customAllowed = true;
             // option rows: pants rise; hair bangs + length. Defaults: pleated skirt (mid rise), long hair
             var bottom = appearance.GetSlot(OutfitCategory.Bottom);
             bottom.axes = new List<OptionAxis> { new OptionAxis { label = "rise", values = new[] { "High", "Mid", "Low" }, index = 1 } };
             bottom.SelectBase("Pleated");
+            // pattern row (plain = the piece's own fabric) on tops, skirts and socks/tights
+            foreach (var pair in PatternBases)
+                appearance.GetSlot(pair.Key).axes.Add(PatternAxis(manifest.patterns, pair.Value));
             var hair = appearance.GetSlot(OutfitCategory.Hair);
             hair.axes = new List<OptionAxis>
             {
@@ -180,6 +217,27 @@ namespace DreamWorld.EditorTools
             if (cam.GetComponent<CreatorCameraZoom>() == null) cam.gameObject.AddComponent<CreatorCameraZoom>();
         }
 
+        static OutfitSlot Movable(CharacterAppearance appearance, OutfitCategory category, Vector2 move, Vector2 size)
+        {
+            var slot = appearance.GetSlot(category);
+            slot.movable = true;
+            slot.moveRange = move;
+            slot.sizeRange = size;
+            return slot;
+        }
+
+        static OptionAxis PatternAxis(string[] patterns, string[] bases)
+        {
+            var values = new List<string> { "Plain" };
+            var textures = new List<Texture2D> { null };
+            foreach (var p in patterns)
+            {
+                values.Add(p);
+                textures.Add(AssetDatabase.LoadAssetAtPath<Texture2D>($"{ModelDir}/Textures/Pattern{p}.png"));
+            }
+            return new OptionAxis { label = "pattern", values = values.ToArray(), textures = textures.ToArray(), bases = bases };
+        }
+
         static int Index(Dictionary<OutfitCategory, List<GameObject>> styles, string name)
         {
             var category = (OutfitCategory)Enum.Parse(typeof(OutfitCategory), name.Split('_')[0]);
@@ -214,11 +272,14 @@ namespace DreamWorld.EditorTools
                 mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
                 AssetDatabase.CreateAsset(mat, path);
             }
-            // Faces use the PSX Face shader (PSX Lit + the eye size/spacing/height sliders).
-            mat.shader = Shader.Find(texture.StartsWith("Eyes") ? "DreamWorld/PSX Face" : "DreamWorld/PSX Lit");
-            mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{ModelDir}/Textures/{texture}.png");
-            // Eye atlases and fishnets have see-through pixels; everything else is solid.
-            bool decal = texture.StartsWith("Eyes") || texture.StartsWith("Nose") || texture.StartsWith("Mouth");
+            // Eyes use the PSX Face shader (eye sliders); nose/mouth/brows/extras the PSX Decal shader (move sliders).
+            bool part = texture.StartsWith("Nose") || texture.StartsWith("Mouth") || texture.StartsWith("Brows") || texture.StartsWith("Extra");
+            mat.shader = Shader.Find(texture.StartsWith("Eyes") ? "DreamWorld/PSX Face" : part ? "DreamWorld/PSX Decal" : "DreamWorld/PSX Lit");
+            var texPath = $"{ModelDir}/Textures/{texture}.png";
+            mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            if (part) FitDecal(mat, texPath);
+            // Face decals and fishnets have see-through pixels; everything else is solid.
+            bool decal = texture.StartsWith("Eyes") || part;
             mat.SetFloat("_Cutoff", decal || texture == "Fishnet" ? 0.5f : 0f);
             // Skin and face get gentler shading so the face reads like flat anime coloring.
             mat.SetFloat("_Softness", texture == "Skin" || decal ? 0.7f : 0.15f);
@@ -226,6 +287,37 @@ namespace DreamWorld.EditorTools
             mat.SetFloat("_AffineStrength", decal ? 0f : 0.15f);
             EditorUtility.SetDirty(mat);
             return mat;
+        }
+
+        // Finds where a face piece sits in its texture (the center its size slider scales around) and whether
+        // it's a mirrored left/right pair (brows, blush), which the shader then spreads apart instead of sliding.
+        static void FitDecal(Material mat, string texPath)
+        {
+            var tex = new Texture2D(2, 2);
+            tex.LoadImage(File.ReadAllBytes(texPath));
+            int w = tex.width, h = tex.height;
+            var px = tex.GetPixels32();
+            bool Opaque(int x, int y) => px[y * w + x].a > 127;
+            int filled = 0, matched = 0;
+            int x0 = w, x1 = -1, y0 = h, y1 = -1, rx0 = w, rx1 = -1;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    if (!Opaque(x, y)) continue;
+                    filled++;
+                    if (w - x < w && Opaque(w - x, y)) matched++;   // the art mirrors around column w/2
+                    x0 = Mathf.Min(x0, x); x1 = Mathf.Max(x1, x);
+                    y0 = Mathf.Min(y0, y); y1 = Mathf.Max(y1, y);
+                    if (x >= w / 2) { rx0 = Mathf.Min(rx0, x); rx1 = Mathf.Max(rx1, x); }
+                }
+            UnityEngine.Object.DestroyImmediate(tex);
+            if (filled == 0) return;
+            // a pair has pixels on both sides that mostly mirror each other (and isn't one centered piece)
+            bool mirror = matched >= filled * 0.8f && rx0 > w / 2 + 2;
+            float cy = (y0 + y1 + 1) / 2f / h;
+            float cx = mirror ? (rx0 + rx1 + 1) / 2f / w - 0.5f : (x0 + x1 + 1) / 2f / w;
+            mat.SetFloat("_Mirror", mirror ? 1 : 0);
+            mat.SetVector("_PartCenter", new Vector4(cx, cy, 0, 0));
         }
 
         // The model is exported in a T-pose; swing the arms down so she stands naturally.

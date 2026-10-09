@@ -167,6 +167,52 @@ def leather_texture():
     return save_png("Leather", np.dstack([lum, lum, lum, np.ones_like(lum)]))
 
 
+def pattern_texture(name, fn, size=64):
+    """Grayscale repeating pattern (one 0.2 m tile) with a little fabric grain; Unity tints it."""
+    grain = np.random.default_rng(len(name)).normal(0, 0.025, (size, size))
+    lum = np.zeros((size, size), np.float32)
+    for y in range(size):
+        for x in range(size):
+            lum[y, x] = fn(x, y) + grain[y, x]
+    return save_png(name, np.dstack([lum, lum, lum, np.ones_like(lum)]))
+
+
+def _heart(x, y, cx, cy, r):
+    X, Y = (x - cx) / r, (y - cy) / r - 0.2
+    return (X * X + Y * Y - 1) ** 3 - X * X * Y ** 3 <= 0
+
+
+def _star(x, y, cx, cy, r):
+    a = math.atan2(y - cy, x - cx)
+    return math.hypot(x - cx, y - cy) <= r * (0.55 + 0.45 * abs(math.cos(2.5 * a + math.pi / 2)))
+
+
+SPOTS = ((10, 12), (40, 8), (26, 34), (56, 40), (8, 52), (38, 58), (20, 4), (52, 22))
+
+
+def _leopard(x, y):
+    """Rosettes: a dark broken ring around a slightly darker middle (wraps across the 64px tile)."""
+    for cx, cy in SPOTS:
+        d = math.hypot(((x - cx + 32) % 64) - 32, ((y - cy + 32) % 64) - 32)
+        if 3.5 <= d <= 5.5 and (x + y) % 5:
+            return DARK
+        if d < 3.5:
+            return 0.80
+    return LIGHT
+
+
+LIGHT, DARK = 0.97, 0.52
+PATTERNS = {   # menu order; "Plain" (the piece's own fabric) comes first in the creator
+    "Stripes": lambda x, y: LIGHT if (y // 8) % 2 else DARK,
+    "Pinstripe": lambda x, y: DARK if x % 8 == 0 else LIGHT,
+    "Dots": lambda x, y: DARK if ((x % 16 - 8) ** 2 + (y % 16 - 8) ** 2 <= 9 or
+                                  ((x + 8) % 16 - 8) ** 2 + ((y + 8) % 16 - 8) ** 2 <= 9) else LIGHT,
+    "Checker": lambda x, y: LIGHT if ((x // 8) + (y // 8)) % 2 else DARK,
+    "Hearts": lambda x, y: DARK if (_heart(x % 32, y % 32, 16, 16, 7) or _heart((x + 16) % 32, (y + 16) % 32, 16, 16, 7)) else LIGHT,
+    "Stars": lambda x, y: DARK if (_star(x % 32, y % 32, 16, 16, 7) or _star((x + 16) % 32, (y + 16) % 32, 16, 16, 5)) else LIGHT,
+    "Leopard": lambda x, y: _leopard(x, y),
+}
+
 TEXTURES = {
     "Cotton": gray_fabric("Cotton", "Mat_Cloth_Canvas_04-128x128.png", contrast=1.6),
     "Knit": gray_fabric("Knit", "Synth-Fabric_15-128x128.png", contrast=1.2),
@@ -190,6 +236,7 @@ TEXTURES = {
     "PrintSkull": print_texture(),
     "Hair": hair_texture(),
     "Leather": leather_texture(),
+    **{f"Pattern{k}": pattern_texture(f"Pattern{k}", fn) for k, fn in PATTERNS.items()},
     "Skin": solid("Skin", (1, 1, 1)),
     "White": solid("White", (1, 1, 1)),
     "SoleWhite": solid("SoleWhite", (0.95, 0.93, 0.90)),
@@ -476,15 +523,13 @@ EYE_LAYERS = 5                          # face, eye base, iris (tinted), pupil+s
 
 
 def draw_eyes(style):
-    design = dict(eye_designs.FACES[style], nose="none", mouth="none")   # nose/mouth are separate pieces
+    # nose, mouth, brows and blush are separate pieces now (movable, mix and match)
+    design = dict(eye_designs.FACES[style], nose="none", mouth="none", brow="none", blush="none")
     TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", eye_designs.draw(design))
 
 
-def face_part(kind, style):
-    """A nose or mouth: its own decal on the face (one layer), so any eyes/nose/mouth can mix."""
-    tex = f"{kind}{style.capitalize()}"
-    TEXTURES[tex] = save_png(tex, eye_designs.draw_part(**{kind.lower(): style}))
-
+def face_decal(name, tex, mat, offset):
+    """A curved grid over the face area (same size as the eye decal) using one 128px layer."""
     def build(bm):
         uv_layer = bm.loops.layers.uv.new("UVMap")
         nx, nz = 12, 10
@@ -495,7 +540,7 @@ def face_part(kind, style):
                 u, v = i / nx, j / nz
                 x = (u - 0.5) * FACE_W
                 z = FACE_Z0 + v * FACE_H
-                row.append((bm.verts.new((x, head_front_y(x, z, 0.0045), z)), (u, v)))
+                row.append((bm.verts.new((x, head_front_y(x, z, offset), z)), (u, v)))
             grid.append(row)
         for j in range(nz):
             for i in range(nx):
@@ -503,7 +548,34 @@ def face_part(kind, style):
                 f = bm.faces.new([q[0] for q in quad])
                 for loop, q in zip(f.loops, quad):
                     loop[uv_layer].uv = q[1]
-    return join(f"{kind}_{style.capitalize()}", [part(tex.lower(), "Head", build, material(tex, tint=False))], keep_uv=True)
+    return join(name, [part(name.lower(), "Head", build, mat)], keep_uv=True)
+
+
+def face_part(kind, style):
+    """A nose or mouth: its own decal on the face (one layer), so any eyes/nose/mouth can mix."""
+    tex = f"{kind}{style.capitalize()}"
+    TEXTURES[tex] = save_png(tex, eye_designs.draw_part(**{kind.lower(): style}))
+    return face_decal(f"{kind}_{style.capitalize()}", tex, material(tex, tint=False), 0.0045)
+
+
+def brows(style):
+    """Eyebrows: tinted (own color), just above the eye layers and under the bangs."""
+    tex = f"Brows{style}"
+    TEXTURES[tex] = save_png(tex, eye_designs.draw_brows(style))
+    return face_decal(f"Brows_{style}", tex, material(tex), 0.0062)
+
+
+def extras():
+    """Blush, freckles, piercings...: three extra slots, each can show any of them (tinted).
+    Each slot sits at its own depth so two extras never flicker against each other."""
+    out = []
+    for style in eye_designs.EXTRAS:
+        tex = f"Extra{style}"
+        TEXTURES[tex] = save_png(tex, eye_designs.draw_extra(style))
+    for n in (1, 2, 3):
+        for style in eye_designs.EXTRAS:
+            out.append(face_decal(f"Extra{n}_{style}", f"Extra{style}", material(f"Extra{style}"), 0.0047 + 0.0002 * n))
+    return out
 
 
 def build_eye_layers(bm):
@@ -937,6 +1009,25 @@ def top_tee():
     return join("Top_Tee", torso_shell("tee", m) + sleeve(1, 0.24, m) + sleeve(-1, 0.24, m))
 
 
+def top_long_sleeve():
+    """Plain fitted long-sleeve tee with a crew neck."""
+    m = material("Jersey")
+    return join("Top_LongSleeve", torso_shell("ls", m) + sleeve(1, 0.60, m) + sleeve(-1, 0.60, m))
+
+
+def top_tank():
+    """Tank top: scoop neck and wide straps over the shoulders."""
+    m = material("Jersey")
+    parts = [part("tkLow", "Spine", lambda bm: loft(bm, torso_sections(0.97, 1.15, G), 12, cap_start=False), m),
+             part("tkUp", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.23, G) + [((0, 0, 1.25), 0.104, 0.078)], 12), m)]
+    for sx in (1, -1):
+        parts.append(part(f"strap{sx}", "Chest", lambda bm, sx=sx: (
+            box(bm, (0.058 * sx - 0.011, -0.084, 1.24), (0.058 * sx + 0.011, -0.072, 1.33)),
+            box(bm, (0.058 * sx - 0.011, -0.078, 1.32), (0.058 * sx + 0.011, 0.070, 1.338)),
+            box(bm, (0.058 * sx - 0.011, 0.062, 1.24), (0.058 * sx + 0.011, 0.074, 1.33))), m))
+    return join("Top_Tank", parts)
+
+
 def top_crop():
     m = material("Cotton")
     parts = [part("cropUp", "Chest", lambda bm: loft(bm, [((0, 0, 1.10), 0.100 + G, 0.075 + G)] +
@@ -979,10 +1070,11 @@ def top_sailor():
 
 
 def top_flannel():
-    """Grunge: open plaid flannel (long, loose) over a black tee."""
+    """Grunge: open plaid flannel (long, loose) over a black tee. Wide enough at the hips to hang
+    over skirts and pants instead of disappearing into them."""
     m = material("Flannel")
-    parts = torso_shell("tee", material("Black", False))
-    low = [((0, 0.005, 0.80), 0.15, 0.115), ((0, 0, 0.92), 0.135, 0.10), ((0, 0, 1.05), 0.12, 0.092),
+    parts = torso_shell("tee", material("Black", False), z0=0.88)
+    low = [((0, 0.005, 0.74), 0.178, 0.132), ((0, 0, 0.90), 0.166, 0.122), ((0, 0, 1.03), 0.136, 0.102),
            ((0, 0, 1.15), 0.108 + G + 0.014, 0.082 + G + 0.014)]
     parts.append(part("flLow", "Spine", lambda bm: loft(bm, low, 12, cap_start=False, cap_end=False, skip={8}), m))
     parts.append(part("flUp", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.32, G + 0.014), 12,
@@ -994,14 +1086,14 @@ def top_flannel():
 
 
 def top_oversized():
-    """Grunge: boxy oversized band tee with a pixel skull print and dropped half sleeves."""
+    """Grunge: boxy oversized band tee with a pixel skull print and loose short sleeves."""
     m = material("Jersey")
     parts = [part("osLow", "Spine", lambda bm: loft(bm, [((0, 0.005, 0.80), 0.145, 0.105), ((0, 0, 0.99), 0.138, 0.10),
                                                          ((0, 0, 1.15), 0.135, 0.10)], 12, cap_start=False), m),
              part("osUp", "Chest", lambda bm: loft(bm, [((0, 0, 1.15), 0.135, 0.10), ((0, 0, 1.27), 0.13, 0.088),
                                                         ((0, 0, 1.32), 0.075, 0.055)], 12), m),
              print_plate(-0.06, 0.06, 1.08, 1.20, -0.102, "PrintSkull")]
-    return join("Top_Oversized", parts + sleeve(1, 0.33, m, puff=0.02, grow=G + 0.012) + sleeve(-1, 0.33, m, puff=0.02, grow=G + 0.012))
+    return join("Top_Oversized", parts + sleeve(1, 0.29, m, puff=0.006, grow=G + 0.01) + sleeve(-1, 0.29, m, puff=0.006, grow=G + 0.01))
 
 
 def top_cardigan():
@@ -1393,8 +1485,10 @@ pieces = [body()]
 pieces += [eyes(s) for s in EYE_STYLES]
 pieces += [face_part("Nose", n) for n in eye_designs.NOSES]
 pieces += [face_part("Mouth", m) for m in eye_designs.MOUTHS]
+pieces += [brows(b) for b in eye_designs.BROWS]
+pieces += extras()
 pieces += build_hair()
-pieces += [top_tee(), top_crop(), top_sweater(), top_hoodie(), top_sailor(),
+pieces += [top_tee(), top_long_sleeve(), top_tank(), top_crop(), top_sweater(), top_hoodie(), top_sailor(),
            top_flannel(), top_oversized(), top_cardigan(), top_puff_blouse(), top_slip_dress()]
 pieces += [bottom_skirt("Bottom_Skirt", "Tweed"),
            bottom_skirt("Bottom_Pleated", "Plaid", pleats=True),
@@ -1407,7 +1501,8 @@ for rise in ("High", "Mid", "Low"):   # every pair of pants comes in three rises
                bottom_wide(f"Bottom_BaggyJeans_{rise}", "Jeans", rise=r),
                bottom_wide(f"Bottom_Cargo_{rise}", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True, rise=r),
                bottom_wide(f"Bottom_FlareJeans_{rise}", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True, rise=r),
-               bottom_legs(f"Bottom_Shorts_{rise}", "Jeans", knee_z=0.66, rise=r)]
+               bottom_legs(f"Bottom_Shorts_{rise}", "Jeans", knee_z=0.66, rise=r),
+               bottom_legs(f"Bottom_ShortShorts_{rise}", "Jeans", knee_z=0.715, rise=r)]
 pieces += [legwear("Legwear_KneeSocks", "Knit", 0.42, z_bottom=0.0),
            legwear("Legwear_ThighHighs", "Knit", 0.66),
            legwear("Legwear_Tights", "Mesh", 0.92, grow=0.004),
@@ -1430,7 +1525,8 @@ pieces += headwear()
 
 # Shaped for Unity's JsonUtility (no dictionaries): pieces keep build order = menu order.
 with open(os.path.join(MODEL_DIR, "Dreamer.manifest.json"), "w") as f:
-    json.dump({"pieces": [{"name": k, "submeshes": v} for k, v in MANIFEST.items()]}, f, indent=1)
+    json.dump({"pieces": [{"name": k, "submeshes": v} for k, v in MANIFEST.items()],
+               "patterns": list(PATTERNS)}, f, indent=1)
 
 # ---------------------------------------------------------------- export
 

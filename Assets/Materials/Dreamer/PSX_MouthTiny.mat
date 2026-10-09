@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: PSX_MouthTiny
-  m_Shader: {fileID: 4800000, guid: d88783190e17bf346b646d27f4e8f8c1, type: 3}
+  m_Shader: {fileID: 4800000, guid: e29462cc0e907df4896242d6faef49fc, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -35,11 +35,16 @@ Material:
     m_Floats:
     - _AffineStrength: 0
     - _Cutoff: 0.5
+    - _Mirror: 0
+    - _MoveX: 0
+    - _MoveY: 0
+    - _PartScale: 1
     - _SnapStrength: 1
     - _Softness: 0.7
     - _Unlit: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _PartCenter: {r: 0.50390625, g: 0.09375, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

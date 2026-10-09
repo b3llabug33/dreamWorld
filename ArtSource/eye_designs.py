@@ -177,9 +177,9 @@ def draw(params):
             y = (e[0] + e[1]) / 2 - 1 - (e[0] - e[1]) * 0.12
             put(4, X(dx), cy + y, LINE)
             put(4, X(dx), cy + y + 1, LINE)
-        # brows
+        # brows (the game draws brows as their own piece; drafts still sketch them here)
         top = cy + max(edges(t / 10)[0] for t in range(-10, 11)) + 6
-        for dx in range(-9, 10):
+        for dx in range(-9, 10) if d["brow"] != "none" else ():
             t = dx / 9
             y = {"arc": (1 - t * t) * 3, "soft": (1 - t * t) * 1.6, "straight": 0, "dash": 0,
                  "angled": 2.5 - abs(t - 0.3) * 2.5 + 1, "sad": -t * 2.5}[d["brow"]]
@@ -191,6 +191,8 @@ def draw(params):
     # blush, nose, mouth
     for side in (-1, 1):
         bx, by = 64 + side * 43, EYE_Y - d["hl"] - 9
+        if d["blush"] == "none":
+            continue
         if d["blush"] == "round":
             ellipse(0, bx, by, 7, 3.5, BLUSH)
         elif d["blush"] == "lines":
@@ -217,7 +219,7 @@ TEETH = (0.98, 0.96, 0.94)
 TONGUE = (0.95, 0.52, 0.58)
 FRECKLE = (0.80, 0.55, 0.45)
 
-NOSES = ("dots", "button", "line", "hook", "triangle", "nostrils", "freckles", "none")
+NOSES = ("dots", "button", "line", "hook", "triangle", "nostrils", "none")   # freckles moved to the extras
 MOUTHS = ("smile", "tiny", "flat", "smirk", "smug", "pout", "cat", "open", "o", "grin", "tongue",
           "fang", "lips", "wavy", "kiss")
 
@@ -242,11 +244,6 @@ def draw_nose(style, put, ellipse):
                 put(0, x, 26 + row, SHADE)
     elif style == "nostrils":
         put(0, 62, 26, SHADE_DARK); put(0, 66, 26, SHADE_DARK)
-    elif style == "freckles":      # dots nose + freckles across the cheeks and nose bridge
-        put(0, 63, 27, SHADE); put(0, 64, 26, SHADE)
-        for x, y in ((46, 38), (50, 36), (53, 39), (57, 35), (60, 37), (68, 37), (71, 35),
-                     (75, 39), (78, 36), (82, 38), (56, 40), (72, 40)):
-            put(0, x, y, FRECKLE)
     # "none": nothing
 
 
@@ -323,4 +320,144 @@ def draw_part(nose=None, mouth=None):
         draw_nose(nose, put, ellipse)
     if mouth:
         draw_mouth(mouth, put, ellipse)
+    return layer
+
+
+# ---------------------------------------------------------------- brows and extras
+# Their own layers on the face, drawn in light grays so Unity can tint them (brow color,
+# blush pink, piercing silver...). Symmetric pieces are drawn on both sides; the game moves
+# them with "spacing", one-sided ones with "across".
+
+BROW_Y = 97       # brow row at the default eye position (eye top is about row 81)
+BROW_X = 34       # brow center offset from the middle column (same as the eyes)
+INK = (0.96, 0.96, 0.96)
+INK_SOFT = (0.80, 0.80, 0.80)
+
+# style -> (half length, curve(t) in pixels for t in -1..1 inner->outer, thickness inner, thickness outer)
+BROWS = {
+    "Soft":     (11, lambda t: (1 - t * t) * 2.0, 4, 3),
+    "Arched":   (11, lambda t: (1 - t * t) * 4.0, 4, 3),
+    "Straight": (11, lambda t: 0.4 * t, 4, 4),
+    "Thick":    (12, lambda t: (1 - t * t) * 1.8, 6, 5),
+    "Thin":     (10, lambda t: (1 - t * t) * 2.4, 3, 2),
+    "Angled":   (11, lambda t: 3.6 - abs(t - 0.35) * 4.0, 5, 3),
+    "Worried":  (10, lambda t: -t * 3.0, 4, 3),
+    "Dots":     (0, None, 0, 0),          # little round "maro" brows
+}
+
+
+def draw_brows(style):
+    layer = np.zeros((PX, PX, 4), np.float32)
+
+    def put(x, y, c):
+        x, y = int(round(x)), int(round(y))
+        if 0 <= x < PX and 0 <= y < PX:
+            layer[y, x] = (*c, 1)
+
+    half, curve, w_in, w_out = BROWS[style]
+    for side in (-1, 1):
+        cx = 64 + side * BROW_X
+        if style == "Dots":
+            for dy in range(-3, 4):
+                for dx in range(-4, 5):
+                    if (dx / 4.6) ** 2 + (dy / 3.2) ** 2 <= 1:
+                        put(cx + dx * side - 3 * side, BROW_Y + 2 + dy, INK)
+            continue
+        for dx in range(-half, half + 1):
+            t = dx / max(half, 1)
+            y = BROW_Y + curve(t)
+            thick = round(w_in + (w_out - w_in) * (t + 1) / 2)
+            if abs(t) > 0.85:
+                thick = max(1, thick - 1)            # tapered ends
+            for k in range(thick):
+                put(cx + dx * side, y - k, INK if k < thick - 1 or thick == 1 else INK_SOFT)
+    return layer
+
+
+SILVER = (0.92, 0.92, 0.94)
+SHADOW = (0.55, 0.55, 0.58)
+EXTRAS = ("Blush", "BlushLines", "HeartBlush", "Freckles", "Mole", "Sparkles", "UnderEye", "TearTattoo",
+          "Bandaid", "NoseStud", "NoseRing", "Septum", "LipRing", "BrowPiercing")
+
+
+def draw_extra(style):
+    layer = np.zeros((PX, PX, 4), np.float32)
+
+    def put(x, y, c=INK):
+        x, y = int(round(x)), int(round(y))
+        if 0 <= x < PX and 0 <= y < PX:
+            layer[y, x] = (*c, 1)
+
+    def blob(cx, cy, rx, ry, c=INK):
+        for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+            for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1:
+                    put(x, y, c)
+
+    def ring(cx, cy, r):
+        for a in range(0, 360, 10):   # shaded underside so the hoop reads against light skin
+            y = math.sin(math.radians(a))
+            put(cx + r * math.cos(math.radians(a)), cy + r * y, SILVER if y > 0 else SHADOW)
+        put(cx - r * 0.5, cy + r * 0.7, (1, 1, 1))
+
+    def stud(cx, cy):
+        blob(cx, cy, 1.4, 1.4, SHADOW)
+        blob(cx, cy + 0.4, 1.0, 1.0, SILVER)
+        put(cx - 0.5, cy + 0.5, (1, 1, 1))
+
+    for side in (-1, 1):                     # symmetric ones: both cheeks
+        bx, by = 64 + side * 42, 42
+        if style == "Blush":
+            blob(bx, by, 7, 3.5)
+        elif style == "BlushLines":
+            for k in (-4, 0, 4):
+                for j in range(3):
+                    put(bx + k + j, by + j)
+        elif style == "HeartBlush":
+            for y in range(-3, 4):
+                for x in range(-4, 5):
+                    X, Y = x / 3.4, y / 3.0 - 0.15
+                    if (X * X + Y * Y - 1) ** 3 - X * X * Y ** 3 <= 0:
+                        put(bx + x, by + y)
+        elif style == "Freckles":
+            for x, y in ((18, 4), (14, 6), (11, 3), (7, 7), (4, 5), (16, 0), (9, 1)):
+                put(64 + side * x, 36 + y)
+            if side == 1:
+                put(64, 39); put(62, 41)   # across the bridge too
+        elif style == "Sparkles":       # little star stickers under the outer eye corners
+            sx, sy = 64 + side * 46, 50
+            for d in range(-3, 4):
+                put(sx + d, sy); put(sx, sy + d)
+            for d in (-1, 1):
+                put(sx + d, sy + d); put(sx + d, sy - d)
+            sx2, sy2 = sx + side * 6, sy - 6
+            for d in range(-1, 2):
+                put(sx2 + d, sy2); put(sx2, sy2 + d)
+        elif style == "UnderEye":       # tired/grunge under-eye shadow
+            for dx in range(-12, 13):
+                put(64 + side * (34 + dx), 49 - (1 - (dx / 12) ** 2) * 1.5, INK_SOFT)
+    if style == "Mole":
+        blob(78, 22, 1.2, 1.2)
+    elif style == "TearTattoo":
+        for y in range(-2, 4):
+            w = max(0, 2 - abs(y - 0.5) * 0.6) if y < 1 else (3 - y) * 0.6
+            for x in range(-int(w), int(w) + 1):
+                put(96 + x, 46 + y)
+    elif style == "Bandaid":            # across the nose bridge, slightly tilted
+        for dx in range(-12, 13):
+            for dy in range(-3, 4):
+                c = INK_SOFT if abs(dx) < 4 and abs(dy) < 2 else INK
+                put(64 + dx, 40 + dy + dx * 0.12, c)
+    elif style == "NoseStud":
+        stud(68, 27)
+    elif style == "NoseRing":
+        ring(68, 25, 2.2)
+    elif style == "Septum":
+        for dx in range(-2, 3):
+            put(64 + dx, 23 - abs(dx) * 0.5 + 0.5, SILVER)
+        put(64, 22, (1, 1, 1))
+    elif style == "LipRing":
+        ring(68, 8, 2.2)
+    elif style == "BrowPiercing":
+        stud(106, 102); stud(107, 93)   # through the outer end of the brow
     return layer

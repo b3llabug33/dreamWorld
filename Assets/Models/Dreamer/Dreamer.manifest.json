@@ -364,15 +364,6 @@
    ]
   },
   {
-   "name": "Nose_Freckles",
-   "submeshes": [
-    {
-     "texture": "NoseFreckles",
-     "tint": false
-    }
-   ]
-  },
-  {
    "name": "Nose_None",
    "submeshes": [
     {
@@ -513,6 +504,456 @@
     {
      "texture": "MouthKiss",
      "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Brows_Soft",
+   "submeshes": [
+    {
+     "texture": "BrowsSoft",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Arched",
+   "submeshes": [
+    {
+     "texture": "BrowsArched",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Straight",
+   "submeshes": [
+    {
+     "texture": "BrowsStraight",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Thick",
+   "submeshes": [
+    {
+     "texture": "BrowsThick",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Thin",
+   "submeshes": [
+    {
+     "texture": "BrowsThin",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Angled",
+   "submeshes": [
+    {
+     "texture": "BrowsAngled",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Worried",
+   "submeshes": [
+    {
+     "texture": "BrowsWorried",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Brows_Dots",
+   "submeshes": [
+    {
+     "texture": "BrowsDots",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_Blush",
+   "submeshes": [
+    {
+     "texture": "ExtraBlush",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_BlushLines",
+   "submeshes": [
+    {
+     "texture": "ExtraBlushLines",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_HeartBlush",
+   "submeshes": [
+    {
+     "texture": "ExtraHeartBlush",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_Freckles",
+   "submeshes": [
+    {
+     "texture": "ExtraFreckles",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_Mole",
+   "submeshes": [
+    {
+     "texture": "ExtraMole",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_Sparkles",
+   "submeshes": [
+    {
+     "texture": "ExtraSparkles",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_UnderEye",
+   "submeshes": [
+    {
+     "texture": "ExtraUnderEye",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_TearTattoo",
+   "submeshes": [
+    {
+     "texture": "ExtraTearTattoo",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_Bandaid",
+   "submeshes": [
+    {
+     "texture": "ExtraBandaid",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_NoseStud",
+   "submeshes": [
+    {
+     "texture": "ExtraNoseStud",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_NoseRing",
+   "submeshes": [
+    {
+     "texture": "ExtraNoseRing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_Septum",
+   "submeshes": [
+    {
+     "texture": "ExtraSeptum",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_LipRing",
+   "submeshes": [
+    {
+     "texture": "ExtraLipRing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra1_BrowPiercing",
+   "submeshes": [
+    {
+     "texture": "ExtraBrowPiercing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_Blush",
+   "submeshes": [
+    {
+     "texture": "ExtraBlush",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_BlushLines",
+   "submeshes": [
+    {
+     "texture": "ExtraBlushLines",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_HeartBlush",
+   "submeshes": [
+    {
+     "texture": "ExtraHeartBlush",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_Freckles",
+   "submeshes": [
+    {
+     "texture": "ExtraFreckles",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_Mole",
+   "submeshes": [
+    {
+     "texture": "ExtraMole",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_Sparkles",
+   "submeshes": [
+    {
+     "texture": "ExtraSparkles",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_UnderEye",
+   "submeshes": [
+    {
+     "texture": "ExtraUnderEye",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_TearTattoo",
+   "submeshes": [
+    {
+     "texture": "ExtraTearTattoo",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_Bandaid",
+   "submeshes": [
+    {
+     "texture": "ExtraBandaid",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_NoseStud",
+   "submeshes": [
+    {
+     "texture": "ExtraNoseStud",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_NoseRing",
+   "submeshes": [
+    {
+     "texture": "ExtraNoseRing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_Septum",
+   "submeshes": [
+    {
+     "texture": "ExtraSeptum",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_LipRing",
+   "submeshes": [
+    {
+     "texture": "ExtraLipRing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra2_BrowPiercing",
+   "submeshes": [
+    {
+     "texture": "ExtraBrowPiercing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_Blush",
+   "submeshes": [
+    {
+     "texture": "ExtraBlush",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_BlushLines",
+   "submeshes": [
+    {
+     "texture": "ExtraBlushLines",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_HeartBlush",
+   "submeshes": [
+    {
+     "texture": "ExtraHeartBlush",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_Freckles",
+   "submeshes": [
+    {
+     "texture": "ExtraFreckles",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_Mole",
+   "submeshes": [
+    {
+     "texture": "ExtraMole",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_Sparkles",
+   "submeshes": [
+    {
+     "texture": "ExtraSparkles",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_UnderEye",
+   "submeshes": [
+    {
+     "texture": "ExtraUnderEye",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_TearTattoo",
+   "submeshes": [
+    {
+     "texture": "ExtraTearTattoo",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_Bandaid",
+   "submeshes": [
+    {
+     "texture": "ExtraBandaid",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_NoseStud",
+   "submeshes": [
+    {
+     "texture": "ExtraNoseStud",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_NoseRing",
+   "submeshes": [
+    {
+     "texture": "ExtraNoseRing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_Septum",
+   "submeshes": [
+    {
+     "texture": "ExtraSeptum",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_LipRing",
+   "submeshes": [
+    {
+     "texture": "ExtraLipRing",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Extra3_BrowPiercing",
+   "submeshes": [
+    {
+     "texture": "ExtraBrowPiercing",
+     "tint": true
     }
    ]
   },
@@ -1309,6 +1750,24 @@
    ]
   },
   {
+   "name": "Top_LongSleeve",
+   "submeshes": [
+    {
+     "texture": "Jersey",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_Tank",
+   "submeshes": [
+    {
+     "texture": "Jersey",
+     "tint": true
+    }
+   ]
+  },
+  {
    "name": "Top_Crop",
    "submeshes": [
     {
@@ -1515,6 +1974,19 @@
    ]
   },
   {
+   "name": "Bottom_ShortShorts_High",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Bottom_SkinnyJeans_Mid",
    "submeshes": [
     {
@@ -1580,6 +2052,19 @@
    ]
   },
   {
+   "name": "Bottom_ShortShorts_Mid",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Bottom_SkinnyJeans_Low",
    "submeshes": [
     {
@@ -1633,6 +2118,19 @@
   },
   {
    "name": "Bottom_Shorts_Low",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_ShortShorts_Low",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -1911,5 +2409,14 @@
     }
    ]
   }
+ ],
+ "patterns": [
+  "Stripes",
+  "Pinstripe",
+  "Dots",
+  "Checker",
+  "Hearts",
+  "Stars",
+  "Leopard"
  ]
 }

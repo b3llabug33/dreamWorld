@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace DreamWorld.CharacterCreation
@@ -16,6 +17,7 @@ namespace DreamWorld.CharacterCreation
         public int[] colorIndexes;
         public string[] options;        // per slot: chosen value of each option row, e.g. "1,2"
         public string[] customColors;   // per slot: "" or a hex color (full-spectrum hair/eyes)
+        public string[] placements;     // per slot: "" or "x,y,size" for movable face pieces
         public float eyeScale = 1f, eyeSpacing, eyeHeight;
 
         public static string SavedJson => PlayerPrefs.GetString(Key, "");
@@ -30,6 +32,7 @@ namespace DreamWorld.CharacterCreation
                 colorIndexes = new int[n],
                 options = new string[n],
                 customColors = new string[n],
+                placements = new string[n],
                 eyeScale = appearance.eyeScale,
                 eyeSpacing = appearance.eyeSpacing,
                 eyeHeight = appearance.eyeHeight,
@@ -42,9 +45,12 @@ namespace DreamWorld.CharacterCreation
                 data.colorIndexes[i] = slot.colorIndex;
                 data.options[i] = string.Join(",", slot.axes.ConvertAll(a => a.index.ToString()));
                 data.customColors[i] = slot.useCustom ? ColorUtility.ToHtmlStringRGB(slot.customColor) : "";
+                data.placements[i] = slot.movable ? string.Join(",", F(slot.moveX), F(slot.moveY), F(slot.size)) : "";
             }
             return JsonUtility.ToJson(data);
         }
+
+        static string F(float v) => v.ToString("0.####", CultureInfo.InvariantCulture);
 
         public static void Save(CharacterAppearance appearance)
         {
@@ -87,6 +93,19 @@ namespace DreamWorld.CharacterCreation
                     var parts = data.options[i].Split(',');
                     for (int a = 0; a < parts.Length && a < slot.axes.Count; a++)
                         if (int.TryParse(parts[a], out int v)) slot.axes[a].index = v;
+                }
+                slot.moveX = slot.moveY = 0f;
+                slot.size = 1f;
+                if (slot.movable && data.placements != null && i < data.placements.Length && !string.IsNullOrEmpty(data.placements[i]))
+                {
+                    var p = data.placements[i].Split(',');
+                    if (p.Length == 3)
+                    {
+                        float.TryParse(p[0], NumberStyles.Float, CultureInfo.InvariantCulture, out slot.moveX);
+                        float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out slot.moveY);
+                        if (!float.TryParse(p[2], NumberStyles.Float, CultureInfo.InvariantCulture, out slot.size) || slot.size <= 0)
+                            slot.size = 1f;
+                    }
                 }
                 slot.useCustom = false;
                 if (data.customColors != null && i < data.customColors.Length && !string.IsNullOrEmpty(data.customColors[i])

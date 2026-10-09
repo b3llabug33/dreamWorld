@@ -33,6 +33,16 @@ namespace DreamWorld.CharacterCreation
         public Color hiliteColor = new Color(0.98f, 0.66f, 0.78f, 0.18f); // selected row glow
 
         OutfitCategory currentCategory = OutfitCategory.Hair;
+        OutfitCategory lastExtra = OutfitCategory.Extra1;   // which of the 3 extras the "extras" row opens
+        // Category list order. The three extra slots share one "extras" row (Extra1 stands for all of them).
+        static readonly OutfitCategory[] CategoryOrder =
+        {
+            OutfitCategory.Skin, OutfitCategory.Eyes, OutfitCategory.Brows, OutfitCategory.Nose, OutfitCategory.Mouth,
+            OutfitCategory.Extra1, OutfitCategory.Hair, OutfitCategory.Top, OutfitCategory.Bottom, OutfitCategory.Legwear,
+            OutfitCategory.Shoes, OutfitCategory.Neck, OutfitCategory.Glasses, OutfitCategory.Headwear,
+        };
+        static bool IsExtra(OutfitCategory c) => c == OutfitCategory.Extra1 || c == OutfitCategory.Extra2 || c == OutfitCategory.Extra3;
+        static OutfitCategory RowOf(OutfitCategory c) => IsExtra(c) ? OutfitCategory.Extra1 : c;
         readonly Dictionary<OutfitCategory, (Text label, Image bar)> rows = new Dictionary<OutfitCategory, (Text, Image)>();
         readonly List<(Image ring, Image swatch)> swatches = new List<(Image, Image)>();
         OutfitCategory[] categories;
@@ -41,9 +51,10 @@ namespace DreamWorld.CharacterCreation
         Sprite frameSprite, solidSprite;
         float cursorTimer;
 
-        GameObject eyeControls;
+        GameObject shapeControls;
         RectTransform optionsRoot, colorHeader, pickerRoot;
-        Slider eyeSize, eyeSpacing, eyeHeight, hueSlider, satSlider, valSlider;
+        Slider shapeSize, shapeX, shapeY, hueSlider, satSlider, valSlider;
+        Text shapeHeader, shapeXLabel, shapeYLabel, resetLabel;
         Texture2D hueTex, satTex, valTex;
         bool syncingSliders, syncingPicker, pickerDriving;
         NetMode chosenMode;
@@ -64,7 +75,7 @@ namespace DreamWorld.CharacterCreation
             if (bodyFont == null) bodyFont = titleFont;
             frameSprite = MakeFrameSprite();
             solidSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.one * 0.5f, 100f);
-            categories = (OutfitCategory[])System.Enum.GetValues(typeof(OutfitCategory));
+            categories = CategoryOrder;
             zoom = FindAnyObjectByType<CreatorCameraZoom>();
 
             EnsureEventSystem();
@@ -96,11 +107,11 @@ namespace DreamWorld.CharacterCreation
             cursorTimer += Time.deltaTime;
             cursorLabel.text = "> character_setup.exe" + (cursorTimer % 1f < 0.5f ? "_" : " ");
 
-            int c = System.Array.IndexOf(categories, currentCategory);
+            int c = System.Array.IndexOf(categories, RowOf(currentCategory));
             if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-                SelectCategory(categories[(c - 1 + categories.Length) % categories.Length]);
+                OpenRow(categories[(c - 1 + categories.Length) % categories.Length]);
             if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-                SelectCategory(categories[(c + 1) % categories.Length]);
+                OpenRow(categories[(c + 1) % categories.Length]);
             if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) appearance.ChangeStyle(currentCategory, -1);
             if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) appearance.ChangeStyle(currentCategory, +1);
             var slot = appearance.GetSlot(currentCategory);
@@ -108,7 +119,7 @@ namespace DreamWorld.CharacterCreation
             if (slot != null && Input.GetKeyDown(KeyCode.E)) appearance.SetColor(currentCategory, (slot.colorIndex + 1) % slot.colors.Length);
             if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) OnReady();
             for (int i = 0; i < categories.Length && i < 10; i++)   // 1..9, then 0 for the 10th
-                if (Input.GetKeyDown(i < 9 ? KeyCode.Alpha1 + i : KeyCode.Alpha0)) SelectCategory(categories[i]);
+                if (Input.GetKeyDown(i < 9 ? KeyCode.Alpha1 + i : KeyCode.Alpha0)) OpenRow(categories[i]);
         }
 
         // ---------- layout ----------
@@ -139,15 +150,15 @@ namespace DreamWorld.CharacterCreation
         void BuildCategoryPanel(RectTransform canvas)
         {
             var panel = MakePanel(canvas, "Categories");
-            float height = 96 + categories.Length * 50;
+            float height = 96 + categories.Length * 44;
             Place(panel, new Vector2(0, 0.5f), new Vector2(64, -18), new Vector2(380, height), new Vector2(0, 0.5f));
             Header(panel, "== CATEGORY ==", -26);
 
             for (int i = 0; i < categories.Length; i++)
             {
                 var category = categories[i];
-                var row = MakeButton(panel, $"Row_{category}", () => SelectCategory(category), transparent: true);
-                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -90 - i * 50), new Vector2(340, 46));
+                var row = MakeButton(panel, $"Row_{category}", () => OpenRow(category), transparent: true);
+                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -88 - i * 44), new Vector2(340, 42));
                 var bar = row.GetComponent<Image>();
                 var label = MakeText((RectTransform)row.transform, "Label", "", bodyFont, 40, textColor, TextAnchor.MiddleLeft);
                 Stretch(label.rectTransform, 18, 0);   // side padding only, so the 40px text fits
@@ -190,7 +201,7 @@ namespace DreamWorld.CharacterCreation
             grid.childAlignment = TextAnchor.UpperCenter;
 
             BuildColorPicker(panel);
-            BuildEyeControls(panel);
+            BuildShapeControls(panel);
         }
 
         // A full-width strip inside the style panel whose top edge we move around in LayoutPanel().
@@ -257,18 +268,68 @@ namespace DreamWorld.CharacterCreation
             valTex.Apply();
         }
 
-        // Eye sliders (only shown on the eyes tab): size, spacing, height + reset.
-        void BuildEyeControls(RectTransform panel)
+        // Size + position sliders and a reset button. Eyes: size/spacing/height (face shader).
+        // Nose, mouth, brows, extras: size and where it sits; pairs (brows, blush) spread apart with "spacing".
+        void BuildShapeControls(RectTransform panel)
         {
-            var rect = Container(panel, "EyeControls", 210);
-            eyeControls = rect.gameObject;
+            var rect = Container(panel, "ShapeControls", 210);
+            shapeControls = rect.gameObject;
             Header(rect, "== SHAPE ==", -20);
-            eyeSize = SliderRow(rect, "size", -62, 0.75f, 1.35f, _ => OnEyeSlider());
-            eyeSpacing = SliderRow(rect, "spacing", -104, -0.06f, 0.06f, _ => OnEyeSlider());
-            eyeHeight = SliderRow(rect, "height", -146, -0.05f, 0.06f, _ => OnEyeSlider());
-            var reset = MakeButton(rect, "ResetEyes", () => { appearance.ResetEyes(); SyncSliders(); });
+            shapeHeader = rect.Find("Header").GetComponent<Text>();
+            shapeSize = SliderRow(rect, "size", -62, 0.75f, 1.35f, _ => OnShapeSlider());
+            shapeX = SliderRow(rect, "spacing", -104, -0.06f, 0.06f, _ => OnShapeSlider());
+            shapeY = SliderRow(rect, "height", -146, -0.05f, 0.06f, _ => OnShapeSlider());
+            shapeXLabel = rect.Find("spacing").GetComponent<Text>();
+            shapeYLabel = rect.Find("height").GetComponent<Text>();
+            var reset = MakeButton(rect, "ResetShape", () =>
+            {
+                if (currentCategory == OutfitCategory.Eyes) appearance.ResetEyes();
+                else appearance.ResetPlacement(currentCategory);
+                SyncSliders();
+            });
             Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -192), new Vector2(220, 42));
-            Stretch(MakeText((RectTransform)reset.transform, "L", "reset eyes", bodyFont, 30, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            resetLabel = MakeText((RectTransform)reset.transform, "L", "reset", bodyFont, 30, textColor, TextAnchor.MiddleCenter);
+            Stretch(resetLabel.rectTransform, 0);
+        }
+
+        // Is the current style of a slot a mirrored pair? (set on its material by DreamerSetup)
+        static bool IsPair(OutfitSlot slot)
+        {
+            var style = slot.CurrentStyle;
+            var r = style != null ? style.GetComponentInChildren<Renderer>(true) : null;
+            var m = r != null ? r.sharedMaterial : null;
+            return m != null && m.HasProperty("_Mirror") && m.GetFloat("_Mirror") > 0.5f;
+        }
+
+        void ConfigureShape(OutfitSlot slot)
+        {
+            syncingSliders = true;
+            if (slot.category == OutfitCategory.Eyes)
+            {
+                shapeHeader.text = "== SHAPE ==";
+                SetRange(shapeSize, 0.75f, 1.35f);
+                SetRange(shapeX, -0.06f, 0.06f);
+                SetRange(shapeY, -0.05f, 0.06f);
+                shapeXLabel.text = "spacing";
+                resetLabel.text = "reset eyes";
+            }
+            else if (slot.movable)
+            {
+                shapeHeader.text = "== PLACE ==";
+                SetRange(shapeSize, slot.sizeRange.x, slot.sizeRange.y);
+                SetRange(shapeX, -slot.moveRange.x, slot.moveRange.x);
+                SetRange(shapeY, -slot.moveRange.y, slot.moveRange.y);
+                shapeXLabel.text = IsPair(slot) ? "spacing" : "across";
+                resetLabel.text = "reset place";
+            }
+            shapeYLabel.text = "height";
+            syncingSliders = false;
+        }
+
+        static void SetRange(Slider slider, float min, float max)
+        {
+            slider.minValue = min;
+            slider.maxValue = max;
         }
 
         static readonly Dictionary<string, string> OptionNames = new Dictionary<string, string>
@@ -284,6 +345,23 @@ namespace DreamWorld.CharacterCreation
         {
             foreach (Transform child in optionsRoot) Destroy(child.gameObject);
             int line = 0;
+            if (IsExtra(slot.category))   // up to three extras at once: pick which one you're editing
+            {
+                var label = MakeText(optionsRoot, "Label_extra", "extra", bodyFont, 30, dimColor, TextAnchor.MiddleLeft);
+                Place(label.rectTransform, new Vector2(0.5f, 1), new Vector2(-170, -20), new Vector2(90, 40));
+                var extras = new[] { OutfitCategory.Extra1, OutfitCategory.Extra2, OutfitCategory.Extra3 };
+                for (int k = 0; k < extras.Length; k++)
+                {
+                    var target = extras[k];
+                    var b = MakeButton(optionsRoot, $"Opt_extra_{k + 1}", () => SelectCategory(target));
+                    Place((RectTransform)b.transform, new Vector2(0.5f, 1), new Vector2(-50 + k * 108, -20), new Vector2(102, 40));
+                    var other = appearance.GetSlot(target);
+                    string name = other != null && other.CurrentBase != null ? $"{k + 1}: on" : $"{k + 1}";
+                    Stretch(MakeText((RectTransform)b.transform, "L", name, bodyFont, 28, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+                    b.GetComponent<Image>().color = target == slot.category ? accentColor : Color.white;
+                }
+                line = 1;
+            }
             for (int a = 0; a < slot.axes.Count; a++)
             {
                 var axis = slot.axes[a];
@@ -325,8 +403,10 @@ namespace DreamWorld.CharacterCreation
                 pickerRoot.anchoredPosition = new Vector2(0, y);
                 y -= 136;
             }
-            eyeControls.SetActive(slot.category == OutfitCategory.Eyes);
-            ((RectTransform)eyeControls.transform).anchoredPosition = new Vector2(0, y);
+            bool shape = slot.category == OutfitCategory.Eyes || (slot.movable && slot.CurrentStyle != null);
+            shapeControls.SetActive(shape);
+            if (shape) ConfigureShape(slot);
+            ((RectTransform)shapeControls.transform).anchoredPosition = new Vector2(0, y);
         }
 
         Slider SliderRow(RectTransform parent, string label, float y, float min, float max, UnityEngine.Events.UnityAction<float> onChange)
@@ -362,17 +442,31 @@ namespace DreamWorld.CharacterCreation
             return slider;
         }
 
-        void OnEyeSlider()
+        void OnShapeSlider()
         {
-            if (!syncingSliders) appearance.SetEyes(eyeSize.value, eyeSpacing.value, eyeHeight.value);
+            if (syncingSliders) return;
+            if (currentCategory == OutfitCategory.Eyes) appearance.SetEyes(shapeSize.value, shapeX.value, shapeY.value);
+            else appearance.SetPlacement(currentCategory, shapeX.value, shapeY.value, shapeSize.value);
         }
 
         void SyncSliders()
         {
+            var slot = appearance.GetSlot(currentCategory);
+            if (slot == null) return;
+            if (slot.category == OutfitCategory.Eyes || slot.movable) ConfigureShape(slot);
             syncingSliders = true;
-            eyeSize.value = appearance.eyeScale;
-            eyeSpacing.value = appearance.eyeSpacing;
-            eyeHeight.value = appearance.eyeHeight;
+            if (slot.category == OutfitCategory.Eyes)
+            {
+                shapeSize.value = appearance.eyeScale;
+                shapeX.value = appearance.eyeSpacing;
+                shapeY.value = appearance.eyeHeight;
+            }
+            else if (slot.movable)
+            {
+                shapeSize.value = slot.size;
+                shapeX.value = slot.moveX;
+                shapeY.value = slot.moveY;
+            }
             syncingSliders = false;
         }
 
@@ -464,9 +558,13 @@ namespace DreamWorld.CharacterCreation
 
         // ---------- behavior ----------
 
+        // A click on a category row: the "extras" row reopens whichever extra was edited last.
+        void OpenRow(OutfitCategory row) => SelectCategory(IsExtra(row) ? lastExtra : row);
+
         void SelectCategory(OutfitCategory category)
         {
             currentCategory = category;
+            if (IsExtra(category)) lastExtra = category;
             SyncSliders();
             RebuildSwatches();
             Refresh();
@@ -509,9 +607,10 @@ namespace DreamWorld.CharacterCreation
             for (int i = 0; i < categories.Length; i++)
             {
                 var category = categories[i];
-                bool selected = category == currentCategory;
+                bool selected = category == RowOf(currentCategory);
                 var (label, bar) = rows[category];
-                label.text = $"{(selected ? ">" : " ")} [{(i + 1) % 10}] {category.ToString().ToLower()}";
+                string name = IsExtra(category) ? "extras" : category.ToString().ToLower();
+                label.text = i < 10 ? $"{(selected ? ">" : " ")} [{(i + 1) % 10}] {name}" : $"{(selected ? ">" : " ")}     {name}";
                 label.color = selected ? accentColor : textColor;
                 bar.color = selected ? hiliteColor : Color.clear;
             }

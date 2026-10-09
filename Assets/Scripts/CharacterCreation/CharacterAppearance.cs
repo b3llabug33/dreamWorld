@@ -5,18 +5,25 @@ using UnityEngine;
 
 namespace DreamWorld.CharacterCreation
 {
-    public enum OutfitCategory { Skin, Eyes, Nose, Mouth, Hair, Top, Bottom, Legwear, Shoes, Neck, Glasses, Headwear }
+    // New categories go at the end (saves store names, but a stable order keeps things tidy).
+    public enum OutfitCategory { Skin, Eyes, Nose, Mouth, Hair, Top, Bottom, Legwear, Shoes, Neck, Glasses, Headwear,
+                                 Brows, Extra1, Extra2, Extra3 }
 
     // One extra choice row for a slot, e.g. hair "bangs" {Straight, Choppy, ...} or pants "rise"
     // {High, Mid, Low}. Mesh names carry the chosen values after the base name:
     // Hair_Long_Straight_Medium, Bottom_BaggyJeans_High. Styles that don't come in a value
     // (skirts have no rise, ponytails have one bangs style) just hide that row.
+    // A texture axis (clothing "pattern") doesn't pick a mesh: value 0 keeps the piece's own fabric,
+    // the others swap in textures[value] on its tinted parts. `bases` limits it to some styles.
     [Serializable]
     public class OptionAxis
     {
         public string label;
         public string[] values = new string[0];
         public int index;
+        public Texture2D[] textures;
+        public string[] bases = new string[0];
+        public bool IsTexture => textures != null && textures.Length > 0;
     }
 
     // One customizable part of the character. Each entry in `styles` is a child mesh of the
@@ -38,6 +45,15 @@ namespace DreamWorld.CharacterCreation
         public Color customColor = Color.white;
 
         public Color CurrentColor => useCustom ? customColor : colors[Mathf.Clamp(colorIndex, 0, colors.Length - 1)];
+
+        // Face pieces that can be moved (nose, mouth, brows, extras): offsets in face-texture uv + size.
+        public bool movable;
+        public Vector2 moveRange = new Vector2(0.08f, 0.08f);   // max |x| and |y| offset
+        public Vector2 sizeRange = new Vector2(0.7f, 1.4f);
+        public float moveX, moveY, size = 1f;
+
+        // Optional: the color each style starts in (by base name order), e.g. blush -> pink, piercings -> silver.
+        public List<int> baseColors = new List<int>();
 
         // "Hair_Long_Straight_Medium" -> base "Long"
         public string BaseName(GameObject style) => style.name.Split('_')[1];
@@ -89,6 +105,13 @@ namespace DreamWorld.CharacterCreation
         public List<int> AvailableValues(OptionAxis axis)
         {
             var found = new List<int>();
+            if (axis.IsTexture)
+            {
+                var b = CurrentBase;
+                if (b != null && (axis.bases.Length == 0 || Array.IndexOf(axis.bases, b) >= 0))
+                    for (int v = 0; v < axis.values.Length; v++) found.Add(v);
+                return found;
+            }
             var mine = CurrentBaseStyles;
             for (int v = 0; v < axis.values.Length; v++)
                 if (mine.Exists(s => HasValue(s, axis.values[v]))) found.Add(v);
@@ -110,6 +133,7 @@ namespace DreamWorld.CharacterCreation
                 var candidates = CurrentBaseStyles;
                 foreach (var axis in axes)
                 {
+                    if (axis.IsTexture) continue;
                     int v = ShownValue(axis);
                     if (v < 0) continue;
                     var narrowed = candidates.FindAll(s => HasValue(s, axis.values[v]));
@@ -155,6 +179,10 @@ namespace DreamWorld.CharacterCreation
         static readonly int EyeScaleId = Shader.PropertyToID("_EyeScale");
         static readonly int EyeSpacingId = Shader.PropertyToID("_EyeSpacing");
         static readonly int EyeHeightId = Shader.PropertyToID("_EyeHeight");
+        static readonly int MainTexId = Shader.PropertyToID("_MainTex");
+        static readonly int MoveXId = Shader.PropertyToID("_MoveX");
+        static readonly int MoveYId = Shader.PropertyToID("_MoveY");
+        static readonly int PartScaleId = Shader.PropertyToID("_PartScale");
         MaterialPropertyBlock block;
 
         // The look the character starts with before any save is loaded ("make a new player").
@@ -184,6 +212,12 @@ namespace DreamWorld.CharacterCreation
             if (slot == null || slot.StyleCount == 0) return;
             // Wrap around in both directions (the extra + count keeps the result non-negative).
             slot.styleIndex = (slot.styleIndex + direction + slot.StyleCount) % slot.StyleCount;
+            int baseIndex = slot.optional ? slot.styleIndex - 1 : slot.styleIndex;
+            if (baseIndex >= 0 && baseIndex < slot.baseColors.Count)   // e.g. a new piercing starts silver
+            {
+                slot.colorIndex = slot.baseColors[baseIndex];
+                slot.useCustom = false;
+            }
             Apply(slot);
             Changed?.Invoke();
         }
@@ -199,6 +233,20 @@ namespace DreamWorld.CharacterCreation
         }
 
         public void ResetEyes() => SetEyes(1f, 0f, 0f);
+
+        // Moves/resizes a face piece (nose, mouth, brows, an extra).
+        public void SetPlacement(OutfitCategory category, float x, float y, float size)
+        {
+            var slot = GetSlot(category);
+            if (slot == null || !slot.movable) return;
+            slot.moveX = Mathf.Clamp(x, -slot.moveRange.x, slot.moveRange.x);
+            slot.moveY = Mathf.Clamp(y, -slot.moveRange.y, slot.moveRange.y);
+            slot.size = Mathf.Clamp(size, slot.sizeRange.x, slot.sizeRange.y);
+            Apply(slot);
+            Changed?.Invoke();
+        }
+
+        public void ResetPlacement(OutfitCategory category) => SetPlacement(category, 0f, 0f, 1f);
 
         // Picks a value on one of a slot's option rows (bangs, length, rise).
         public void SetOption(OutfitCategory category, int axis, int value)
@@ -241,6 +289,13 @@ namespace DreamWorld.CharacterCreation
             if (current == null) return;
 
             bool eyes = slot.category == OutfitCategory.Eyes;
+            Texture2D pattern = null;   // clothing pattern chosen on a texture axis (0 = the piece's own fabric)
+            foreach (var axis in slot.axes)
+                if (axis.IsTexture)
+                {
+                    int v = slot.ShownValue(axis);
+                    if (v > 0 && v < axis.textures.Length) pattern = axis.textures[v];
+                }
             foreach (var r in current.GetComponentsInChildren<Renderer>(true))
             {
                 // Two-tone pieces (a sailor collar, a sneaker sole...) keep some submeshes untinted.
@@ -249,9 +304,16 @@ namespace DreamWorld.CharacterCreation
                 for (int i = 0; i < count; i++)
                 {
                     bool tint = mask == null || mask.Tints(i);
-                    if (!tint && !eyes) continue;
+                    if (!tint && !eyes && !slot.movable) continue;
                     block.Clear();
                     block.SetColor(ColorId, tint ? slot.CurrentColor : Color.white);
+                    if (tint && pattern != null) block.SetTexture(MainTexId, pattern);
+                    if (slot.movable)
+                    {
+                        block.SetFloat(MoveXId, slot.moveX);
+                        block.SetFloat(MoveYId, slot.moveY);
+                        block.SetFloat(PartScaleId, slot.size);
+                    }
                     if (eyes)   // every face layer moves with the eye sliders
                     {
                         block.SetFloat(EyeScaleId, eyeScale);
