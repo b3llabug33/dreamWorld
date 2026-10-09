@@ -476,7 +476,34 @@ EYE_LAYERS = 5                          # face, eye base, iris (tinted), pupil+s
 
 
 def draw_eyes(style):
-    TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", eye_designs.draw(eye_designs.FACES[style]))
+    design = dict(eye_designs.FACES[style], nose="none", mouth="none")   # nose/mouth are separate pieces
+    TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", eye_designs.draw(design))
+
+
+def face_part(kind, style):
+    """A nose or mouth: its own decal on the face (one layer), so any eyes/nose/mouth can mix."""
+    tex = f"{kind}{style.capitalize()}"
+    TEXTURES[tex] = save_png(tex, eye_designs.draw_part(**{kind.lower(): style}))
+
+    def build(bm):
+        uv_layer = bm.loops.layers.uv.new("UVMap")
+        nx, nz = 12, 10
+        grid = []
+        for j in range(nz + 1):
+            row = []
+            for i in range(nx + 1):
+                u, v = i / nx, j / nz
+                x = (u - 0.5) * FACE_W
+                z = FACE_Z0 + v * FACE_H
+                row.append((bm.verts.new((x, head_front_y(x, z, 0.0045), z)), (u, v)))
+            grid.append(row)
+        for j in range(nz):
+            for i in range(nx):
+                quad = (grid[j][i], grid[j][i + 1], grid[j + 1][i + 1], grid[j + 1][i])
+                f = bm.faces.new([q[0] for q in quad])
+                for loop, q in zip(f.loops, quad):
+                    loop[uv_layer].uv = q[1]
+    return join(f"{kind}_{style.capitalize()}", [part(tex.lower(), "Head", build, material(tex, tint=False))], keep_uv=True)
 
 
 def build_eye_layers(bm):
@@ -748,7 +775,16 @@ def sleeve(sx, x1, mat, puff=0.0, grow=G):
 
 def torso_shell(prefix, mat, z0=0.99, grow=G, hem=None, skip=(), n=12):
     """Top body: Spine piece (waist to bust) + Chest piece (bust to collar)."""
-    low = torso_sections(z0, 1.15, grow) if hem is None else [hem] + torso_sections(0.99, 1.15, grow + 0.008)
+    if hem is None:
+        low = torso_sections(z0, 1.15, grow)
+    else:   # loose top: straight from the bust down to the hem, no cinched waist
+        (_, _, hz), hw_, hd_ = hem
+        bw, bd = torso_at(1.15)
+        bust = ((0, 0, 1.15), bw + grow + 0.008, bd + grow + 0.008)
+        mid_z = (hz + 1.15) / 2
+        mw, md = torso_at(mid_z)
+        mid = ((0, 0, mid_z), max(mw + grow + 0.01, (hw_ + bust[1]) / 2), max(md + grow + 0.01, (hd_ + bust[2]) / 2))
+        low = [hem, mid, bust]
     open_front = bool(skip)
     return [part(f"{prefix}Low", "Spine", lambda bm: loft(bm, low, n, skip=skip, cap_start=not open_front), mat),
             part(f"{prefix}Up", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.32, grow), n, skip=skip,
@@ -786,7 +822,7 @@ def top_crop():
 
 def top_sweater():
     m = material("Knit")
-    parts = torso_shell("sw", m, grow=G + 0.004, hem=((0, 0, 0.88), 0.165, 0.12))
+    parts = torso_shell("sw", m, grow=G + 0.004, hem=((0, 0, 0.88), 0.128 + G, 0.090 + G))
     parts.append(part("swNeck", "Neck", lambda bm: loft(bm, [((0, 0.005, 1.30), 0.055, 0.05),
                                                             ((0, 0.01, 1.40), 0.045, 0.045)], 8), m))
     return join("Top_Sweater", parts + sleeve(1, 0.60, m, grow=G + 0.004) + sleeve(-1, 0.60, m, grow=G + 0.004))
@@ -794,10 +830,10 @@ def top_sweater():
 
 def top_hoodie():
     m = material("Fleece")
-    parts = torso_shell("hd", m, grow=G + 0.008, hem=((0, 0, 0.86), 0.15, 0.11))
+    parts = torso_shell("hd", m, grow=G + 0.008, hem=((0, 0, 0.85), 0.132 + G, 0.094 + G))
     # hood lying on the upper back, behind the neck
-    parts.append(part("hood", "Chest", lambda bm: loft(bm, [((0, 0.05, 1.29), 0.09, 0.06), ((0, 0.075, 1.36), 0.10, 0.06),
-                                                           ((0, 0.085, 1.40), 0.07, 0.04)], 8), m))
+    parts.append(part("hood", "Chest", lambda bm: loft(bm, [((0, 0.072, 1.345), 0.075, 0.022), ((0, 0.098, 1.29), 0.098, 0.028),
+                                                           ((0, 0.108, 1.21), 0.085, 0.024), ((0, 0.104, 1.15), 0.05, 0.015)], 8), m))
     parts.append(part("pocket", "Spine", lambda bm: box(bm, (-0.07, -0.085, 0.92), (0.07, -0.07, 1.00)), m))
     parts.append(part("string", "Chest", lambda bm: [box(bm, (x - 0.004, -0.09, 1.18), (x + 0.004, -0.08, 1.29))
                                                     for x in (-0.03, 0.03)], material("White", False)))
@@ -807,7 +843,7 @@ def top_hoodie():
 def top_sailor():
     m = material("Cotton")
     navy = material("Navy", False)
-    parts = torso_shell("sl", m, hem=((0, 0, 0.93), 0.13, 0.095))
+    parts = torso_shell("sl", m, hem=((0, 0, 0.93), 0.110 + G, 0.078 + G))
     # square sailor collar: flat plate on the back + lapels down the front
     parts.append(part("collarBack", "Chest", lambda bm: box(bm, (-0.10, 0.06, 1.17), (0.10, 0.085, 1.33)), navy))
     for sx in (1, -1):
@@ -917,13 +953,17 @@ def torso_at(z):
 
 
 # Waistlines: "high" sits above the natural waist (tops look tucked in), "low" rides on the hips.
-RISE = {"high": 1.06, "low": 0.875}
+RISE = {"high": 1.06, "mid": 0.99, "low": 0.875}
 
 
-def pants_top(m, rise, grow):
-    """Hip piece from the crotch up to the waistline, plus a waistband and a gold button."""
+def pants_top(m, rise, grow, leg_r=0.066):
+    """Hip piece from the crotch up to the waistline, plus a waistband and a gold button.
+    Its bottom spreads to the outer edge of the legs so it flows into them."""
     top = RISE[rise]
-    rings = [((0, 0, z), w + grow, d + grow) for z, w, d in TORSO if 0.76 <= z < top - 0.01]
+    outer = 0.066 + leg_r
+    rings = [((0, 0, 0.74), outer, leg_r + 0.004)]
+    rings += [((0, 0, z), max(w + grow, outer * (0.95 if z < 0.8 else 0)), d + grow)
+              for z, w, d in TORSO if 0.76 <= z < top - 0.01]
     w, d = torso_at(top)
     rings.append(((0, 0, top), w + grow, d + grow))
     band = [((0, 0, top - 0.04), torso_at(top - 0.04)[0] + grow + 0.007, torso_at(top - 0.04)[1] + grow + 0.007),
@@ -938,7 +978,7 @@ def pants_top(m, rise, grow):
 def bottom_legs(name, texture, knee_z=None, rise="high"):
     """Fitted pants (knee_z None) or shorts (legs end at knee_z)."""
     m = material(texture)
-    parts = pants_top(m, rise, G)
+    parts = pants_top(m, rise, G, leg_r=0.054 + G + (0.004 if knee_z else 0))
     for side, sx in sides():
         if knee_z is None:
             parts += [part(f"u{side}", f"UpperLeg.{side}", lambda bm, sx=sx: loft(
@@ -955,7 +995,7 @@ def bottom_legs(name, texture, knee_z=None, rise="high"):
 def bottom_wide(name, texture, thigh=0.072, knee=0.07, hem=0.078, hem_z=0.03, pockets=False, fitted_thigh=False, rise="high"):
     """Baggy / cargo / flare pants: wide straight legs that bunch up at the hem over the shoes."""
     m = material(texture)
-    parts = pants_top(m, rise, G + 0.008)
+    parts = pants_top(m, rise, G + 0.008, leg_r=(0.054 + G) if fitted_thigh else thigh)
     bunch = lambda i, k: (1.08 if i % 2 else 0.96) if k >= 2 else 1.0   # stacked fabric at the ankle
     for side, sx in sides():
         top_r = 0.054 + G if fitted_thigh else thigh
@@ -982,7 +1022,14 @@ def leg_radius(z):
     return pts[-1][1]
 
 
-def legwear(name, texture, z_top, grow=0.004, z_bottom=0.0, frill=False):
+def leg_center_y(z):
+    """Matches the body's lower leg: the calf bulge sits 8 mm toward the back."""
+    if z <= 0.08 or z >= 0.45:
+        return 0.0
+    return 0.008 * ((z - 0.08) / 0.23 if z <= 0.31 else (0.45 - z) / 0.14)
+
+
+def legwear(name, texture, z_top, grow=0.005, z_bottom=0.0, frill=False):
     """Socks/tights hugging the leg from z_bottom to z_top (feet included when z_bottom is 0)."""
     m = material(texture)
     parts = []
@@ -995,7 +1042,7 @@ def legwear(name, texture, z_top, grow=0.004, z_bottom=0.0, frill=False):
             upper.append(z_top)
         if len(lower) >= 2:
             parts.append(part(f"lw{side}", f"LowerLeg.{side}", lambda bm, sx=sx, lower=lower: loft(
-                bm, [((0.07 * sx, 0.008 if 0.2 < z < 0.4 else 0, z), leg_radius(z) + grow, leg_radius(z) + grow)
+                bm, [((0.07 * sx, leg_center_y(z), z), leg_radius(z) + grow, leg_radius(z) + grow)
                      for z in lower], 8), m))
         if len(upper) >= 2:
             parts.append(part(f"uw{side}", f"UpperLeg.{side}", lambda bm, sx=sx, upper=upper: loft(
@@ -1029,7 +1076,7 @@ def shoes(name, top_z, sole=None, upper="Leather", platform=0.0, low=False, stra
     m = material(upper)
     parts = []
     for side, sx in sides():
-        h = 0.06 if low else 0.085
+        h = 0.078 if low else 0.085
         parts.append(part(f"{name}F{side}", f"Foot.{side}", lambda bm, sx=sx: box(
             bm, (0.07 * sx - 0.04, -0.135, platform), (0.07 * sx + 0.04, 0.04, h + platform), taper_front=0.25), m))
         if sole or platform:
@@ -1040,13 +1087,16 @@ def shoes(name, top_z, sole=None, upper="Leather", platform=0.0, low=False, stra
             parts.append(part(f"{name}T{side}", f"Foot.{side}", lambda bm, sx=sx: box(
                 bm, (0.07 * sx - 0.041, -0.06, 0.055), (0.07 * sx + 0.041, -0.04, 0.075)), m))
         if top_z > 0.1:
-            parts.append(part(f"{name}L{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
-                bm, [((0.07 * sx, 0, 0.08), 0.058, 0.058), ((0.07 * sx, 0.008, top_z), 0.052 + G + 0.006, 0.052 + G + 0.006)],
-                8), m))
+            zs = [0.06] + [z for z in (0.2, 0.31) if z < top_z - 0.03] + [top_z]
+            parts.append(part(f"{name}L{side}", f"LowerLeg.{side}", lambda bm, sx=sx, zs=zs: loft(
+                bm, [((0.07 * sx, leg_center_y(z), z), max(0.046, leg_radius(z) + 0.014), max(0.046, leg_radius(z) + 0.014))
+                     for z in zs], 8), m))
         if laces:  # criss-cross lace bars up the front of the shaft
-            parts.append(part(f"{name}X{side}", f"LowerLeg.{side}", lambda bm, sx=sx: [box(
-                bm, (0.07 * sx - 0.022, -0.074, z), (0.07 * sx + 0.022, -0.066, z + 0.008))
-                for z in np.arange(0.10, top_z - 0.02, 0.035)], material("SoleWhite", False)))
+            def lace_bars(bm, sx=sx):
+                for z in np.arange(0.10, top_z - 0.02, 0.035):
+                    y = leg_center_y(z) - max(0.046, leg_radius(z) + 0.014)   # front of the shaft
+                    box(bm, (0.07 * sx - 0.02, y - 0.006, z), (0.07 * sx + 0.02, y + 0.003, z + 0.008))
+            parts.append(part(f"{name}X{side}", f"LowerLeg.{side}", lace_bars, material("SoleWhite", False)))
     return join(name, parts, tile=0.15)
 
 # ---------------------------------------------------------------- accessories
@@ -1140,9 +1190,12 @@ def headwear():
     items = [
         join("Headwear_Halo", [part("halo", "Head", lambda bm: torus(bm, (0, 0.02, 1.72), 0.085, 0.009, seg=14, tube=4), white)]),
         join("Headwear_Bow", [part("bow", "Head", lambda bm: (
-            [strand(bm, (0, 0.13, 1.56), (0.09 * sx, 0.14, 1.60), 0.035, 0.018, flat_tip=0.7) for sx in (1, -1)],
-            [strand(bm, (0, 0.13, 1.54), (0.04 * sx, 0.14, 1.45), 0.015, 0.01, flat_tip=1.0) for sx in (1, -1)],
-            box(bm, (-0.018, 0.12, 1.535), (0.018, 0.15, 1.575))), material("Satin"))]),
+            [bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0, matrix=Matrix.Translation((0.05 * sx, 0.128, 1.575))
+                                        @ Matrix.Diagonal((0.05, 0.022, 0.034, 1))) for sx in (1, -1)],
+            bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0, matrix=Matrix.Translation((0, 0.132, 1.575))
+                                       @ Matrix.Diagonal((0.018, 0.02, 0.022, 1))),
+            [strand(bm, (0.008 * sx, 0.135, 1.56), (0.035 * sx, 0.14, 1.50), 0.012, 0.008, flat_tip=1.0) for sx in (1, -1)]),
+            material("Satin"))]),
     ]
     ears = []
     for sx in (1, -1):
@@ -1180,6 +1233,17 @@ def headwear():
     return items
 
 
+def necklace_beads(bm):
+    """Small beads in a U from the sides of the neck down onto the chest, resting on the body."""
+    for k in range(17):
+        t = -1 + 2 * k / 16
+        x = 0.056 * t
+        z = 1.318 - 0.064 * (1 - t * t)
+        w, d = torso_at(z)
+        y = -d * math.sqrt(max(0.0, 1 - (x / w) ** 2)) - 0.007
+        box(bm, (x - 0.004, y - 0.004, z - 0.004), (x + 0.004, y + 0.004, z + 0.004))
+
+
 def neckwear():
     """New slot: chokers and necklaces."""
     gold = material("Gold", False)
@@ -1193,21 +1257,18 @@ def neckwear():
                                                  10, cap_start=False, cap_end=False), material("Satin")),
             part("bow", "Neck", lambda bm: [strand(bm, (0, -0.03, 1.357), (0.028 * sx, -0.034, 1.37), 0.012, 0.006, flat_tip=0.8)
                                             for sx in (1, -1)], material("Satin"))]),
-        join("Neck_Chain", [
-            part("chain", "Chest", lambda bm: torus(bm, (0, 0.0, 1.29), 0.072, 0.004, seg=16, tube=3), material("White")),
-            part("heart", "Chest", lambda bm: star(bm, (0, -0.078, 1.245), 0.012, 0.011, 0.005), material("White"))]),
+        join("Neck_Chain", [part("chain", "Chest", necklace_beads, material("White")),
+                            part("heart", "Chest", lambda bm: star(bm, (0, -torso_at(1.24)[1] - 0.011, 1.24), 0.011, 0.010, 0.005),
+                                 material("White"))]),
     ]
-    # tilt the chain so it hangs lower in front, like it rests on the collarbones
-    chain = items[2]
-    for v in chain.data.vertices:
-        if v.co.y < 0.0 and v.co.z > 1.26:
-            v.co.z -= (-v.co.y) * 0.45
     return items
 
 # ---------------------------------------------------------------- build everything
 
 pieces = [body()]
 pieces += [eyes(s) for s in EYE_STYLES]
+pieces += [face_part("Nose", n) for n in eye_designs.NOSES]
+pieces += [face_part("Mouth", m) for m in eye_designs.MOUTHS]
 pieces += build_hair()
 pieces += [top_tee(), top_crop(), top_sweater(), top_hoodie(), top_sailor(),
            top_flannel(), top_oversized(), top_cardigan(), top_puff_blouse(), top_slip_dress()]
@@ -1216,17 +1277,17 @@ pieces += [bottom_skirt("Bottom_Skirt", "Tweed"),
            bottom_ruffle("Bottom_RuffleSkirt", "Gingham"),
            bottom_skirt("Bottom_LongSkirt", "Tartan", length_z=0.22, flare=0.10),
            ]
-for rise in ("High", "Low"):   # every pair of pants comes high-waisted and low-rise
+for rise in ("High", "Mid", "Low"):   # every pair of pants comes in three rises (picked separately in the creator)
     r = rise.lower()
-    pieces += [bottom_legs(f"Bottom_SkinnyJeans{rise}", "Jeans", rise=r),
-               bottom_wide(f"Bottom_BaggyJeans{rise}", "Jeans", rise=r),
-               bottom_wide(f"Bottom_Cargo{rise}", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True, rise=r),
-               bottom_wide(f"Bottom_FlareJeans{rise}", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True, rise=r),
-               bottom_legs(f"Bottom_Shorts{rise}", "Jeans", knee_z=0.66, rise=r)]
+    pieces += [bottom_legs(f"Bottom_SkinnyJeans_{rise}", "Jeans", rise=r),
+               bottom_wide(f"Bottom_BaggyJeans_{rise}", "Jeans", rise=r),
+               bottom_wide(f"Bottom_Cargo_{rise}", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True, rise=r),
+               bottom_wide(f"Bottom_FlareJeans_{rise}", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True, rise=r),
+               bottom_legs(f"Bottom_Shorts_{rise}", "Jeans", knee_z=0.66, rise=r)]
 pieces += [legwear("Legwear_KneeSocks", "Knit", 0.42, z_bottom=0.0),
            legwear("Legwear_ThighHighs", "Knit", 0.66),
-           legwear("Legwear_Tights", "Mesh", 0.92, grow=0.003),
-           legwear("Legwear_Fishnets", "Fishnet", 0.92, grow=0.0035),
+           legwear("Legwear_Tights", "Mesh", 0.92, grow=0.004),
+           legwear("Legwear_Fishnets", "Fishnet", 0.92, grow=0.0045),
            legwear("Legwear_FrillySocks", "Cotton", 0.15, z_bottom=0.0, frill=True),
            leg_warmers("Legwear_LegWarmers", "Knit")]
 pieces += [shoes("Shoes_Sneakers", 0.0, sole="SoleWhite", upper="Cotton"),
@@ -1312,11 +1373,11 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 
 LOOKS = {
-    "grunge": {"Skin_Body", "Eyes_Toon", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeansLow", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
+    "grunge": {"Skin_Body", "Eyes_Toon", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeans_Low", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
     "girly": {"Skin_Body", "Eyes_Almond", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
     "twilight": {"Skin_Body", "Eyes_Doe", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
-    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Pigtails", "Top_Oversized", "Bottom_CargoLow", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
-    "y2k": {"Skin_Body", "Eyes_Almond", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeansHigh", "Shoes_Platforms", "Headwear_Halo"},
+    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Pigtails", "Top_Oversized", "Bottom_Cargo_Low", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "y2k": {"Skin_Body", "Eyes_Almond", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeans_High", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)

@@ -41,7 +41,8 @@ Unity ignores this folder (it's outside `Assets/`). New drafts get added here as
 
 `Faces/noses_drafts.png` (8 noses: dots, button, line, hook, triangle, nostrils, freckles, none) and
 `Faces/mouths_drafts.png` (15 mouths: smile, tiny, flat, smirk, smug, pout, cat, open, o, grin, tongue,
-fang, lips, wavy, kiss) are drafts on the soft-almond face; picks still open.
+fang, lips, wavy, kiss) are all in the game as their own **nose** and **mouth** categories, so any
+eyes/nose/mouth mix (`Faces/nose_mouth_mixes.png`).
 
 `Faces/eye_sliders_default_big_smallwide_closehigh.png` shows the eye sliders: size, spacing,
 height (brows move with the eyes; mouth and blush stay put), plus a reset.
@@ -62,6 +63,14 @@ pupil type, lid/wing/lashes, mouth, brows, blush), so mixing ("H's eyes with N's
 | `Hair/all_hairstyles_front.png` | every hairstyle on red skin (bald-spot check) |
 
 Blender previews show clothes in a neutral lilac; real colors come from the in-game palette.
+
+## Clothing audit
+
+`Audit/` has every piece rendered on a red body (front/side/back) to catch clipping. Fixed in the
+first audit: sweater/hoodie/sailor no longer flare into a peplum at the waist, the hood lies flat
+down the back, pants hips flow into the legs, socks/tights follow the calf, boots hug the leg,
+low shoes cover the whole foot, the bow is a real bow, the necklace rests on the collarbones.
+Pants come in high / mid / low rise, picked with their own buttons (`Outfits/creator_rise_picker.png`).
 
 ## World
 

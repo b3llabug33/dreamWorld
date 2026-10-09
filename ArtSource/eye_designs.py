@@ -302,3 +302,25 @@ def draw_mouth(style, put, ellipse):
     elif style == "kiss":          # little pucker
         ellipse(0, 64, 12, 2, 1.6, LIP)
         put(0, 64, 12, MOUTH)
+
+
+def draw_part(nose=None, mouth=None):
+    """A single 128x128 layer with just a nose or just a mouth (separate creator options)."""
+    layer = np.zeros((PX, PX, 4), np.float32)
+
+    def put(_, x, y, c):
+        x, y = int(round(x)), int(round(y))
+        if 0 <= x < PX and 0 <= y < PX:
+            layer[y, x] = (*c, 1)
+
+    def ellipse(_, cx, cy, rx, ry, c, clip=None):
+        for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+            for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1:
+                    put(0, x, y, c)
+
+    if nose:
+        draw_nose(nose, put, ellipse)
+    if mouth:
+        draw_mouth(mouth, put, ellipse)
+    return layer

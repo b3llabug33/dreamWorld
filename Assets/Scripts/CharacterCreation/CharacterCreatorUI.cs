@@ -40,7 +40,8 @@ namespace DreamWorld.CharacterCreation
         Sprite frameSprite, solidSprite;
         float cursorTimer;
 
-        GameObject eyeControls;
+        GameObject eyeControls, variantRow;
+        readonly List<Image> variantButtons = new List<Image>();
         Slider eyeSize, eyeSpacing, eyeHeight;
         bool syncingSliders;
         NetMode chosenMode;
@@ -131,15 +132,15 @@ namespace DreamWorld.CharacterCreation
         void BuildCategoryPanel(RectTransform canvas)
         {
             var panel = MakePanel(canvas, "Categories");
-            float height = 96 + categories.Length * 54;
-            Place(panel, new Vector2(0, 0.5f), new Vector2(64, 10), new Vector2(380, height), new Vector2(0, 0.5f));
+            float height = 96 + categories.Length * 50;
+            Place(panel, new Vector2(0, 0.5f), new Vector2(64, -18), new Vector2(380, height), new Vector2(0, 0.5f));
             Header(panel, "== CATEGORY ==", -26);
 
             for (int i = 0; i < categories.Length; i++)
             {
                 var category = categories[i];
                 var row = MakeButton(panel, $"Row_{category}", () => SelectCategory(category), transparent: true);
-                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -92 - i * 54), new Vector2(340, 50));
+                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -90 - i * 50), new Vector2(340, 46));
                 var bar = row.GetComponent<Image>();
                 var label = MakeText((RectTransform)row.transform, "Label", "", bodyFont, 40, textColor, TextAnchor.MiddleLeft);
                 Stretch(label.rectTransform, 18, 0);   // side padding only, so the 40px text fits
@@ -165,10 +166,11 @@ namespace DreamWorld.CharacterCreation
             styleCount = MakeText(panel, "StyleCount", "", bodyFont, 30, dimColor, TextAnchor.MiddleCenter);
             Place(styleCount.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -156), new Vector2(280, 34));
 
-            Header(panel, "== COLOR ==", -216);
+            BuildVariantRow(panel);
+            Header(panel, "== COLOR ==", -256);
             swatchGrid = new GameObject("Swatches", typeof(RectTransform), typeof(GridLayoutGroup)).GetComponent<RectTransform>();
             swatchGrid.SetParent(panel, false);
-            Place(swatchGrid, new Vector2(0.5f, 1), new Vector2(0, -440), new Vector2(400, 380));
+            Place(swatchGrid, new Vector2(0.5f, 1), new Vector2(0, -476), new Vector2(400, 380));
             var grid = swatchGrid.GetComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(50, 50);
             grid.spacing = new Vector2(10, 10);
@@ -186,13 +188,33 @@ namespace DreamWorld.CharacterCreation
             var rect = (RectTransform)eyeControls.transform;
             rect.SetParent(panel, false);
             Stretch(rect, 0);
-            Header(rect, "== SHAPE ==", -452);
-            eyeSize = SliderRow(rect, "size", -500, 0.75f, 1.35f);
-            eyeSpacing = SliderRow(rect, "spacing", -546, -0.06f, 0.06f);
-            eyeHeight = SliderRow(rect, "height", -592, -0.05f, 0.06f);
+            Header(rect, "== SHAPE ==", -470);
+            eyeSize = SliderRow(rect, "size", -514, 0.75f, 1.35f);
+            eyeSpacing = SliderRow(rect, "spacing", -556, -0.06f, 0.06f);
+            eyeHeight = SliderRow(rect, "height", -598, -0.05f, 0.06f);
             var reset = MakeButton(rect, "ResetEyes", () => { appearance.ResetEyes(); SyncSliders(); });
-            Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -642), new Vector2(220, 46));
+            Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -646), new Vector2(220, 44));
             Stretch(MakeText((RectTransform)reset.transform, "L", "reset eyes", bodyFont, 30, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+        }
+
+        // Variant buttons (pants rise: high / mid / low), only shown when the current style has variants.
+        void BuildVariantRow(RectTransform panel)
+        {
+            variantRow = new GameObject("Variants", typeof(RectTransform));
+            var rect = (RectTransform)variantRow.transform;
+            rect.SetParent(panel, false);
+            Stretch(rect, 0);
+            var label = MakeText(rect, "Label", "rise", bodyFont, 30, dimColor, TextAnchor.MiddleLeft);
+            Place(label.rectTransform, new Vector2(0.5f, 1), new Vector2(-170, -204), new Vector2(80, 40));
+            var names = new[] { "high", "mid", "low" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                int index = i;
+                var b = MakeButton(rect, "Variant_" + names[i], () => appearance.SetVariant(currentCategory, index));
+                Place((RectTransform)b.transform, new Vector2(0.5f, 1), new Vector2(-50 + i * 100, -204), new Vector2(92, 42));
+                Stretch(MakeText((RectTransform)b.transform, "L", names[i], bodyFont, 30, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+                variantButtons.Add(b.GetComponent<Image>());
+            }
         }
 
         Slider SliderRow(RectTransform parent, string label, float y, float min, float max)
@@ -393,6 +415,10 @@ namespace DreamWorld.CharacterCreation
             styleCount.text = $"{slot.styleIndex + 1} / {slot.StyleCount}";
             for (int i = 0; i < swatches.Count; i++)
                 swatches[i].ring.color = i == slot.colorIndex ? textColor : new Color(0, 0, 0, 0.6f);
+            bool variants = slot.CurrentHasVariants;
+            variantRow.SetActive(variants);
+            for (int i = 0; i < variantButtons.Count; i++)
+                variantButtons[i].color = variants && i == slot.variantIndex ? accentColor : Color.white;
             statusLabel.text = "";
         }
 

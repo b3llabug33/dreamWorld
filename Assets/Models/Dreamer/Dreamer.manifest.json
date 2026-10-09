@@ -310,6 +310,213 @@
    ]
   },
   {
+   "name": "Nose_Dots",
+   "submeshes": [
+    {
+     "texture": "NoseDots",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_Button",
+   "submeshes": [
+    {
+     "texture": "NoseButton",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_Line",
+   "submeshes": [
+    {
+     "texture": "NoseLine",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_Hook",
+   "submeshes": [
+    {
+     "texture": "NoseHook",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_Triangle",
+   "submeshes": [
+    {
+     "texture": "NoseTriangle",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_Nostrils",
+   "submeshes": [
+    {
+     "texture": "NoseNostrils",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_Freckles",
+   "submeshes": [
+    {
+     "texture": "NoseFreckles",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Nose_None",
+   "submeshes": [
+    {
+     "texture": "NoseNone",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Smile",
+   "submeshes": [
+    {
+     "texture": "MouthSmile",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Tiny",
+   "submeshes": [
+    {
+     "texture": "MouthTiny",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Flat",
+   "submeshes": [
+    {
+     "texture": "MouthFlat",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Smirk",
+   "submeshes": [
+    {
+     "texture": "MouthSmirk",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Smug",
+   "submeshes": [
+    {
+     "texture": "MouthSmug",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Pout",
+   "submeshes": [
+    {
+     "texture": "MouthPout",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Cat",
+   "submeshes": [
+    {
+     "texture": "MouthCat",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Open",
+   "submeshes": [
+    {
+     "texture": "MouthOpen",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_O",
+   "submeshes": [
+    {
+     "texture": "MouthO",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Grin",
+   "submeshes": [
+    {
+     "texture": "MouthGrin",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Tongue",
+   "submeshes": [
+    {
+     "texture": "MouthTongue",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Fang",
+   "submeshes": [
+    {
+     "texture": "MouthFang",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Lips",
+   "submeshes": [
+    {
+     "texture": "MouthLips",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Wavy",
+   "submeshes": [
+    {
+     "texture": "MouthWavy",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Mouth_Kiss",
+   "submeshes": [
+    {
+     "texture": "MouthKiss",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Hair_Bob",
    "submeshes": [
     {
@@ -541,7 +748,7 @@
    ]
   },
   {
-   "name": "Bottom_SkinnyJeansHigh",
+   "name": "Bottom_SkinnyJeans_High",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -554,7 +761,7 @@
    ]
   },
   {
-   "name": "Bottom_BaggyJeansHigh",
+   "name": "Bottom_BaggyJeans_High",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -567,7 +774,7 @@
    ]
   },
   {
-   "name": "Bottom_CargoHigh",
+   "name": "Bottom_Cargo_High",
    "submeshes": [
     {
      "texture": "Cotton",
@@ -580,7 +787,7 @@
    ]
   },
   {
-   "name": "Bottom_FlareJeansHigh",
+   "name": "Bottom_FlareJeans_High",
    "submeshes": [
     {
      "texture": "JeansDark",
@@ -593,7 +800,7 @@
    ]
   },
   {
-   "name": "Bottom_ShortsHigh",
+   "name": "Bottom_Shorts_High",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -606,7 +813,7 @@
    ]
   },
   {
-   "name": "Bottom_SkinnyJeansLow",
+   "name": "Bottom_SkinnyJeans_Mid",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -619,7 +826,7 @@
    ]
   },
   {
-   "name": "Bottom_BaggyJeansLow",
+   "name": "Bottom_BaggyJeans_Mid",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -632,7 +839,7 @@
    ]
   },
   {
-   "name": "Bottom_CargoLow",
+   "name": "Bottom_Cargo_Mid",
    "submeshes": [
     {
      "texture": "Cotton",
@@ -645,7 +852,7 @@
    ]
   },
   {
-   "name": "Bottom_FlareJeansLow",
+   "name": "Bottom_FlareJeans_Mid",
    "submeshes": [
     {
      "texture": "JeansDark",
@@ -658,7 +865,72 @@
    ]
   },
   {
-   "name": "Bottom_ShortsLow",
+   "name": "Bottom_Shorts_Mid",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_SkinnyJeans_Low",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_BaggyJeans_Low",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Cargo_Low",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_FlareJeans_Low",
+   "submeshes": [
+    {
+     "texture": "JeansDark",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Shorts_Low",
    "submeshes": [
     {
      "texture": "Jeans",

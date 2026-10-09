@@ -92,15 +92,22 @@ namespace DreamWorld.EditorTools
             {
                 Slot(OutfitCategory.Skin, styles, Skins, 0, 0),
                 Slot(OutfitCategory.Eyes, styles, Irises, 0, 0),
+                Slot(OutfitCategory.Nose, styles, new[] { Color.white }, 0, 0),
+                Slot(OutfitCategory.Mouth, styles, new[] { Color.white }, 0, 0),
                 Slot(OutfitCategory.Hair, styles, HairColors, 0, 0),
                 Slot(OutfitCategory.Top, styles, Clothes, Index(styles, "Top_Sweater"), 5),
-                Slot(OutfitCategory.Bottom, styles, Clothes, Index(styles, "Bottom_Pleated") + 1, 3, optional: true),
+                Slot(OutfitCategory.Bottom, styles, Clothes, 0, 3, optional: true),
                 Slot(OutfitCategory.Legwear, styles, Clothes, 0, 11, optional: true),
                 Slot(OutfitCategory.Shoes, styles, Clothes, Index(styles, "Shoes_Loafers"), 10),
                 Slot(OutfitCategory.Neck, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Glasses, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Headwear, styles, Accessories, 0, 2, optional: true),
             };
+            // pants come in three rises, picked separately from the style; default to pleated skirt, mid rise
+            var bottom = appearance.GetSlot(OutfitCategory.Bottom);
+            bottom.variants = new[] { "High", "Mid", "Low" };
+            bottom.variantIndex = 1;
+            bottom.SelectBase("Pleated");
             foreach (var slot in appearance.slots)
                 foreach (var style in slot.styles) style.SetActive(style == slot.CurrentStyle);
             EditorUtility.SetDirty(appearance);
@@ -192,11 +199,12 @@ namespace DreamWorld.EditorTools
             mat.shader = Shader.Find(texture.StartsWith("Eyes") ? "DreamWorld/PSX Face" : "DreamWorld/PSX Lit");
             mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{ModelDir}/Textures/{texture}.png");
             // Eye atlases and fishnets have see-through pixels; everything else is solid.
-            mat.SetFloat("_Cutoff", texture.StartsWith("Eyes") || texture == "Fishnet" ? 0.5f : 0f);
+            bool decal = texture.StartsWith("Eyes") || texture.StartsWith("Nose") || texture.StartsWith("Mouth");
+            mat.SetFloat("_Cutoff", decal || texture == "Fishnet" ? 0.5f : 0f);
             // Skin and face get gentler shading so the face reads like flat anime coloring.
-            mat.SetFloat("_Softness", texture == "Skin" || texture.StartsWith("Eyes") ? 0.7f : 0.15f);
+            mat.SetFloat("_Softness", texture == "Skin" || decal ? 0.7f : 0.15f);
             // clothes and faces only get a hint of the PS1 affine warp (strong warp bends textures as the camera moves)
-            mat.SetFloat("_AffineStrength", texture.StartsWith("Eyes") ? 0f : 0.15f);
+            mat.SetFloat("_AffineStrength", decal ? 0f : 0.15f);
             EditorUtility.SetDirty(mat);
             return mat;
         }

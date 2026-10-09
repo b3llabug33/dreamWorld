@@ -14,6 +14,7 @@ namespace DreamWorld.CharacterCreation
         public string[] categories;
         public int[] styleIndexes;
         public int[] colorIndexes;
+        public int[] variantIndexes;
         public float eyeScale = 1f, eyeSpacing, eyeHeight;
 
         public static string SavedJson => PlayerPrefs.GetString(Key, "");
@@ -26,6 +27,7 @@ namespace DreamWorld.CharacterCreation
                 categories = new string[n],
                 styleIndexes = new int[n],
                 colorIndexes = new int[n],
+                variantIndexes = new int[n],
                 eyeScale = appearance.eyeScale,
                 eyeSpacing = appearance.eyeSpacing,
                 eyeHeight = appearance.eyeHeight,
@@ -36,6 +38,7 @@ namespace DreamWorld.CharacterCreation
                 data.categories[i] = slot.category.ToString();
                 data.styleIndexes[i] = slot.styleIndex;
                 data.colorIndexes[i] = slot.colorIndex;
+                data.variantIndexes[i] = slot.variantIndex;
             }
             return JsonUtility.ToJson(data);
         }
@@ -76,6 +79,7 @@ namespace DreamWorld.CharacterCreation
                 if (slot == null) continue;
                 slot.styleIndex = data.styleIndexes[i];
                 slot.colorIndex = data.colorIndexes[i];
+                if (data.variantIndexes != null && i < data.variantIndexes.Length) slot.variantIndex = data.variantIndexes[i];
             }
             return true;
         }

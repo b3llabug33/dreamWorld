@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DreamWorld.CharacterCreation
 {
-    public enum OutfitCategory { Skin, Eyes, Hair, Top, Bottom, Legwear, Shoes, Neck, Glasses, Headwear }
+    public enum OutfitCategory { Skin, Eyes, Nose, Mouth, Hair, Top, Bottom, Legwear, Shoes, Neck, Glasses, Headwear }
 
     // One customizable part of the character. Each entry in `styles` is a child mesh of the
     // Dreamer model; only the selected one is shown. Optional slots get a "none" choice first.
@@ -19,15 +19,77 @@ namespace DreamWorld.CharacterCreation
         public int styleIndex;
         public int colorIndex;
 
-        public int StyleCount => styles.Count + (optional ? 1 : 0);
+        // Optional per-style variants, e.g. pants rises {"High","Mid","Low"}: meshes are named
+        // Bottom_BaggyJeans_High etc. The style list shows each base style once; the variant is
+        // picked separately. Styles without variant meshes (skirts) just ignore it.
+        public string[] variants = new string[0];
+        public int variantIndex;
+
+        // "Bottom_BaggyJeans_High" -> "BaggyJeans"
+        public string BaseName(GameObject style)
+        {
+            var name = style.name.Substring(style.name.IndexOf('_') + 1);
+            foreach (var v in variants)
+                if (name.EndsWith("_" + v)) return name.Substring(0, name.Length - v.Length - 1);
+            return name;
+        }
+
+        public List<string> BaseNames
+        {
+            get
+            {
+                var names = new List<string>();
+                foreach (var s in styles)
+                {
+                    var b = BaseName(s);
+                    if (!names.Contains(b)) names.Add(b);
+                }
+                return names;
+            }
+        }
+
+        public int StyleCount => BaseNames.Count + (optional ? 1 : 0);
+
+        public string CurrentBase
+        {
+            get
+            {
+                var names = BaseNames;
+                int i = optional ? styleIndex - 1 : styleIndex;
+                return i >= 0 && i < names.Count ? names[i] : null;
+            }
+        }
+
+        // True when the current style comes in variants (so the UI shows the variant buttons).
+        public bool CurrentHasVariants
+        {
+            get
+            {
+                var b = CurrentBase;
+                return b != null && variants.Length > 0 && styles.Exists(s => s.name.EndsWith($"_{b}_{variants[0]}"));
+            }
+        }
 
         public GameObject CurrentStyle
         {
             get
             {
-                int i = optional ? styleIndex - 1 : styleIndex;
-                return i >= 0 && i < styles.Count ? styles[i] : null;
+                var b = CurrentBase;
+                if (b == null) return null;
+                if (variants.Length > 0)
+                {
+                    var v = variants[Mathf.Clamp(variantIndex, 0, variants.Length - 1)];
+                    var match = styles.Find(s => s.name.EndsWith($"_{b}_{v}"));
+                    if (match != null) return match;
+                }
+                return styles.Find(s => BaseName(s) == b);
             }
+        }
+
+        public void SelectBase(string baseName)
+        {
+            int i = BaseNames.IndexOf(baseName);
+            if (i >= 0) styleIndex = i + (optional ? 1 : 0);
         }
 
         // "Hair_Twintails" -> "twintails", "Shoes_MaryJanes" -> "mary janes"
@@ -35,10 +97,8 @@ namespace DreamWorld.CharacterCreation
         {
             get
             {
-                var style = CurrentStyle;
-                if (style == null) return "none";
-                var name = style.name.Substring(style.name.IndexOf('_') + 1);
-                return Regex.Replace(name, "(?<=[a-z])(?=[A-Z])", " ").ToLower();
+                var b = CurrentBase;
+                return b == null ? "none" : Regex.Replace(b, "(?<=[a-z])(?=[A-Z])", " ").ToLower();
             }
         }
     }
@@ -102,6 +162,15 @@ namespace DreamWorld.CharacterCreation
         }
 
         public void ResetEyes() => SetEyes(1f, 0f, 0f);
+
+        public void SetVariant(OutfitCategory category, int variant)
+        {
+            var slot = GetSlot(category);
+            if (slot == null || slot.variants.Length == 0) return;
+            slot.variantIndex = Mathf.Clamp(variant, 0, slot.variants.Length - 1);
+            Apply(slot);
+            Changed?.Invoke();
+        }
 
         public void SetColor(OutfitCategory category, int colorIndex)
         {
