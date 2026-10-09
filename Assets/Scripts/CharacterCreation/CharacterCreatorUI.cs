@@ -70,7 +70,7 @@ namespace DreamWorld.CharacterCreation
 
         void BuildTitle(RectTransform canvas)
         {
-            var title = MakeText(canvas, "Title", "make your dreamer", 64);
+            var title = MakeText(canvas, "Title", "make you", 64);
             Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -90), new Vector2(900, 100));
         }
 
