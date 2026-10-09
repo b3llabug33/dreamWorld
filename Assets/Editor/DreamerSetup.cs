@@ -31,11 +31,16 @@ namespace DreamWorld.EditorTools
         static readonly Color[] HairColors = {
             C(0.15f, 0.12f, 0.14f), C(0.40f, 0.26f, 0.18f), C(0.95f, 0.82f, 0.50f), C(0.85f, 0.45f, 0.25f),
             C(0.96f, 0.66f, 0.76f), C(0.72f, 0.62f, 0.90f), C(0.60f, 0.88f, 0.80f), C(0.30f, 0.35f, 0.70f),
-            C(0.92f, 0.92f, 0.96f), C(0.25f, 0.55f, 0.45f) };
+            C(0.92f, 0.92f, 0.96f), C(0.25f, 0.55f, 0.45f), C(0.38f, 0.26f, 0.52f), C(0.62f, 0.42f, 0.58f) };
         static readonly Color[] Clothes = {
             C(0.97f, 0.96f, 0.94f), C(0.96f, 0.66f, 0.76f), C(0.72f, 0.62f, 0.90f), C(0.25f, 0.30f, 0.60f),
             C(0.50f, 0.65f, 0.45f), C(0.98f, 0.94f, 0.85f), C(0.60f, 0.88f, 0.80f), C(0.95f, 0.50f, 0.45f),
-            C(0.80f, 0.20f, 0.25f), C(0.95f, 0.85f, 0.45f), C(0.45f, 0.30f, 0.22f), C(0.15f, 0.13f, 0.18f) };
+            C(0.80f, 0.20f, 0.25f), C(0.95f, 0.85f, 0.45f), C(0.45f, 0.30f, 0.22f), C(0.15f, 0.13f, 0.18f),
+            // twilight: midnight indigo, dusk purple, mauve, twilight rose, sunset peach, dusk orange, lilac gray, deep teal
+            C(0.16f, 0.14f, 0.36f), C(0.38f, 0.26f, 0.52f), C(0.62f, 0.42f, 0.58f), C(0.85f, 0.52f, 0.62f),
+            C(0.98f, 0.70f, 0.55f), C(0.90f, 0.48f, 0.32f), C(0.62f, 0.60f, 0.72f), C(0.15f, 0.32f, 0.40f),
+            // denim washes: light, mid, dark, black
+            C(0.62f, 0.72f, 0.86f), C(0.36f, 0.46f, 0.68f), C(0.18f, 0.22f, 0.38f), C(0.22f, 0.22f, 0.25f) };
         static readonly Color[] Accessories = {
             C(0.15f, 0.13f, 0.18f), C(0.97f, 0.96f, 0.94f), C(1.00f, 0.82f, 0.35f), C(0.96f, 0.66f, 0.76f),
             C(0.80f, 0.20f, 0.25f), C(0.72f, 0.62f, 0.90f), C(0.60f, 0.88f, 0.80f) };
@@ -86,9 +91,10 @@ namespace DreamWorld.EditorTools
                 Slot(OutfitCategory.Eyes, styles, Irises, 0, 0),
                 Slot(OutfitCategory.Hair, styles, HairColors, 0, 0),
                 Slot(OutfitCategory.Top, styles, Clothes, Index(styles, "Top_Sweater"), 5),
-                Slot(OutfitCategory.Bottom, styles, Clothes, Index(styles, "Bottom_Pleated"), 3),
+                Slot(OutfitCategory.Bottom, styles, Clothes, Index(styles, "Bottom_Pleated") + 1, 3, optional: true),
                 Slot(OutfitCategory.Legwear, styles, Clothes, 0, 11, optional: true),
                 Slot(OutfitCategory.Shoes, styles, Clothes, Index(styles, "Shoes_Loafers"), 10),
+                Slot(OutfitCategory.Neck, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Glasses, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Headwear, styles, Accessories, 0, 2, optional: true),
             };
@@ -130,6 +136,7 @@ namespace DreamWorld.EditorTools
             cam.transform.position = new Vector3(0, 0.84f, -3.7f);
             cam.transform.eulerAngles = Vector3.zero;
             cam.fieldOfView = 40;
+            if (cam.GetComponent<CreatorCameraZoom>() == null) cam.gameObject.AddComponent<CreatorCameraZoom>();
         }
 
         static int Index(Dictionary<OutfitCategory, List<GameObject>> styles, string name)
@@ -152,8 +159,10 @@ namespace DreamWorld.EditorTools
                 AssetDatabase.CreateAsset(mat, path);
             }
             mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{ModelDir}/Textures/{texture}.png");
-            // Eye atlases have transparent pixels; everything else is solid.
-            mat.SetFloat("_Cutoff", texture.StartsWith("Eyes") ? 0.5f : 0f);
+            // Eye atlases and fishnets have see-through pixels; everything else is solid.
+            mat.SetFloat("_Cutoff", texture.StartsWith("Eyes") || texture == "Fishnet" ? 0.5f : 0f);
+            // Skin and face get gentler shading so the face reads like flat anime coloring.
+            mat.SetFloat("_Softness", texture == "Skin" || texture.StartsWith("Eyes") ? 0.7f : 0.15f);
             EditorUtility.SetDirty(mat);
             return mat;
         }

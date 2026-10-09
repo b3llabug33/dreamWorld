@@ -1,0 +1,17 @@
+CC0 fabric textures, center-cropped and downscaled to 128x128 for the PS1 look.
+build_dreamer.py converts them to grayscale so Unity can tint them.
+
+Poly Haven (CC0, https://polyhaven.com/license):
+  Satin      <- crepe_satin        https://polyhaven.com/a/crepe_satin
+  Gingham    <- gingham_check      https://polyhaven.com/a/gingham_check
+  Floral     <- floral_jacquard    https://polyhaven.com/a/floral_jacquard
+  LeatherHide<- brown_leather      https://polyhaven.com/a/brown_leather
+  Fleece     <- knitted_fleece     https://polyhaven.com/a/knitted_fleece
+  Jersey     <- jersey_melange     https://polyhaven.com/a/jersey_melange
+  Velvet     <- velour_velvet      https://polyhaven.com/a/velour_velvet
+  Corduroy   <- ribbed_corduroy    https://polyhaven.com/a/ribbed_corduroy
+  Houndstooth<- wool_boucle        https://polyhaven.com/a/wool_boucle
+ambientCG (CC0, https://ambientcg.com/list?type=Material):
+  Jeans      <- Fabric077          https://ambientcg.com/view?id=Fabric077
+  JeansDark  <- Fabric069          https://ambientcg.com/view?id=Fabric069
+  Flannel    <- Fabric051          https://ambientcg.com/view?id=Fabric051

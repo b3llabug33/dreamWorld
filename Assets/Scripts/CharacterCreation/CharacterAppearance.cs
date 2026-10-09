@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DreamWorld.CharacterCreation
 {
-    public enum OutfitCategory { Skin, Eyes, Hair, Top, Bottom, Legwear, Shoes, Glasses, Headwear }
+    public enum OutfitCategory { Skin, Eyes, Hair, Top, Bottom, Legwear, Shoes, Neck, Glasses, Headwear }
 
     // One customizable part of the character. Each entry in `styles` is a child mesh of the
     // Dreamer model; only the selected one is shown. Optional slots get a "none" choice first.

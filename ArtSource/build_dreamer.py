@@ -89,10 +89,10 @@ def save_png(name, rgba):
     return img
 
 
-def gray_fabric(name, source, mean=0.82, contrast=1.3):
+def gray_fabric(name, source, mean=0.82, contrast=1.3, folder="SBS_Textures"):
     """Load a CC0 fabric texture, drop its color and re-center its brightness so a Unity
     tint shows the chosen color with the fabric's weave/pattern on top."""
-    src = bpy.data.images.load(os.path.join(THIRD_PARTY, "SBS_Textures", source))
+    src = bpy.data.images.load(os.path.join(THIRD_PARTY, folder, source))
     w, h = src.size
     px = np.array(src.pixels[:], dtype=np.float32).reshape(h, w, 4)
     lum = px[..., 0] * 0.299 + px[..., 1] * 0.587 + px[..., 2] * 0.114
@@ -122,6 +122,44 @@ def hair_texture():
     return save_png("Hair", out)
 
 
+def fishnet_texture():
+    """32x32 diamond net with transparent holes (Unity renders it with alpha cutout)."""
+    n = 32
+    out = np.zeros((n, n, 4), np.float32)
+    for y in range(n):
+        for x in range(n):
+            if (x + y) % 8 == 0 or (x - y) % 8 == 0:
+                out[y, x] = (0.85, 0.85, 0.85, 1)
+    return save_png("Fishnet", out)
+
+
+def print_texture():
+    """16x16 pixel skull print for the oversized band tee (fixed colors, cream on black)."""
+    art = [
+        "................",
+        "................",
+        ".....######.....",
+        "....########....",
+        "...##########...",
+        "...##########...",
+        "...#..####..#...",
+        "...#..####..#...",
+        "...####..####...",
+        "....###..###....",
+        ".....######.....",
+        ".....#.##.#.....",
+        "......####......",
+        "................",
+        "................",
+        "................",
+    ]
+    out = np.zeros((16, 16, 4), np.float32)
+    for row, line in enumerate(art):
+        for x, ch in enumerate(line):
+            out[15 - row, x] = (0.95, 0.92, 0.85, 1) if ch == "#" else (0.09, 0.08, 0.11, 1)
+    return save_png("PrintSkull", out)
+
+
 def leather_texture():
     w = h = 32
     lum = 0.78 + np.random.default_rng(3).normal(0, 0.035, (h, w)).astype(np.float32)
@@ -134,9 +172,22 @@ TEXTURES = {
     "Knit": gray_fabric("Knit", "Synth-Fabric_15-128x128.png", contrast=1.2),
     "Plaid": gray_fabric("Plaid", "Mat_Cloth_Plaid_04-128x128.png", mean=0.75, contrast=1.1),
     "Tartan": gray_fabric("Tartan", "Mat_Cloth_Plaid_03-128x128.png", mean=0.75, contrast=1.1),
-    "Denim": gray_fabric("Denim", "Synth-Fabric_06-128x128.png", contrast=1.4),
     "Tweed": gray_fabric("Tweed", "Synth-Fabric_02-128x128.png", contrast=1.0),
     "Mesh": gray_fabric("Mesh", "Synth-Fabric_14-128x128.png", contrast=1.2),
+    "Jeans": gray_fabric("Jeans", "Jeans.png", contrast=1.5, folder="CC0_Fabrics"),
+    "JeansDark": gray_fabric("JeansDark", "JeansDark.png", contrast=1.4, folder="CC0_Fabrics"),
+    "Flannel": gray_fabric("Flannel", "Flannel.png", mean=0.72, contrast=1.0, folder="CC0_Fabrics"),
+    "Satin": gray_fabric("Satin", "Satin.png", contrast=3.0, folder="CC0_Fabrics"),
+    "Gingham": gray_fabric("Gingham", "Gingham.png", mean=0.78, contrast=0.9, folder="CC0_Fabrics"),
+    "Floral": gray_fabric("Floral", "Floral.png", contrast=1.4, folder="CC0_Fabrics"),
+    "LeatherHide": gray_fabric("LeatherHide", "LeatherHide.png", contrast=1.6, folder="CC0_Fabrics"),
+    "Fleece": gray_fabric("Fleece", "Fleece.png", contrast=1.6, folder="CC0_Fabrics"),
+    "Jersey": gray_fabric("Jersey", "Jersey.png", contrast=1.1, folder="CC0_Fabrics"),
+    "Velvet": gray_fabric("Velvet", "Velvet.png", contrast=2.0, folder="CC0_Fabrics"),
+    "Corduroy": gray_fabric("Corduroy", "Corduroy.png", contrast=1.6, folder="CC0_Fabrics"),
+    "Houndstooth": gray_fabric("Houndstooth", "Houndstooth.png", mean=0.7, contrast=1.0, folder="CC0_Fabrics"),
+    "Fishnet": fishnet_texture(),
+    "PrintSkull": print_texture(),
     "Hair": hair_texture(),
     "Leather": leather_texture(),
     "Skin": solid("Skin", (1, 1, 1)),
@@ -199,9 +250,10 @@ def ring_points(center, rx, ry, n, axis):
     return pts
 
 
-def loft(bm, sections, n=8, axis="z", cap_start=True, cap_end=True, ripple=None):
+def loft(bm, sections, n=8, axis="z", cap_start=True, cap_end=True, ripple=None, skip=()):
     """Connect a list of (center, rx, ry) cross-sections into a tube.
-    ripple(i, ring_index) can return a radius multiplier per vertex (used for pleats)."""
+    ripple(i, ring_index) can return a radius multiplier per vertex (used for pleats);
+    skip lists face columns to leave open (column i joins vertex i and i+1)."""
     rings = []
     for k, (c, rx, ry) in enumerate(sections):
         pts = ring_points(c, rx, ry, n, axis)
@@ -211,6 +263,8 @@ def loft(bm, sections, n=8, axis="z", cap_start=True, cap_end=True, ripple=None)
         rings.append([bm.verts.new(p) for p in pts])
     for a, b in zip(rings, rings[1:]):
         for i in range(n):
+            if i in skip:
+                continue
             j = (i + 1) % n
             bm.faces.new((a[i], a[j], b[j], b[i]))
     if cap_start:
@@ -258,13 +312,19 @@ def torus(bm, center, major, minor, axis="z", seg=12, tube=4, arc=2 * math.pi, s
 
 
 def strand(bm, root, tip, width, depth=0.025, flat_tip=0.0):
-    """Chunky hair lock: 4-sided spike from a wide root to a point (or a blunt edge)."""
+    """Chunky front-facing hair lock: 4-sided spike from a wide root to a point (or blunt)."""
+    strand_v(bm, root, tip, Vector((width, 0, 0)), Vector((0, -depth, 0)), flat_tip)
+
+
+def strand_v(bm, root, tip, side, front, flat_tip=0.0):
+    """Lock with arbitrary orientation: `side` spans its width, `front` its thickness."""
     r, t = Vector(root), Vector(tip)
-    side, front = Vector((width, 0, 0)), Vector((0, -depth, 0))
+    side, front = Vector(side), Vector(front)
+    width = side.length
     a, b = bm.verts.new(r - side), bm.verts.new(r + side)
     c, d = bm.verts.new(r + front), bm.verts.new(r - front)
     if flat_tip > 0:
-        tip_side = Vector((width * flat_tip, 0, 0))
+        tip_side = side * flat_tip
         p, q = bm.verts.new(t - tip_side), bm.verts.new(t + tip_side)
         for f in ((a, c, p), (c, b, q, p), (b, d, q), (d, a, p, q), (a, d, b, c)):
             bm.faces.new(f)
@@ -313,7 +373,8 @@ def join(name, parts, tile=0.2, uv_origin=(0, 0, 0), keep_uv=False):
     """Merge segments into one skinned mesh, give it box UVs and record its submeshes."""
     if not keep_uv:
         for p in parts:
-            box_uv(p, tile, uv_origin)
+            if not p.data.uv_layers:
+                box_uv(p, tile, uv_origin)
     bpy.ops.object.select_all(action="DESELECT")
     for p in parts:
         p.select_set(True)
@@ -334,6 +395,7 @@ def join(name, parts, tile=0.2, uv_origin=(0, 0, 0), keep_uv=False):
 
 HEAD_C = Vector((0, 0, 1.485))
 HEAD_R = Vector((0.105, 0.115, 0.135))
+JAW = 0.88   # squashes the lower half of the head: shorter jaw, cuter anime proportions
 
 
 def head_taper(z):
@@ -346,7 +408,7 @@ def build_head(bm, scale=1.0, cut=None, seg=12, rings=8):
     """Low-poly ellipsoid head with the anime jaw taper applied."""
     verts = []
     top = bm.verts.new(HEAD_C + Vector((0, 0, HEAD_R.z * scale)))
-    bottom = bm.verts.new(HEAD_C - Vector((0, 0, HEAD_R.z * scale)))
+    bottom = bm.verts.new(HEAD_C - Vector((0, 0, HEAD_R.z * scale * JAW)))
     for r in range(1, rings):
         phi = math.pi * r / rings
         row = []
@@ -356,6 +418,8 @@ def build_head(bm, scale=1.0, cut=None, seg=12, rings=8):
             y = math.sin(phi) * math.sin(th) * HEAD_R.y * scale
             z = HEAD_C.z + math.cos(phi) * HEAD_R.z * scale
             tx, ty = head_taper(z)
+            if z < HEAD_C.z:
+                z = HEAD_C.z - (HEAD_C.z - z) * JAW
             row.append(bm.verts.new((x * tx, y * ty, z)))
         verts.append(row)
     for s in range(seg):
@@ -370,6 +434,8 @@ def build_head(bm, scale=1.0, cut=None, seg=12, rings=8):
 
 def head_front_y(x, z, offset):
     """Y of the head's front surface at (x, z), pushed out by `offset` (for face decals)."""
+    if z < HEAD_C.z:  # undo the jaw squash to find the matching point on the unsquashed shape
+        z = HEAD_C.z - (HEAD_C.z - z) / JAW
     tx, ty = head_taper(z)
     u = x / (HEAD_R.x * tx)
     w = (z - HEAD_C.z) / HEAD_R.z
@@ -381,7 +447,7 @@ def head_front_y(x, z, offset):
 FACE_W, FACE_H = 0.16, 0.13          # decal size in meters
 FACE_Z0 = 1.395                      # decal bottom edge
 FACE_PX = 64
-EYE_Y = 37                           # eye center row in the face texture
+EYE_Y = 32                           # eye center row in the face texture
 EYE_STYLES = ("Sparkle", "Soft", "Sharp", "Sleepy")
 
 
@@ -405,10 +471,10 @@ def draw_eyes(style):
     # per style: eye half-width, half-height, iris half-width, lid drop (rows hidden by the lid),
     # outer-corner flick direction (+1 up = cat eye, -1 down = droopy)
     ew, eh, iw, lid, flick = {
-        "Sparkle": (8, 10, 6, 0, 0),
-        "Soft": (8, 9, 6, 0, -1),
-        "Sharp": (8, 7, 5, 0, 1),
-        "Sleepy": (8, 9, 6, 6, -1),
+        "Sparkle": (9, 11, 7, 0, 0),
+        "Soft": (9, 10, 7, 0, -1),
+        "Sharp": (9, 8, 6, 0, 1),
+        "Sleepy": (9, 10, 7, 6, -1),
     }[style]
 
     def eye(cx, outer):
@@ -451,16 +517,18 @@ def draw_eyes(style):
 
     eye(17, -1)   # image left = character's right eye
     eye(47, +1)
-    for cx in (12, 52):
+    for cx in (11, 53):
         for x in range(-3, 4):
             if x % 2 == 0:
-                put(base, cx + x, 22, blush)
-                put(base, cx + x + 1, 21, blush)
-    put(base, 32, 19, (0.85, 0.62, 0.58))  # nose hint
-    for x in range(30, 34):
-        put(base, x, 13, mouth)
-    put(base, 29, 14, mouth)
-    put(base, 34, 14, mouth)
+                put(base, cx + x, 17, blush)
+                put(base, cx + x + 1, 16, blush)
+    put(base, 32, 15, (0.82, 0.58, 0.55))  # nose hint
+    put(base, 31, 14, (0.90, 0.70, 0.66))
+    # small cat-like smile, a little wider
+    for x in range(29, 36):
+        put(base, x, 8 if x in (32,) else 9, mouth)
+    put(base, 28, 10, mouth)
+    put(base, 36, 10, mouth)
 
     TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", np.concatenate([base, iris, top], axis=1))
 
@@ -538,24 +606,24 @@ def hand(bm, sx):
 
 def body():
     parts = [
-        part("hips", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99), 10), skin),
-        part("chest", "Chest", lambda bm: loft(bm, torso_sections(0.99, 1.32), 10), skin),
+        part("hips", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99), 12), skin),
+        part("chest", "Chest", lambda bm: loft(bm, torso_sections(0.99, 1.32), 12), skin),
         part("neck", "Neck", lambda bm: loft(bm, [((0, 0.005, 1.30), 0.029, 0.029), ((0, 0.01, 1.42), 0.026, 0.026)], 6), skin),
         part("head", "Head", lambda bm: build_head(bm), skin),
     ]
     for side, sx in sides():
         parts += [
             part(f"upperarm{side}", f"UpperArm.{side}", lambda bm, sx=sx: loft(
-                bm, [((0.11 * sx, 0, 1.28), 0.037, 0.037), ((0.39 * sx, 0, 1.28), 0.029, 0.029)], 6, "x"), skin),
+                bm, [((0.11 * sx, 0, 1.28), 0.037, 0.037), ((0.39 * sx, 0, 1.28), 0.029, 0.029)], 8, "x"), skin),
             part(f"lowerarm{side}", f"LowerArm.{side}", lambda bm, sx=sx: loft(
-                bm, [((0.39 * sx, 0, 1.28), 0.029, 0.029), ((0.61 * sx, 0, 1.28), 0.022, 0.022)], 6, "x"), skin),
+                bm, [((0.39 * sx, 0, 1.28), 0.029, 0.029), ((0.61 * sx, 0, 1.28), 0.022, 0.022)], 8, "x"), skin),
             part(f"hand{side}", f"Hand.{side}", lambda bm, sx=sx: hand(bm, sx), skin),
             part(f"upperleg{side}", f"UpperLeg.{side}", lambda bm, sx=sx: loft(
                 bm, [((0.064 * sx, 0, 0.80), 0.054, 0.054), ((0.066 * sx, 0, 0.62), 0.048, 0.048),
-                     ((0.065 * sx, 0, 0.45), 0.037, 0.037)], 6), skin),
+                     ((0.065 * sx, 0, 0.45), 0.037, 0.037)], 8), skin),
             part(f"lowerleg{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
                 bm, [((0.07 * sx, 0, 0.45), 0.040, 0.040), ((0.07 * sx, 0.008, 0.31), 0.044, 0.044),
-                     ((0.07 * sx, 0, 0.08), 0.025, 0.025)], 6), skin),
+                     ((0.07 * sx, 0, 0.08), 0.025, 0.025)], 8), skin),
             part(f"foot{side}", f"Foot.{side}", lambda bm, sx=sx: box(
                 bm, (0.07 * sx - 0.03, -0.12, 0.0), (0.07 * sx + 0.03, 0.025, 0.07), taper_front=0.3), skin),
         ]
@@ -565,34 +633,73 @@ def body():
 
 hair_mat = material("Hair")
 HAIR_UV = dict(tile=0.3, uv_origin=(0, 0, 1.38))  # puts the angel-ring band around z = 1.56
+CAP = 1.12  # hair shell size relative to the head
 
 
 def hair_cap(bm):
-    # Slightly bigger head shell. Only open it where the face is, so the sides and
-    # back of the head stay covered from every angle (ny/nz: -1..1 across the shell).
+    """Slightly bigger head shell, opened only where the face is. The opening stops at the
+    brow line and at the temples (|x| < 0.09), so no scalp shows from the side or above."""
     def cut(co):
         r = co - HEAD_C
-        ny = r.y / (HEAD_R.y * 1.12)
-        nz = r.z / (HEAD_R.z * 1.12)
-        face = ny < -0.5 and nz < 0.4        # the face opening, up to the brow
-        cheeks = ny < 0 and nz < -0.4        # keep the jaw line clear
-        bottom = nz < -0.8                   # no cap under the chin/neck
+        ny = r.y / (HEAD_R.y * CAP)
+        nz = r.z / (HEAD_R.z * CAP)
+        face = ny < -0.45 and nz < 0.15 and abs(r.x) < 0.09
+        cheeks = ny < -0.1 and nz < -0.35
+        bottom = nz < -0.85
         return face or cheeks or bottom
-    build_head(bm, scale=1.12, cut=cut)
+    build_head(bm, scale=CAP, cut=cut, seg=16, rings=10)
 
 
-def spiky_bangs(bm):
-    y = head_front_y(0, 1.56, 0.012)
-    for x, tip_z, w in ((-0.075, 1.47, 0.03), (-0.035, 1.50, 0.028), (0.0, 1.49, 0.028),
-                        (0.035, 1.505, 0.028), (0.075, 1.47, 0.03)):
-        strand(bm, (x, y + abs(x) * 0.5, 1.60), (x * 1.1, y - 0.005 + abs(x) * 0.6, tip_z), w)
+def on_cap(theta, z, push=0.0):
+    """Point on the hair shell at angle theta (radians; -90deg = front, +90deg = back) and height z."""
+    nz = max(-1.0, min(1.0, (z - HEAD_C.z) / (HEAD_R.z * CAP)))
+    ring = math.sqrt(max(0.0, 1 - nz * nz))
+    tx, ty = head_taper(z)
+    return Vector((math.cos(theta) * HEAD_R.x * CAP * ring * tx * (1 + push),
+                   math.sin(theta) * HEAD_R.y * CAP * ring * ty * (1 + push), z))
+
+
+def lock(bm, theta, z_root, z_tip, width, out=0.02, depth=0.02, flat_tip=0.0):
+    """Hair lock rooted on the shell at angle theta, hanging to z_tip and flaring `out`
+    meters away from the head (gives shaggy volume)."""
+    root = on_cap(theta, z_root, 0.02)
+    radial = Vector((math.cos(theta), math.sin(theta), 0))
+    tangent = Vector((-math.sin(theta), math.cos(theta), 0))
+    tip = Vector((root.x, root.y, z_tip)) + radial * out
+    strand_v(bm, root, tip, tangent * width, radial * depth, flat_tip)
+
+
+def fringe_plate(bm):
+    """Hair-colored band over the upper forehead behind the bangs, so no skin shows
+    between the locks."""
+    rows = []
+    for z in (1.50, 1.52, 1.545):
+        rows.append([bm.verts.new((x, head_front_y(x, z, 0.007), z)) for x in np.linspace(-0.088, 0.088, 7)])
+    for a, b in zip(rows, rows[1:]):
+        for i in range(6):
+            bm.faces.new((a[i], a[i + 1], b[i + 1], b[i]))
+
+
+def spiky_bangs(bm, lengths=(1.47, 1.50, 1.485, 1.495, 1.48, 1.50, 1.47)):
+    fringe_plate(bm)
+    n = len(lengths)
+    for k, tip_z in enumerate(lengths):
+        x = -0.09 + 0.18 * k / (n - 1)
+        root = (x * 0.8, head_front_y(x * 0.8, 1.56, 0.02), 1.60)
+        strand(bm, root, (x * 1.08, head_front_y(x, tip_z, 0.012), tip_z), 0.026)
+
+
+def curtain_bangs(bm):
+    """Parted in the middle, longer toward the sides (wolf cut)."""
+    spiky_bangs(bm, lengths=(1.43, 1.46, 1.49, 1.515, 1.49, 1.46, 1.43))
 
 
 def blunt_bangs(bm):
     """Straight-cut 'hime' fringe: wide flat panels that end in a level line."""
-    y = head_front_y(0, 1.56, 0.012)
-    for x in (-0.06, -0.02, 0.02, 0.06):
-        strand(bm, (x, y + abs(x) * 0.45, 1.60), (x * 1.05, y - 0.004 + abs(x) * 0.5, 1.515), 0.024, flat_tip=0.9)
+    fringe_plate(bm)
+    for x in (-0.07, -0.035, 0.0, 0.035, 0.07):
+        root = (x * 0.8, head_front_y(x * 0.8, 1.56, 0.02), 1.60)
+        strand(bm, root, (x * 1.05, head_front_y(x, 1.512, 0.011), 1.512), 0.022, flat_tip=0.95)
 
 
 def side_locks(bm, tip_z, blunt=False):
@@ -600,7 +707,7 @@ def side_locks(bm, tip_z, blunt=False):
         strand(bm, (0.105 * sx, -0.03, 1.55), (0.10 * sx, -0.05, tip_z), 0.028, 0.03, flat_tip=0.9 if blunt else 0)
 
 
-def tail(bm, root, tip_drop, out, thickness=0.05, back=0.0, n=6):
+def tail(bm, root, tip_drop, out, thickness=0.05, back=0.0, n=8):
     """A hanging tail (twintail/ponytail): bulges below the tie, tapers to a point."""
     x0, y0, z0 = root
     sections = []
@@ -624,16 +731,33 @@ def back_panel(bm, bottom_z, width=0.13, depth=0.05):
               ((0, 0.09, bottom_z), width * 0.8, depth * 0.6)], 8, cap_start=False)
 
 
+def wolf_extra(bm):
+    """Shaggy long wolf cut: choppy short layers flicking out around the crown, then long
+    thin uneven pieces from the sides and nape."""
+    rnd = random.Random(11)
+    side_locks(bm, 1.36)
+    for k in range(14):  # short upper layer, everywhere but the face
+        th = math.radians(-65 + k * (310 / 13))
+        lock(bm, th, 1.575, 1.41 + rnd.uniform(-0.035, 0.035), 0.034, out=0.04, depth=0.02)
+    for k in range(9):   # mid layer
+        th = math.radians(-35 + k * (250 / 8))
+        lock(bm, th, 1.52, 1.27 + rnd.uniform(-0.05, 0.05), 0.032, out=0.045, depth=0.02)
+    for k in range(11):  # long choppy ends at the back and sides
+        th = math.radians(-15 + k * (210 / 10))
+        lock(bm, th, 1.46, 1.08 + rnd.uniform(-0.07, 0.07), 0.03, out=0.035, depth=0.018)
+
+
 def build_hair():
     return [
         hair_style("Hair_Bob", lambda bm: (side_locks(bm, 1.40), loft(
             bm, [((0, 0.03, 1.50), 0.125, 0.10), ((0, 0.045, 1.38), 0.13, 0.085)], 8, cap_start=False))),
         hair_style("Hair_Long", lambda bm: (side_locks(bm, 1.22), back_panel(bm, 1.05))),
+        hair_style("Hair_WolfCut", wolf_extra, curtain_bangs),
         hair_style("Hair_Hime", lambda bm: (side_locks(bm, 1.36, blunt=True), back_panel(bm, 0.98, 0.135)), blunt_bangs),
         hair_style("Hair_Twintails", lambda bm: (side_locks(bm, 1.42), [
             tail(bm, (0.115 * sx, 0.03, 1.60), 0.62, 0.07 * sx, 0.055, back=0.03) for sx in (1, -1)])),
         hair_style("Hair_Pigtails", lambda bm: (side_locks(bm, 1.42), [
-            tail(bm, (0.11 * sx, 0.06, 1.41), 0.30, 0.03 * sx, 0.04) for sx in (1, -1)])),
+            tail(bm, (0.11 * sx, 0.06, 1.41), 0.42, 0.04 * sx, 0.045) for sx in (1, -1)])),
         hair_style("Hair_Ponytail", lambda bm: (side_locks(bm, 1.44), tail(bm, (0, 0.13, 1.57), 0.45, 0.0, 0.055, back=0.04))),
         hair_style("Hair_Buns", lambda bm: (side_locks(bm, 1.40), [bmesh.ops.create_icosphere(
             bm, subdivisions=1, radius=0.055, matrix=Matrix.Translation((0.09 * sx, 0.02, 1.63))) for sx in (1, -1)])),
@@ -650,19 +774,38 @@ def sleeve(sx, x1, mat, puff=0.0, grow=G):
     side = "L" if sx > 0 else "R"
     pieces = [part(f"sleeveU{side}", f"UpperArm.{side}", lambda bm: loft(
         bm, [((0.10 * sx, 0, 1.28), 0.037 + grow + puff, 0.037 + grow + puff),
-             ((min(x1, 0.39) * sx, 0, 1.28), 0.030 + grow + puff * 0.5, 0.030 + grow + puff * 0.5)], 6, "x"), mat)]
+             ((min(x1, 0.39) * sx, 0, 1.28), 0.030 + grow + puff * 0.5, 0.030 + grow + puff * 0.5)], 8, "x"), mat)]
     if x1 > 0.39:
         pieces.append(part(f"sleeveL{side}", f"LowerArm.{side}", lambda bm: loft(
             bm, [((0.39 * sx, 0, 1.28), 0.030 + grow, 0.030 + grow), ((x1 * sx, 0, 1.28), 0.026 + grow, 0.026 + grow)],
-            6, "x"), mat))
+            8, "x"), mat))
     return pieces
 
 
-def torso_shell(prefix, mat, z0=0.99, grow=G, hem=None):
+def torso_shell(prefix, mat, z0=0.99, grow=G, hem=None, skip=(), n=12):
     """Top body: Spine piece (waist to bust) + Chest piece (bust to collar)."""
     low = torso_sections(z0, 1.15, grow) if hem is None else [hem] + torso_sections(0.99, 1.15, grow + 0.008)
-    return [part(f"{prefix}Low", "Spine", lambda bm: loft(bm, low, 10), mat),
-            part(f"{prefix}Up", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.32, grow), 10), mat)]
+    open_front = bool(skip)
+    return [part(f"{prefix}Low", "Spine", lambda bm: loft(bm, low, n, skip=skip, cap_start=not open_front), mat),
+            part(f"{prefix}Up", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.32, grow), n, skip=skip,
+                                                         cap_end=not open_front), mat)]
+
+
+def buttons(z_values, y, bone="Spine", mat=None):
+    mat = mat or material("White", False)
+    return [part(f"btn{z:.2f}", bone if z < 1.15 else "Chest", lambda bm, z=z: box(
+        bm, (-0.007, y - 0.006, z - 0.007), (0.007, y + 0.002, z + 0.007)), mat) for z in z_values]
+
+
+def print_plate(x0, x1, z0, z1, y, texture):
+    """Flat decal on the chest (band-tee print) with its own 0..1 UVs."""
+    def build(bm):
+        uv = bm.loops.layers.uv.new("UVMap")
+        v = [bm.verts.new(p) for p in ((x0, y, z0), (x1, y, z0), (x1, y, z1), (x0, y, z1))]
+        f = bm.faces.new(v)
+        for loop, c in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+            loop[uv].uv = c
+    return part("print", "Chest", build, material(texture, False))
 
 
 def top_tee():
@@ -673,7 +816,7 @@ def top_tee():
 def top_crop():
     m = material("Cotton")
     parts = [part("cropUp", "Chest", lambda bm: loft(bm, [((0, 0, 1.10), 0.100 + G, 0.075 + G)] +
-                                                     torso_sections(1.15, 1.32, G), 10), m)]
+                                                     torso_sections(1.15, 1.32, G), 12), m)]
     return join("Top_Crop", parts + sleeve(1, 0.20, m, puff=0.012) + sleeve(-1, 0.20, m, puff=0.012))
 
 
@@ -681,12 +824,12 @@ def top_sweater():
     m = material("Knit")
     parts = torso_shell("sw", m, grow=G + 0.004, hem=((0, 0, 0.88), 0.165, 0.12))
     parts.append(part("swNeck", "Neck", lambda bm: loft(bm, [((0, 0.005, 1.30), 0.055, 0.05),
-                                                            ((0, 0.01, 1.40), 0.045, 0.045)], 6), m))
+                                                            ((0, 0.01, 1.40), 0.045, 0.045)], 8), m))
     return join("Top_Sweater", parts + sleeve(1, 0.60, m, grow=G + 0.004) + sleeve(-1, 0.60, m, grow=G + 0.004))
 
 
 def top_hoodie():
-    m = material("Knit")
+    m = material("Fleece")
     parts = torso_shell("hd", m, grow=G + 0.008, hem=((0, 0, 0.86), 0.15, 0.11))
     # hood lying on the upper back, behind the neck
     parts.append(part("hood", "Chest", lambda bm: loft(bm, [((0, 0.05, 1.29), 0.09, 0.06), ((0, 0.075, 1.36), 0.10, 0.06),
@@ -711,6 +854,71 @@ def top_sailor():
     return join("Top_Sailor", parts + sleeve(1, 0.58, m) + sleeve(-1, 0.58, m))
 
 
+def top_flannel():
+    """Grunge: open plaid flannel (long, loose) over a black tee."""
+    m = material("Flannel")
+    parts = torso_shell("tee", material("Black", False))
+    low = [((0, 0.005, 0.80), 0.15, 0.115), ((0, 0, 0.92), 0.135, 0.10), ((0, 0, 1.05), 0.12, 0.092),
+           ((0, 0, 1.15), 0.108 + G + 0.014, 0.082 + G + 0.014)]
+    parts.append(part("flLow", "Spine", lambda bm: loft(bm, low, 12, cap_start=False, cap_end=False, skip={8}), m))
+    parts.append(part("flUp", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.32, G + 0.014), 12,
+                                                        cap_end=False, skip={8}), m))
+    for sx in (1, -1):  # collar points
+        parts.append(part(f"collar{sx}", "Chest", lambda bm, sx=sx: strand(
+            bm, (0.06 * sx, -0.045, 1.33), (0.035 * sx, -0.085, 1.25), 0.025, 0.008, flat_tip=0.3), m))
+    return join("Top_Flannel", parts + sleeve(1, 0.56, m, grow=G + 0.014) + sleeve(-1, 0.56, m, grow=G + 0.014))
+
+
+def top_oversized():
+    """Grunge: boxy oversized band tee with a pixel skull print and dropped half sleeves."""
+    m = material("Jersey")
+    parts = [part("osLow", "Spine", lambda bm: loft(bm, [((0, 0.005, 0.80), 0.145, 0.105), ((0, 0, 0.99), 0.138, 0.10),
+                                                         ((0, 0, 1.15), 0.135, 0.10)], 12, cap_start=False), m),
+             part("osUp", "Chest", lambda bm: loft(bm, [((0, 0, 1.15), 0.135, 0.10), ((0, 0, 1.27), 0.13, 0.088),
+                                                        ((0, 0, 1.32), 0.075, 0.055)], 12), m),
+             print_plate(-0.06, 0.06, 1.08, 1.20, -0.102, "PrintSkull")]
+    return join("Top_Oversized", parts + sleeve(1, 0.33, m, puff=0.02, grow=G + 0.012) + sleeve(-1, 0.33, m, puff=0.02, grow=G + 0.012))
+
+
+def top_cardigan():
+    """Girly: cropped buttoned cardigan with long cozy sleeves."""
+    m = material("Knit")
+    parts = torso_shell("cd", m, grow=G + 0.006, hem=((0, 0, 1.02), 0.098 + G, 0.074 + G))
+    parts += buttons((1.05, 1.11, 1.17, 1.23), -0.094)
+    return join("Top_Cardigan", parts + sleeve(1, 0.60, m, grow=G + 0.008) + sleeve(-1, 0.60, m, grow=G + 0.008))
+
+
+def top_puff_blouse():
+    """Girly: floral blouse with big puff sleeves and a frilly hem."""
+    m = material("Floral")
+    parts = torso_shell("pb", m, hem=((0, 0, 0.94), 0.125, 0.092))
+    parts.append(part("frill", "Spine", lambda bm: loft(
+        bm, [((0, 0, 0.95), 0.12, 0.088), ((0, 0, 0.90), 0.15, 0.115)], 16, cap_start=False, cap_end=False,
+        ripple=lambda i, k: (1.12 if i % 2 else 0.94) if k == 1 else 1.0), m))
+    for sx in (1, -1):
+        side = "L" if sx > 0 else "R"
+        parts.append(part(f"puff{side}", f"UpperArm.{side}", lambda bm, sx=sx: loft(
+            bm, [((0.09 * sx, 0, 1.28), 0.045, 0.045), ((0.15 * sx, 0, 1.28), 0.075, 0.075),
+                 ((0.24 * sx, 0, 1.28), 0.07, 0.07), ((0.29 * sx, 0, 1.28), 0.042, 0.042)], 10, "x"), m))
+    return join("Top_PuffBlouse", parts)
+
+
+def top_slip_dress():
+    """Girly/twilight: satin slip dress with thin straps (pair it with no bottom)."""
+    m = material("Satin")
+    parts = [part("sdLow", "Spine", lambda bm: loft(bm, torso_sections(0.99, 1.15, G), 12, cap_start=False), m),
+             part("sdUp", "Chest", lambda bm: loft(bm, torso_sections(1.15, 1.23, G) + [((0, 0, 1.25), 0.10, 0.076)], 12), m),
+             part("sdSkirt", "Hips", lambda bm: loft(bm, [((0, 0, 0.99), 0.075 + G + 0.002, 0.055 + G + 0.002),
+                                                          ((0, 0, 0.86), 0.13, 0.095), ((0, 0.01, 0.52), 0.17, 0.14)],
+                                                     12, cap_start=False, cap_end=False), m)]
+    for sx in (1, -1):  # thin straps over the shoulders
+        parts.append(part(f"strap{sx}", "Chest", lambda bm, sx=sx: (
+            box(bm, (0.05 * sx - 0.005, -0.082, 1.24), (0.05 * sx + 0.005, -0.072, 1.33)),
+            box(bm, (0.05 * sx - 0.005, -0.075, 1.32), (0.05 * sx + 0.005, 0.068, 1.335)),
+            box(bm, (0.05 * sx - 0.005, 0.062, 1.24), (0.05 * sx + 0.005, 0.072, 1.33))), m))
+    return join("Top_SlipDress", parts)
+
+
 def skirt_rings(length_z, flare, pleats=False):
     sections = [((0, 0, 0.99), 0.075 + G + 0.004, 0.055 + G + 0.004), ((0, 0, 0.90), 0.138, 0.10),
                 ((0, 0.01, length_z), 0.138 + flare, 0.10 + flare * 0.8)]
@@ -724,59 +932,117 @@ def bottom_skirt(name, texture, length_z=0.64, flare=0.062, pleats=False):
         bm, sections, 16 if pleats else 8, cap_start=False, cap_end=False, ripple=ripple), material(texture))])
 
 
+def bottom_ruffle(name, texture):
+    """Girly: three-tier ruffled mini skirt."""
+    tiers = [(0.99, 0.87, 0.075 + G + 0.004, 0.13), (0.89, 0.76, 0.125, 0.17), (0.78, 0.66, 0.16, 0.21)]
+
+    def build(bm):
+        for z0, z1, r0, r1 in tiers:
+            loft(bm, [((0, 0, z0), r0, r0 * 0.74), ((0, 0.005, z1), r1, r1 * 0.8)], 16, cap_start=False, cap_end=False,
+                 ripple=lambda i, k: (1.10 if i % 2 else 0.95) if k == 1 else 1.0)
+    return join(name, [part(name.lower(), "Hips", build, material(texture))])
+
+
+def waistband(m, button=True):
+    parts = [part("band", "Hips", lambda bm: loft(bm, [((0, 0, 0.955), 0.075 + G + 0.014, 0.055 + G + 0.014),
+                                                      ((0, 0, 1.0), 0.075 + G + 0.012, 0.055 + G + 0.012)], 12), m)]
+    if button:
+        parts.append(part("button", "Hips", lambda bm: box(bm, (-0.006, -0.087, 0.97), (0.006, -0.079, 0.985)),
+                          material("Gold", False)))
+    return parts
+
+
 def bottom_legs(name, texture, knee_z=None):
-    """Pants (knee_z None) or shorts (legs end at knee_z)."""
+    """Fitted pants (knee_z None) or shorts (legs end at knee_z)."""
     m = material(texture)
-    parts = [part("hip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99, G), 10), m)]
+    parts = [part("hip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99, G), 12), m)] + waistband(m)
     for side, sx in sides():
         if knee_z is None:
             parts += [part(f"u{side}", f"UpperLeg.{side}", lambda bm, sx=sx: loft(
-                          bm, [((0.064 * sx, 0, 0.80), 0.054 + G, 0.054 + G), ((0.065 * sx, 0, 0.45), 0.040 + G, 0.040 + G)], 6), m),
+                          bm, [((0.064 * sx, 0, 0.80), 0.054 + G, 0.054 + G), ((0.065 * sx, 0, 0.45), 0.040 + G, 0.040 + G)], 8), m),
                       part(f"l{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
-                          bm, [((0.07 * sx, 0, 0.45), 0.043 + G, 0.043 + G), ((0.07 * sx, 0, 0.11), 0.042 + G, 0.042 + G)], 6), m)]
+                          bm, [((0.07 * sx, 0, 0.45), 0.043 + G, 0.043 + G), ((0.07 * sx, 0, 0.11), 0.042 + G, 0.042 + G)], 8), m)]
         else:
             parts.append(part(f"u{side}", f"UpperLeg.{side}", lambda bm, sx=sx: loft(
                 bm, [((0.064 * sx, 0, 0.80), 0.054 + G + 0.004, 0.054 + G + 0.004),
-                     ((0.065 * sx, 0, knee_z), 0.052 + G, 0.052 + G)], 6), m))
+                     ((0.065 * sx, 0, knee_z), 0.052 + G, 0.052 + G)], 8), m))
     return join(name, parts)
 
 
-def legwear(name, texture, z_top, grow=0.004, z_bottom=0.0, chunky=False):
+def bottom_wide(name, texture, thigh=0.072, knee=0.07, hem=0.078, hem_z=0.03, pockets=False, fitted_thigh=False):
+    """Baggy / cargo / flare pants: wide straight legs that bunch up at the hem over the shoes."""
+    m = material(texture)
+    parts = [part("hip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99, G + 0.008), 12), m)] + waistband(m)
+    bunch = lambda i, k: (1.08 if i % 2 else 0.96) if k >= 2 else 1.0   # stacked fabric at the ankle
+    for side, sx in sides():
+        top_r = 0.054 + G if fitted_thigh else thigh
+        parts += [part(f"u{side}", f"UpperLeg.{side}", lambda bm, sx=sx, top_r=top_r: loft(
+                      bm, [((0.068 * sx, 0, 0.82), top_r, top_r), ((0.068 * sx, 0, 0.62), (top_r + knee) / 2, (top_r + knee) / 2),
+                           ((0.068 * sx, 0, 0.45), knee, knee)], 10), m),
+                  part(f"l{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
+                      bm, [((0.07 * sx, 0, 0.45), knee, knee), ((0.07 * sx, 0, 0.22), (knee + hem) / 2, (knee + hem) / 2),
+                           ((0.07 * sx, -0.005, 0.09), hem, hem), ((0.07 * sx, -0.01, hem_z), hem * 1.02, hem * 1.02)],
+                      10, ripple=bunch), m)]
+        if pockets:  # cargo pockets on the outer thighs
+            parts.append(part(f"pk{side}", f"UpperLeg.{side}", lambda bm, sx=sx: box(
+                bm, (min(sx * (0.068 + thigh - 0.01), sx * (0.068 + thigh + 0.012)), -0.035, 0.52),
+                    (max(sx * (0.068 + thigh - 0.01), sx * (0.068 + thigh + 0.012)), 0.035, 0.63)), m))
+    return join(name, parts)
+
+
+def leg_radius(z):
+    """The body's leg profile (matches body())."""
+    pts = [(0.08, 0.025), (0.31, 0.044), (0.45, 0.040), (0.62, 0.048), (0.80, 0.054)]
+    for (z0, r0), (z1, r1) in zip(pts, pts[1:]):
+        if z <= z1:
+            return r0 + (r1 - r0) * (max(z, z0) - z0) / (z1 - z0)
+    return pts[-1][1]
+
+
+def legwear(name, texture, z_top, grow=0.004, z_bottom=0.0, frill=False):
     """Socks/tights hugging the leg from z_bottom to z_top (feet included when z_bottom is 0)."""
     m = material(texture)
     parts = []
-
-    def leg_radius(z):  # matches the body's leg profile
-        pts = [(0.08, 0.025), (0.31, 0.044), (0.45, 0.040), (0.62, 0.048), (0.80, 0.054)]
-        for (z0, r0), (z1, r1) in zip(pts, pts[1:]):
-            if z <= z1:
-                return r0 + (r1 - r0) * (max(z, z0) - z0) / (z1 - z0)
-        return pts[-1][1]
-
     for side, sx in sides():
-        lower = [z for z in (max(0.08, z_bottom), 0.31, 0.45) if z_bottom <= z <= min(z_top, 0.45)]
+        lower = [z for z in (max(0.08, z_bottom), 0.2, 0.31, 0.45) if z_bottom <= z <= min(z_top, 0.45)]
         if z_top < 0.45:
             lower.append(z_top)
         upper = [z for z in (0.45, 0.62, 0.80) if z <= z_top]
         if z_top > 0.45 and z_top not in upper:
             upper.append(z_top)
-        extra = 0.018 if chunky else 0.0
         if len(lower) >= 2:
             parts.append(part(f"lw{side}", f"LowerLeg.{side}", lambda bm, sx=sx, lower=lower: loft(
-                bm, [((0.07 * sx, 0.008 if 0.2 < z < 0.4 else 0, z), leg_radius(z) + grow + extra,
-                      leg_radius(z) + grow + extra) for z in lower], 6), m))
+                bm, [((0.07 * sx, 0.008 if 0.2 < z < 0.4 else 0, z), leg_radius(z) + grow, leg_radius(z) + grow)
+                     for z in lower], 8), m))
         if len(upper) >= 2:
             parts.append(part(f"uw{side}", f"UpperLeg.{side}", lambda bm, sx=sx, upper=upper: loft(
-                bm, [((0.065 * sx, 0, z), leg_radius(z) + grow, leg_radius(z) + grow) for z in upper], 6), m))
+                bm, [((0.065 * sx, 0, z), leg_radius(z) + grow, leg_radius(z) + grow) for z in upper], 8), m))
         if z_bottom == 0.0:
             parts.append(part(f"ft{side}", f"Foot.{side}", lambda bm, sx=sx: box(
                 bm, (0.07 * sx - 0.033, -0.123, -0.002), (0.07 * sx + 0.033, 0.028, 0.073), taper_front=0.3), m))
+        if frill:  # ruffle cuff at the top of ankle socks
+            r = leg_radius(z_top) + grow
+            parts.append(part(f"fr{side}", f"LowerLeg.{side}", lambda bm, sx=sx, r=r: loft(
+                bm, [((0.07 * sx, 0, z_top - 0.005), r, r), ((0.07 * sx, 0, z_top + 0.03), r + 0.022, r + 0.022)], 16,
+                cap_start=False, cap_end=False, ripple=lambda i, k: (1.15 if i % 2 else 0.9) if k == 1 else 1.0), m))
     if z_top >= 0.76:  # tights: cover the hips too
-        parts.append(part("lwHip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.92, grow), 10), m))
+        parts.append(part("lwHip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.92, grow), 12), m))
     return join(name, parts)
 
 
-def shoes(name, top_z, sole=None, upper="Leather", platform=0.0, low=False, strap=False):
+def leg_warmers(name, texture):
+    """Slouchy knit warmers bunched over the top of low shoes (z 0.04 up to the calf)."""
+    m = material(texture)
+    parts = []
+    rings = [(0.04, 0.066), (0.085, 0.064), (0.14, 0.062), (0.20, 0.064), (0.26, 0.062), (0.31, 0.058)]
+    for side, sx in sides():
+        parts.append(part(f"wm{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
+            bm, [((0.07 * sx, 0.004, z), r, r) for z, r in rings], 10, cap_start=False, cap_end=False,
+            ripple=lambda i, k: (1.07 if (i + k) % 2 else 0.95)), m))
+    return join(name, parts)
+
+
+def shoes(name, top_z, sole=None, upper="Leather", platform=0.0, low=False, strap=False, laces=False):
     m = material(upper)
     parts = []
     for side, sx in sides():
@@ -793,7 +1059,11 @@ def shoes(name, top_z, sole=None, upper="Leather", platform=0.0, low=False, stra
         if top_z > 0.1:
             parts.append(part(f"{name}L{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
                 bm, [((0.07 * sx, 0, 0.08), 0.058, 0.058), ((0.07 * sx, 0.008, top_z), 0.052 + G + 0.006, 0.052 + G + 0.006)],
-                6), m))
+                8), m))
+        if laces:  # criss-cross lace bars up the front of the shaft
+            parts.append(part(f"{name}X{side}", f"LowerLeg.{side}", lambda bm, sx=sx: [box(
+                bm, (0.07 * sx - 0.022, -0.074, z), (0.07 * sx + 0.022, -0.066, z + 0.008))
+                for z in np.arange(0.10, top_z - 0.02, 0.035)], material("SoleWhite", False)))
     return join(name, parts, tile=0.15)
 
 # ---------------------------------------------------------------- accessories
@@ -864,15 +1134,32 @@ def glasses(name, source_obj, remove_lens=True):
     return join(name, [obj], tile=0.05)
 
 
+def star(bm, center, r_out, r_in, depth):
+    """Five-point star prism facing forward (-Y)."""
+    c = Vector(center)
+    front, back = [], []
+    for i in range(10):
+        a = math.pi / 2 + i * math.pi / 5
+        r = r_out if i % 2 == 0 else r_in
+        p = c + Vector((math.cos(a) * r, 0, math.sin(a) * r))
+        front.append(bm.verts.new(p - Vector((0, depth / 2, 0))))
+        back.append(bm.verts.new(p + Vector((0, depth / 2, 0))))
+    bm.faces.new(front[::-1])
+    bm.faces.new(back)
+    for i in range(10):
+        j = (i + 1) % 10
+        bm.faces.new((front[i], front[j], back[j], back[i]))
+
+
 def headwear():
-    gold, white = material("White"), material("White")
+    white = material("White")
     pink = material("Pink", False)
     items = [
-        join("Headwear_Halo", [part("halo", "Head", lambda bm: torus(bm, (0, 0.02, 1.72), 0.085, 0.009, seg=14, tube=4), gold)]),
+        join("Headwear_Halo", [part("halo", "Head", lambda bm: torus(bm, (0, 0.02, 1.72), 0.085, 0.009, seg=14, tube=4), white)]),
         join("Headwear_Bow", [part("bow", "Head", lambda bm: (
             [strand(bm, (0, 0.13, 1.56), (0.09 * sx, 0.14, 1.60), 0.035, 0.018, flat_tip=0.7) for sx in (1, -1)],
             [strand(bm, (0, 0.13, 1.54), (0.04 * sx, 0.14, 1.45), 0.015, 0.01, flat_tip=1.0) for sx in (1, -1)],
-            box(bm, (-0.018, 0.12, 1.535), (0.018, 0.15, 1.575))), white)]),
+            box(bm, (-0.018, 0.12, 1.535), (0.018, 0.15, 1.575))), material("Satin"))]),
     ]
     ears = []
     for sx in (1, -1):
@@ -887,6 +1174,51 @@ def headwear():
         phones.append(part(f"cup{sx}", "Head", lambda bm, sx=sx: loft(
             bm, [((0.12 * sx, 0, 1.47), 0.04, 0.04), ((0.145 * sx, 0, 1.47), 0.04, 0.04)], 8, "x"), white))
     items.append(join("Headwear_Headphones", phones))
+
+    # grunge: slouchy knit beanie with a folded cuff, sitting low on the forehead
+    def beanie(bm):
+        build_head(bm, scale=1.2, cut=lambda co: (co - HEAD_C).z < 0.035, seg=16, rings=10)
+        loft(bm, [((0, 0.005, 1.515), HEAD_R.x * 1.22, HEAD_R.y * 1.22), ((0, 0.005, 1.56), HEAD_R.x * 1.2, HEAD_R.y * 1.2)],
+             16, cap_start=False, cap_end=False)
+        bmesh.ops.create_icosphere(bm, subdivisions=1, radius=0.018, matrix=Matrix.Translation((0, 0.035, 1.66)))
+    items.append(join("Headwear_Beanie", [part("beanie", "Head", beanie, material("Knit"))], tile=0.12))
+
+    # girly/twilight: soft velvet beret tilted to one side
+    def beret(bm):
+        loft(bm, [((0.012, 0.01, 1.565), 0.118, 0.126), ((0.025, 0.01, 1.605), 0.15, 0.15),
+                  ((0.025, 0.01, 1.63), 0.135, 0.135), ((0.02, 0.01, 1.645), 0.07, 0.07)], 12, cap_start=False)
+        box(bm, (0.015, 0.005, 1.645), (0.025, 0.015, 1.665))
+    items.append(join("Headwear_Beret", [part("beret", "Head", beret, material("Velvet"))], tile=0.15))
+
+    # girly: two little star clips in the side bangs
+    clips = [part(f"star{i}", "Head", lambda bm, z=z, x=x: star(bm, (x, head_front_y(x, z, 0.02), z), 0.016, 0.007, 0.006), white)
+             for i, (x, z) in enumerate(((0.072, 1.535), (0.088, 1.505)))]
+    items.append(join("Headwear_StarClips", clips))
+    return items
+
+
+def neckwear():
+    """New slot: chokers and necklaces."""
+    gold = material("Gold", False)
+    items = [
+        join("Neck_Choker", [
+            part("band", "Neck", lambda bm: loft(bm, [((0, 0.006, 1.345), 0.032, 0.032), ((0, 0.006, 1.37), 0.031, 0.031)],
+                                                 10, cap_start=False, cap_end=False), material("LeatherHide")),
+            part("ring", "Neck", lambda bm: torus(bm, (0, -0.033, 1.338), 0.009, 0.0025, axis="y", seg=8, tube=3), gold)]),
+        join("Neck_Ribbon", [
+            part("band", "Neck", lambda bm: loft(bm, [((0, 0.006, 1.35), 0.031, 0.031), ((0, 0.006, 1.365), 0.0305, 0.0305)],
+                                                 10, cap_start=False, cap_end=False), material("Satin")),
+            part("bow", "Neck", lambda bm: [strand(bm, (0, -0.03, 1.357), (0.028 * sx, -0.034, 1.37), 0.012, 0.006, flat_tip=0.8)
+                                            for sx in (1, -1)], material("Satin"))]),
+        join("Neck_Chain", [
+            part("chain", "Chest", lambda bm: torus(bm, (0, 0.0, 1.29), 0.072, 0.004, seg=16, tube=3), material("White")),
+            part("heart", "Chest", lambda bm: star(bm, (0, -0.078, 1.245), 0.012, 0.011, 0.005), material("White"))]),
+    ]
+    # tilt the chain so it hangs lower in front, like it rests on the collarbones
+    chain = items[2]
+    for v in chain.data.vertices:
+        if v.co.y < 0.0 and v.co.z > 1.26:
+            v.co.z -= (-v.co.y) * 0.45
     return items
 
 # ---------------------------------------------------------------- build everything
@@ -894,21 +1226,30 @@ def headwear():
 pieces = [body()]
 pieces += [eyes(s) for s in EYE_STYLES]
 pieces += build_hair()
-pieces += [top_tee(), top_crop(), top_sweater(), top_hoodie(), top_sailor()]
+pieces += [top_tee(), top_crop(), top_sweater(), top_hoodie(), top_sailor(),
+           top_flannel(), top_oversized(), top_cardigan(), top_puff_blouse(), top_slip_dress()]
 pieces += [bottom_skirt("Bottom_Skirt", "Tweed"),
            bottom_skirt("Bottom_Pleated", "Plaid", pleats=True),
+           bottom_ruffle("Bottom_RuffleSkirt", "Gingham"),
            bottom_skirt("Bottom_LongSkirt", "Tartan", length_z=0.22, flare=0.10),
-           bottom_legs("Bottom_Jeans", "Denim"),
-           bottom_legs("Bottom_Shorts", "Denim", knee_z=0.66)]
+           bottom_legs("Bottom_SkinnyJeans", "Jeans"),
+           bottom_wide("Bottom_BaggyJeans", "Jeans"),
+           bottom_wide("Bottom_Cargo", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True),
+           bottom_wide("Bottom_FlareJeans", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True),
+           bottom_legs("Bottom_Shorts", "Jeans", knee_z=0.66)]
 pieces += [legwear("Legwear_KneeSocks", "Knit", 0.42, z_bottom=0.0),
            legwear("Legwear_ThighHighs", "Knit", 0.66),
            legwear("Legwear_Tights", "Mesh", 0.92, grow=0.003),
-           legwear("Legwear_LegWarmers", "Knit", 0.36, z_bottom=0.10, chunky=True)]
+           legwear("Legwear_Fishnets", "Fishnet", 0.92, grow=0.0035),
+           legwear("Legwear_FrillySocks", "Cotton", 0.15, z_bottom=0.0, frill=True),
+           leg_warmers("Legwear_LegWarmers", "Knit")]
 pieces += [shoes("Shoes_Sneakers", 0.0, sole="SoleWhite", upper="Cotton"),
            shoes("Shoes_Boots", 0.38),
+           shoes("Shoes_Combat", 0.30, sole="Black", upper="LeatherHide", platform=0.025, laces=True),
            shoes("Shoes_Platforms", 0.42, platform=0.05),
            shoes("Shoes_Loafers", 0.0, low=True, sole="Black"),
            shoes("Shoes_MaryJanes", 0.0, low=True, strap=True)]
+pieces += neckwear()
 pieces += [glasses("Glasses_Round", "glasses3.001"),
            glasses("Glasses_CatEye", "glasses17.001"),
            glasses("Glasses_Slim", "glasses13.001"),
@@ -977,10 +1318,11 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 
 LOOKS = {
-    "look1": {"Skin_Body", "Eyes_Sparkle", "Hair_Twintails", "Top_Sailor", "Bottom_Pleated", "Legwear_ThighHighs", "Shoes_Loafers", "Headwear_Halo"},
-    "look2": {"Skin_Body", "Eyes_Sleepy", "Hair_Hime", "Top_Hoodie", "Bottom_Shorts", "Legwear_Tights", "Shoes_Platforms", "Headwear_CatEars"},
-    "look3": {"Skin_Body", "Eyes_Sharp", "Hair_Ponytail", "Top_Crop", "Bottom_Jeans", "Shoes_Sneakers", "Glasses_Round", "Headwear_Headphones"},
-    "look4": {"Skin_Body", "Eyes_Soft", "Hair_Pigtails", "Top_Sweater", "Bottom_LongSkirt", "Legwear_LegWarmers", "Shoes_MaryJanes", "Glasses_CatEye", "Headwear_Bow"},
+    "grunge": {"Skin_Body", "Eyes_Sleepy", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeans", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
+    "girly": {"Skin_Body", "Eyes_Sparkle", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
+    "twilight": {"Skin_Body", "Eyes_Soft", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
+    "baggy": {"Skin_Body", "Eyes_Sharp", "Hair_Pigtails", "Top_Oversized", "Bottom_Cargo", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "y2k": {"Skin_Body", "Eyes_Sparkle", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeans", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)

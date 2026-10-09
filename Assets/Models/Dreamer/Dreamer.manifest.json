@@ -96,6 +96,15 @@
    ]
   },
   {
+   "name": "Hair_WolfCut",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
    "name": "Hair_Hime",
    "submeshes": [
     {
@@ -180,7 +189,7 @@
    "name": "Top_Hoodie",
    "submeshes": [
     {
-     "texture": "Knit",
+     "texture": "Fleece",
      "tint": true
     },
     {
@@ -207,6 +216,63 @@
    ]
   },
   {
+   "name": "Top_Flannel",
+   "submeshes": [
+    {
+     "texture": "Black",
+     "tint": false
+    },
+    {
+     "texture": "Flannel",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_Oversized",
+   "submeshes": [
+    {
+     "texture": "Jersey",
+     "tint": true
+    },
+    {
+     "texture": "PrintSkull",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Top_Cardigan",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    },
+    {
+     "texture": "White",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Top_PuffBlouse",
+   "submeshes": [
+    {
+     "texture": "Floral",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_SlipDress",
+   "submeshes": [
+    {
+     "texture": "Satin",
+     "tint": true
+    }
+   ]
+  },
+  {
    "name": "Bottom_Skirt",
    "submeshes": [
     {
@@ -225,6 +291,15 @@
    ]
   },
   {
+   "name": "Bottom_RuffleSkirt",
+   "submeshes": [
+    {
+     "texture": "Gingham",
+     "tint": true
+    }
+   ]
+  },
+  {
    "name": "Bottom_LongSkirt",
    "submeshes": [
     {
@@ -234,11 +309,54 @@
    ]
   },
   {
-   "name": "Bottom_Jeans",
+   "name": "Bottom_SkinnyJeans",
    "submeshes": [
     {
-     "texture": "Denim",
+     "texture": "Jeans",
      "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_BaggyJeans",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Cargo",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_FlareJeans",
+   "submeshes": [
+    {
+     "texture": "JeansDark",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
     }
    ]
   },
@@ -246,8 +364,12 @@
    "name": "Bottom_Shorts",
    "submeshes": [
     {
-     "texture": "Denim",
+     "texture": "Jeans",
      "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
     }
    ]
   },
@@ -274,6 +396,24 @@
    "submeshes": [
     {
      "texture": "Mesh",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Legwear_Fishnets",
+   "submeshes": [
+    {
+     "texture": "Fishnet",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Legwear_FrillySocks",
+   "submeshes": [
+    {
+     "texture": "Cotton",
      "tint": true
     }
    ]
@@ -310,6 +450,23 @@
    ]
   },
   {
+   "name": "Shoes_Combat",
+   "submeshes": [
+    {
+     "texture": "LeatherHide",
+     "tint": true
+    },
+    {
+     "texture": "Black",
+     "tint": false
+    },
+    {
+     "texture": "SoleWhite",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Shoes_Platforms",
    "submeshes": [
     {
@@ -336,6 +493,37 @@
    "submeshes": [
     {
      "texture": "Leather",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Neck_Choker",
+   "submeshes": [
+    {
+     "texture": "LeatherHide",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Neck_Ribbon",
+   "submeshes": [
+    {
+     "texture": "Satin",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Neck_Chain",
+   "submeshes": [
+    {
+     "texture": "White",
      "tint": true
     }
    ]
@@ -398,7 +586,7 @@
    "name": "Headwear_Bow",
    "submeshes": [
     {
-     "texture": "White",
+     "texture": "Satin",
      "tint": true
     }
    ]
@@ -418,6 +606,33 @@
   },
   {
    "name": "Headwear_Headphones",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Headwear_Beanie",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Headwear_Beret",
+   "submeshes": [
+    {
+     "texture": "Velvet",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Headwear_StarClips",
    "submeshes": [
     {
      "texture": "White",

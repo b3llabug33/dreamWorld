@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PSX_Denim
+  m_Name: PSX_Floral
   m_Shader: {fileID: 4800000, guid: d88783190e17bf346b646d27f4e8f8c1, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -24,7 +24,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 4cba8162f7aee4b48abc5d32d8f2f013, type: 3}
+        m_Texture: {fileID: 2800000, guid: be4d2220a21466e40a4c832a86ef2c1d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -32,6 +32,7 @@ Material:
     - _AffineStrength: 0.6
     - _Cutoff: 0
     - _SnapStrength: 1
+    - _Softness: 0.15
     - _Unlit: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

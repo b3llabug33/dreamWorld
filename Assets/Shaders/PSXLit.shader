@@ -13,6 +13,7 @@ Shader "DreamWorld/PSX Lit"
         _AffineStrength ("Affine Warp", Range(0,1)) = 0.6
         [Toggle] _Unlit ("Unlit (ignore lights)", Float) = 0
         _Cutoff ("Alpha Cutoff (0 = off)", Range(0,1)) = 0
+        _Softness ("Soft Shading", Range(0,1)) = 0
     }
     SubShader
     {
@@ -35,6 +36,7 @@ Shader "DreamWorld/PSX Lit"
             float _AffineStrength;
             float _Unlit;
             float _Cutoff;
+            float _Softness;
             // Set globally by PSXCamera: xy = low-res render size. Falls back to 320x240.
             float4 _PSXResolution;
 
@@ -75,6 +77,9 @@ Shader "DreamWorld/PSX Lit"
                 float3 n = UnityObjectToWorldNormal(v.normal);
                 float ndl = saturate(dot(n, normalize(_WorldSpaceLightPos0.xyz)));
                 float3 lit = ShadeSH9(float4(n, 1)) + _LightColor0.rgb * ndl;
+                // Softness pulls the shading toward full brightness: faces/skin read cleaner,
+                // closer to flat anime coloring, without losing the PS1 vertex lighting entirely.
+                lit = lerp(lit, max(lit, 1), _Softness);
                 o.light = lerp(lit, 1, _Unlit);
 
                 UNITY_TRANSFER_FOG(o, o.pos);

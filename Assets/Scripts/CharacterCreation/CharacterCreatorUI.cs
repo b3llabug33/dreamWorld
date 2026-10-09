@@ -14,6 +14,7 @@ namespace DreamWorld.CharacterCreation
     {
         public CharacterAppearance appearance;
         public CharacterTurntable turntable;
+        CreatorCameraZoom zoom;
 
         [Header("Fonts (fall back to Unity's built-in font)")]
         public Font titleFont;
@@ -43,6 +44,7 @@ namespace DreamWorld.CharacterCreation
             frameSprite = MakeFrameSprite();
             solidSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.one * 0.5f, 100f);
             categories = (OutfitCategory[])System.Enum.GetValues(typeof(OutfitCategory));
+            zoom = FindAnyObjectByType<CreatorCameraZoom>();
 
             EnsureEventSystem();
             var canvas = BuildCanvas();
@@ -78,8 +80,8 @@ namespace DreamWorld.CharacterCreation
             if (slot != null && Input.GetKeyDown(KeyCode.Q)) appearance.SetColor(currentCategory, (slot.colorIndex - 1 + slot.colors.Length) % slot.colors.Length);
             if (slot != null && Input.GetKeyDown(KeyCode.E)) appearance.SetColor(currentCategory, (slot.colorIndex + 1) % slot.colors.Length);
             if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) OnReady();
-            for (int i = 0; i < categories.Length && i < 9; i++)
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i)) SelectCategory(categories[i]);
+            for (int i = 0; i < categories.Length && i < 10; i++)   // 1..9, then 0 for the 10th
+                if (Input.GetKeyDown(i < 9 ? KeyCode.Alpha1 + i : KeyCode.Alpha0)) SelectCategory(categories[i]);
         }
 
         // ---------- layout ----------
@@ -110,7 +112,7 @@ namespace DreamWorld.CharacterCreation
         void BuildCategoryPanel(RectTransform canvas)
         {
             var panel = MakePanel(canvas, "Categories");
-            float height = 96 + categories.Length * 58;
+            float height = 96 + categories.Length * 54;
             Place(panel, new Vector2(0, 0.5f), new Vector2(64, 10), new Vector2(380, height), new Vector2(0, 0.5f));
             Header(panel, "== CATEGORY ==", -26);
 
@@ -118,7 +120,7 @@ namespace DreamWorld.CharacterCreation
             {
                 var category = categories[i];
                 var row = MakeButton(panel, $"Row_{category}", () => SelectCategory(category), transparent: true);
-                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -92 - i * 58), new Vector2(340, 52));
+                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -92 - i * 54), new Vector2(340, 50));
                 var bar = row.GetComponent<Image>();
                 var label = MakeText((RectTransform)row.transform, "Label", "", bodyFont, 40, textColor, TextAnchor.MiddleLeft);
                 Stretch(label.rectTransform, 18, 0);   // side padding only, so the 40px text fits
@@ -129,7 +131,7 @@ namespace DreamWorld.CharacterCreation
         void BuildStylePanel(RectTransform canvas)
         {
             var panel = MakePanel(canvas, "Style");
-            Place(panel, new Vector2(1, 0.5f), new Vector2(-64, 10), new Vector2(460, 600), new Vector2(1, 0.5f));
+            Place(panel, new Vector2(1, 0.5f), new Vector2(-64, 10), new Vector2(460, 680), new Vector2(1, 0.5f));
             Header(panel, "== STYLE ==", -26);
 
             var prev = MakeButton(panel, "Prev", () => appearance.ChangeStyle(currentCategory, -1));
@@ -147,10 +149,10 @@ namespace DreamWorld.CharacterCreation
             Header(panel, "== COLOR ==", -216);
             swatchGrid = new GameObject("Swatches", typeof(RectTransform), typeof(GridLayoutGroup)).GetComponent<RectTransform>();
             swatchGrid.SetParent(panel, false);
-            Place(swatchGrid, new Vector2(0.5f, 1), new Vector2(0, -400), new Vector2(400, 300));
+            Place(swatchGrid, new Vector2(0.5f, 1), new Vector2(0, -440), new Vector2(400, 380));
             var grid = swatchGrid.GetComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(56, 56);
-            grid.spacing = new Vector2(12, 12);
+            grid.cellSize = new Vector2(50, 50);
+            grid.spacing = new Vector2(10, 10);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 6;
             grid.childAlignment = TextAnchor.UpperCenter;
@@ -159,15 +161,21 @@ namespace DreamWorld.CharacterCreation
         void BuildBottomBar(RectTransform canvas)
         {
             var left = MakeButton(canvas, "TurnLeft", () => turntable.Turn(-1));
-            Place((RectTransform)left.transform, new Vector2(0.5f, 0), new Vector2(-110, 84), new Vector2(150, 58));
+            Place((RectTransform)left.transform, new Vector2(0.5f, 0), new Vector2(-215, 84), new Vector2(150, 58));
+            var zoomOut = MakeButton(canvas, "ZoomOut", () => { if (zoom) zoom.Zoom(-0.34f); });
+            Place((RectTransform)zoomOut.transform, new Vector2(0.5f, 0), new Vector2(-55, 84), new Vector2(110, 58));
+            Stretch(MakeText((RectTransform)zoomOut.transform, "L", "zoom -", bodyFont, 32, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            var zoomIn = MakeButton(canvas, "ZoomIn", () => { if (zoom) zoom.Zoom(+0.34f); });
+            Place((RectTransform)zoomIn.transform, new Vector2(0.5f, 0), new Vector2(65, 84), new Vector2(110, 58));
+            Stretch(MakeText((RectTransform)zoomIn.transform, "L", "zoom +", bodyFont, 32, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
             Stretch(MakeText((RectTransform)left.transform, "L", "< turn", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
             var right = MakeButton(canvas, "TurnRight", () => turntable.Turn(+1));
-            Place((RectTransform)right.transform, new Vector2(0.5f, 0), new Vector2(110, 84), new Vector2(150, 58));
+            Place((RectTransform)right.transform, new Vector2(0.5f, 0), new Vector2(225, 84), new Vector2(150, 58));
             Stretch(MakeText((RectTransform)right.transform, "R", "turn >", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
 
-            var hint = MakeText(canvas, "Hint", "drag: spin   W/S: category   A/D: style   Q/E: color   enter: ready",
+            var hint = MakeText(canvas, "Hint", "drag: spin   scroll/Z/X: zoom   W/S: category   A/D: style   Q/E: color   enter: ready",
                 bodyFont, 26, dimColor, TextAnchor.MiddleCenter);
-            Place(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(1100, 34));
+            Place(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(1300, 34));
 
             var ready = MakeButton(canvas, "Ready", OnReady);
             ready.GetComponent<Image>().color = accentColor;
@@ -237,7 +245,7 @@ namespace DreamWorld.CharacterCreation
                 var category = categories[i];
                 bool selected = category == currentCategory;
                 var (label, bar) = rows[category];
-                label.text = $"{(selected ? ">" : " ")} [{i + 1}] {category.ToString().ToLower()}";
+                label.text = $"{(selected ? ">" : " ")} [{(i + 1) % 10}] {category.ToString().ToLower()}";
                 label.color = selected ? accentColor : textColor;
                 bar.color = selected ? hiliteColor : Color.clear;
             }
