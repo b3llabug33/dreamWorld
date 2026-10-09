@@ -157,9 +157,13 @@ namespace DreamWorld.CharacterCreation
         static readonly int EyeHeightId = Shader.PropertyToID("_EyeHeight");
         MaterialPropertyBlock block;
 
+        // The look the character starts with before any save is loaded ("make a new dreamer").
+        public string DefaultLook { get; private set; }
+
         void Awake()
         {
             block = new MaterialPropertyBlock();
+            DefaultLook = CharacterSave.ToJson(this);
             CharacterSave.Load(this);
             foreach (var slot in slots) Apply(slot);
         }

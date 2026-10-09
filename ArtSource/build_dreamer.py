@@ -672,6 +672,20 @@ def fringe_lock(bm, x_root, x_tip, tip_z, width, tip=0.6):
          off0=-0.008, off1=0.0075, steps=6)
 
 
+def fringe_base(bm, z0, z1=1.568):
+    """Hair-colored layer hugging the forehead under the bangs, from z0 up past the hair cap's
+    face opening, so no skin shows between swept or parted locks. It sits just above the face
+    decals and just below the bang locks."""
+    nx, nz = 10, 4
+    rows = []
+    for j in range(nz + 1):
+        z = z0 + (z1 - z0) * j / nz
+        rows.append([bm.verts.new((x, head_front_y(x, z, 0.0068), z)) for x in np.linspace(-0.092, 0.092, nx + 1)])
+    for a, b in zip(rows, rows[1:]):
+        for i in range(nx):
+            bm.faces.new((a[i], a[i + 1], b[i + 1], b[i]))
+
+
 # bang styles (the "bangs" option in the creator), used as mesh name suffixes
 BANGS = ("Straight", "Choppy", "Middle", "Left", "Right", "Micro")
 
@@ -734,17 +748,19 @@ def under_layer(bm, bottom_z):
 LENGTHS = ("Short", "Medium", "Long")
 
 
-def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut=None, cap_scale=CAP):
+def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut=None, cap_scale=CAP, suffix=""):
     """Every bangs x length combination of one hairstyle, named Hair_<Base>[_<Bangs>]_<Length>.
     extra(bm, length_index) builds the rest of the hair; bang_kinds=None means no bangs option
     (the style draws its own fringe in `extra`)."""
     out = []
     for li, length in enumerate(LENGTHS):
         for kind in (bang_kinds or (None,)):
-            name = f"Hair_{base}_{kind}_{length}" if kind else f"Hair_{base}_{length}"
+            name = (f"Hair_{base}_{kind}_{length}" if kind else f"Hair_{base}_{length}") + (f"_{suffix}" if suffix else "")
 
             def build(bm, kind=kind, li=li):
                 hair_cap(bm, hairline=0.035 if kind == "Micro" else hairline, nape=nape, side_cut=side_cut, scale=cap_scale)
+                # forehead under the bangs stays hair-colored (micro bangs keep the forehead below them)
+                fringe_base(bm, 1.528 if kind == "Micro" else 1.497)
                 if kind:
                     bangs(bm, kind)
                 extra(bm, li)
@@ -823,8 +839,8 @@ def build_hair():
     return (hair_set("Long", long_extra) +
             hair_set("Bob", bob_extra, BANGS[:5]) +
             hair_set("WolfCut", wolf_extra, BANGS[:5]) +
-            hair_set("Twintails", twintails_extra, BANGS[:5]) +
-            hair_set("Pigtails", pigtails_extra, BANGS[:5]) +
+            hair_set("Twintails", twintails_extra, BANGS[:5], suffix="High") +     # tie: high = twintails
+            hair_set("Twintails", pigtails_extra, BANGS[:5], suffix="Low") +       # tie: low = pigtails
             hair_set("Ponytail", ponytail_extra, ("Choppy",)) +
             hair_set("Buns", buns_extra, ("Choppy",)) +
             hair_set("Pixie", pixie_extra, None, hairline=0.03, nape=-0.08, side_cut=-0.005, cap_scale=1.05))
@@ -1449,9 +1465,9 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 LOOKS = {
     "grunge": {"Skin_Body", "Eyes_Toon", "Hair_WolfCut_Middle_Medium", "Top_Flannel", "Bottom_BaggyJeans_Low", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
-    "girly": {"Skin_Body", "Eyes_Almond", "Hair_Twintails_Choppy_Medium", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
+    "girly": {"Skin_Body", "Eyes_Almond", "Hair_Twintails_Choppy_Medium_High", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
     "twilight": {"Skin_Body", "Eyes_Doe", "Hair_Long_Micro_Long", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
-    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Pigtails_Choppy_Medium", "Top_Oversized", "Bottom_Cargo_Low", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Twintails_Choppy_Medium_Low", "Top_Oversized", "Bottom_Cargo_Low", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
     "y2k": {"Skin_Body", "Eyes_Almond", "Hair_Ponytail_Choppy_Medium", "Top_Cardigan", "Bottom_FlareJeans_High", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DreamWorld.Account;
 using DreamWorld.Net;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -47,7 +48,9 @@ namespace DreamWorld.CharacterCreation
         bool syncingSliders, syncingPicker, pickerDriving;
         NetMode chosenMode;
         readonly Dictionary<NetMode, Image> modeButtons = new Dictionary<NetMode, Image>();
-        InputField addressField;
+        InputField addressField, nameField;
+        GameObject canvasRoot;
+        bool shown = true;
 
         void Start()
         {
@@ -66,11 +69,13 @@ namespace DreamWorld.CharacterCreation
 
             EnsureEventSystem();
             var canvas = BuildCanvas();
+            canvasRoot = canvas.gameObject;
             BuildTitle(canvas);
             BuildCategoryPanel(canvas);
             BuildStylePanel(canvas);
             BuildBottomBar(canvas);
             BuildNetRow(canvas);
+            BuildNameAndBack(canvas);
             BuildScanlines(canvas);
 
             appearance.Changed += Refresh;
@@ -84,7 +89,8 @@ namespace DreamWorld.CharacterCreation
 
         void Update()
         {
-            if (cursorLabel == null) return;                               // skipped Start (command-line boot)
+            if (cursorLabel == null || !shown) return;                     // skipped Start, or the account screens are up
+            if (nameField != null && nameField.isFocused) return;          // typing a name, not shortcuts
             if (addressField != null && addressField.isFocused) return;    // typing an address, not shortcuts
             // blinking terminal cursor
             cursorTimer += Time.deltaTime;
@@ -521,8 +527,65 @@ namespace DreamWorld.CharacterCreation
             statusLabel.text = "";
         }
 
-        void OnReady()
+        // The account screens hide the creator while they're open.
+        public void Show(bool show)
         {
+            shown = show;
+            if (canvasRoot != null) canvasRoot.SetActive(show);
+            if (show && nameField != null)
+            {
+                nameField.text = AccountService.CurrentName;
+                SelectCategory(currentCategory);
+            }
+        }
+
+        // Character name (saved with the character) and a button back to "your dreamers".
+        void BuildNameAndBack(RectTransform canvas)
+        {
+            var field = new GameObject("Name", typeof(RectTransform), typeof(Image), typeof(InputField));
+            field.transform.SetParent(canvas, false);
+            var image = field.GetComponent<Image>();
+            image.sprite = frameSprite;
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 0.5f;
+            Place((RectTransform)field.transform, new Vector2(0.5f, 1), new Vector2(0, -60), new Vector2(440, 70));
+            var text = MakeText((RectTransform)field.transform, "Text", "", bodyFont, 40, accentColor, TextAnchor.MiddleCenter);
+            Stretch(text.rectTransform, 16, 0);
+            text.supportRichText = false;
+            var hint = MakeText((RectTransform)field.transform, "Placeholder", "name your dreamer", bodyFont, 40, dimColor, TextAnchor.MiddleCenter);
+            Stretch(hint.rectTransform, 16, 0);
+            nameField = field.GetComponent<InputField>();
+            nameField.textComponent = text;
+            nameField.placeholder = hint;
+            nameField.characterLimit = 16;
+            nameField.text = AccountService.CurrentName;
+
+            var back = MakeButton(canvas, "Back", () => { var flow = FindAnyObjectByType<AccountFlow>(); if (flow) flow.ShowSelect(); });
+            Place((RectTransform)back.transform, new Vector2(0, 0), new Vector2(64, 64), new Vector2(240, 66), new Vector2(0, 0));
+            Stretch(MakeText((RectTransform)back.transform, "L", "< dreamers", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+        }
+
+        async void OnReady()
+        {
+            if (AccountService.LoggedIn)
+            {
+                var name = nameField.text.Trim();
+                if (name.Length == 0)
+                {
+                    statusLabel.text = "give your dreamer a name";
+                    return;
+                }
+                if (AccountService.CurrentSlot < 0) AccountService.CurrentSlot = 0;
+                AccountService.CurrentName = name;
+                statusLabel.text = "saving...";
+                var error = await AccountService.SaveCharacter(new CharacterRecord
+                    { slot = AccountService.CurrentSlot, name = name, look = CharacterSave.ToJson(appearance) });
+                if (error != null)
+                {
+                    statusLabel.text = error;
+                    return;
+                }
+            }
             CharacterSave.Save(appearance);
             NetSession.Mode = chosenMode;
             if (chosenMode == NetMode.Join) NetSession.Address = addressField.text.Trim();

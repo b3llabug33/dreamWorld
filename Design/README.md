@@ -74,6 +74,16 @@ The pixie was rebuilt (cropped sides, tapered nape, side-swept fringe). Hair and
 full-spectrum color picker (hue / saturation / light) next to the swatches.
 See `Hair/hair_bangs_lengths_check.png`, `Hair/pixie_lengths.png`, `Hair/hairstyles_in_game.png`.
 
+Twintails and pigtails are one style now with a **tie** row (high = twintails, low = pigtails).
+Side-part, middle-part and pixie fringes have a hair-colored layer under them so no forehead skin
+shows between the locks (`Hair/bangs_forehead_fix.png`).
+
+## Accounts
+
+`Screens/login.png` -> `Screens/your_dreamers.png` -> creator (`Screens/creator_name_and_tie.png`).
+Log in / sign up (Unity Gaming Services accounts, characters in Cloud Save) or play offline (saved
+on this computer). Up to 4 dreamers per account, each with a name.
+
 ## Clothing audit
 
 `Audit/` has every piece rendered on a red body (front/side/back) to catch clipping. Fixed in the

@@ -112,6 +112,7 @@ namespace DreamWorld.EditorTools
             {
                 new OptionAxis { label = "bangs", values = new[] { "Straight", "Choppy", "Middle", "Left", "Right", "Micro" }, index = 1 },
                 new OptionAxis { label = "length", values = new[] { "Short", "Medium", "Long" }, index = 1 },
+                new OptionAxis { label = "tie", values = new[] { "High", "Low" }, index = 0 },   // twintails high, pigtails low
             };
             hair.SelectBase("Long");
             // full-spectrum color pickers for hair and eyes
@@ -162,6 +163,15 @@ namespace DreamWorld.EditorTools
                 ui.titleFont = LoadFont("Assets/Fonts/PixelifySans.ttf");
                 ui.bodyFont = LoadFont("Assets/Fonts/VT323-Regular.ttf");
                 EditorUtility.SetDirty(ui);
+
+                // log in / your dreamers screens in front of the creator
+                var flow = UnityEngine.Object.FindAnyObjectByType<DreamWorld.Account.AccountFlow>();
+                if (flow == null) flow = new GameObject("AccountFlow").AddComponent<DreamWorld.Account.AccountFlow>();
+                flow.creator = ui;
+                flow.appearance = ui.appearance;
+                flow.titleFont = ui.titleFont;
+                flow.bodyFont = ui.bodyFont;
+                EditorUtility.SetDirty(flow);
             }
             var cam = Camera.main;
             cam.transform.position = new Vector3(0, 0.84f, -3.7f);

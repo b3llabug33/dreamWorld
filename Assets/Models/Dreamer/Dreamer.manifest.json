@@ -949,7 +949,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Straight_Short",
+   "name": "Hair_Twintails_Straight_Short_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -958,7 +958,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Choppy_Short",
+   "name": "Hair_Twintails_Choppy_Short_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -967,7 +967,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Middle_Short",
+   "name": "Hair_Twintails_Middle_Short_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -976,7 +976,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Left_Short",
+   "name": "Hair_Twintails_Left_Short_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -985,7 +985,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Right_Short",
+   "name": "Hair_Twintails_Right_Short_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -994,7 +994,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Straight_Medium",
+   "name": "Hair_Twintails_Straight_Medium_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1003,7 +1003,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Choppy_Medium",
+   "name": "Hair_Twintails_Choppy_Medium_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1012,7 +1012,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Middle_Medium",
+   "name": "Hair_Twintails_Middle_Medium_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1021,7 +1021,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Left_Medium",
+   "name": "Hair_Twintails_Left_Medium_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1030,7 +1030,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Right_Medium",
+   "name": "Hair_Twintails_Right_Medium_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1039,7 +1039,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Straight_Long",
+   "name": "Hair_Twintails_Straight_Long_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1048,7 +1048,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Choppy_Long",
+   "name": "Hair_Twintails_Choppy_Long_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1057,7 +1057,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Middle_Long",
+   "name": "Hair_Twintails_Middle_Long_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1066,7 +1066,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Left_Long",
+   "name": "Hair_Twintails_Left_Long_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1075,7 +1075,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails_Right_Long",
+   "name": "Hair_Twintails_Right_Long_High",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1084,7 +1084,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Straight_Short",
+   "name": "Hair_Twintails_Straight_Short_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1093,7 +1093,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Choppy_Short",
+   "name": "Hair_Twintails_Choppy_Short_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1102,7 +1102,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Middle_Short",
+   "name": "Hair_Twintails_Middle_Short_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1111,7 +1111,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Left_Short",
+   "name": "Hair_Twintails_Left_Short_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1120,7 +1120,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Right_Short",
+   "name": "Hair_Twintails_Right_Short_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1129,7 +1129,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Straight_Medium",
+   "name": "Hair_Twintails_Straight_Medium_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1138,7 +1138,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Choppy_Medium",
+   "name": "Hair_Twintails_Choppy_Medium_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1147,7 +1147,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Middle_Medium",
+   "name": "Hair_Twintails_Middle_Medium_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1156,7 +1156,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Left_Medium",
+   "name": "Hair_Twintails_Left_Medium_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1165,7 +1165,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Right_Medium",
+   "name": "Hair_Twintails_Right_Medium_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1174,7 +1174,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Straight_Long",
+   "name": "Hair_Twintails_Straight_Long_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1183,7 +1183,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Choppy_Long",
+   "name": "Hair_Twintails_Choppy_Long_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1192,7 +1192,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Middle_Long",
+   "name": "Hair_Twintails_Middle_Long_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1201,7 +1201,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Left_Long",
+   "name": "Hair_Twintails_Left_Long_Low",
    "submeshes": [
     {
      "texture": "Hair",
@@ -1210,7 +1210,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails_Right_Long",
+   "name": "Hair_Twintails_Right_Long_Low",
    "submeshes": [
     {
      "texture": "Hair",

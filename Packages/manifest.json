@@ -1,7 +1,10 @@
 {
   "dependencies": {
+    "com.firstgeargames.fishnet": "https://github.com/FirstGearGames/FishNet.git?path=Assets/FishNet#4.7.3",
     "com.unity.ai.assistant": "2.20.0-pre.2",
     "com.unity.multiplayer.center": "1.0.1",
+    "com.unity.services.authentication": "3.8.0",
+    "com.unity.services.cloudsave": "3.4.1",
     "com.unity.ugui": "2.0.0",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",
@@ -36,7 +39,6 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0",
-    "com.firstgeargames.fishnet": "https://github.com/FirstGearGames/FishNet.git?path=Assets/FishNet#4.7.3"
+    "com.unity.modules.xr": "1.0.0"
   }
 }
