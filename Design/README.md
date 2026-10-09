@@ -35,8 +35,12 @@ Unity ignores this folder (it's outside `Assets/`). New drafts get added here as
 | `Faces/old_small_cartoon_eyes.png` | The earlier small cartoon eyes (too small, felt scary) |
 | `Faces/old_anime_eyes.png` | The earlier anime eyes (felt uncanny) |
 
-**Current pick:** E soft almond is the default face. A, B, C, D, F are also in the game's eye menu
-(round, glossy, doe, sparkly, toon). Round 2 picks are still open.
+**Current pick:** E soft almond is the default face. The eye menu also has A, B, C, D, F
+(round, glossy, doe, sparkly, toon) and round-2 picks J, N, G, M, L, K
+(upturned, starry, cat eye, monolid, pixel hex, puppy).
+
+`Faces/eye_sliders_default_big_smallwide_closehigh.png` shows the eye sliders: size, spacing,
+height (brows move with the eyes; mouth and blush stay put), plus a reset.
 
 All face designs are numbers in `ArtSource/eye_designs.py` (shape curve, tilt, hood, iris size,
 pupil type, lid/wing/lashes, mouth, brows, blush), so mixing ("H's eyes with N's mouth") is easy.
@@ -72,4 +76,5 @@ Blender previews show clothes in a neutral lilac; real colors come from the in-g
   `ArtSource/build_world.py`) so everything can be re-tuned and rebuilt in one go.
 - Third-party art is CC0 only (Screaming Brain Studios, Poly Haven, ambientCG, iPoly3D glasses);
   sources are listed in `ArtSource/ThirdParty/*/SOURCE.txt` / `LICENSE.txt`.
-- Multiplayer: small online test first (a few friends), server-authoritative, room to grow later.
+- Multiplayer: FishNet (free for games). Small online test first (a few friends); the look syncs as
+  the tiny CharacterSave JSON. Tested: host + client, and a headless server with two clients.
