@@ -394,39 +394,60 @@ def join(name, parts, tile=0.2, uv_origin=(0, 0, 0), keep_uv=False):
 # ---------------------------------------------------------------- head shape
 
 HEAD_C = Vector((0, 0, 1.485))
-HEAD_R = Vector((0.105, 0.115, 0.135))
-JAW = 0.88   # squashes the lower half of the head: shorter jaw, cuter anime proportions
+HEAD_R = Vector((0.106, 0.114, 0.135))   # widest half-sizes (used by hats)
+
+# Sculpted anime head, as horizontal rings from the crown down to the chin:
+# (height above HEAD_C, half-width, front depth, back depth). The back of the jaw pulls in
+# fast while the front stays forward, which gives a jawline and a small pointed chin.
+HEAD_PROFILE = [
+    (0.125, 0.045, 0.050, 0.056),
+    (0.100, 0.080, 0.086, 0.096),
+    (0.065, 0.099, 0.105, 0.112),
+    (0.025, 0.105, 0.112, 0.116),
+    (-0.015, 0.104, 0.112, 0.113),
+    (-0.045, 0.097, 0.108, 0.104),   # cheekbones
+    (-0.070, 0.084, 0.102, 0.088),
+    (-0.090, 0.064, 0.095, 0.064),   # jaw angle
+    (-0.106, 0.040, 0.088, 0.036),
+    (-0.117, 0.018, 0.081, 0.014),
+]
+HEAD_TOP = 0.135
+CHIN = Vector((0, -0.074, -0.122))      # chin tip, relative to HEAD_C
 
 
-def head_taper(z):
-    """Anime jaw: the head narrows toward a small pointed chin below its center."""
-    t = max(0.0, (HEAD_C.z - z) / HEAD_R.z)
-    return 1 - 0.42 * t * t, 1 - 0.18 * t
+def head_ring(dz):
+    """Interpolated (half-width, front depth, back depth) of the head at height dz."""
+    p = HEAD_PROFILE
+    if dz >= p[0][0]:
+        t = min(1.0, (dz - p[0][0]) / (HEAD_TOP - p[0][0]))
+        return tuple(v * (1 - t) for v in p[0][1:])
+    for (z0, *a), (z1, *b) in zip(p, p[1:]):
+        if z1 <= dz <= z0:
+            t = (z0 - dz) / (z0 - z1)
+            return tuple(x + (y - x) * t for x, y in zip(a, b))
+    return p[-1][1:]
 
 
-def build_head(bm, scale=1.0, cut=None, seg=12, rings=8):
-    """Low-poly ellipsoid head with the anime jaw taper applied."""
+def head_point(theta, dz, scale=1.0):
+    """Surface point at angle theta (-90deg = front, +90deg = back) and height dz,
+    for a head scaled `scale` around its center."""
+    rx, yf, yb = head_ring(dz / scale)
+    depth = yf if math.sin(theta) < 0 else yb
+    return HEAD_C + Vector((math.cos(theta) * rx * scale, math.sin(theta) * depth * scale, dz))
+
+
+def build_head(bm, scale=1.0, cut=None, seg=16, rings=None):
+    top = bm.verts.new(HEAD_C + Vector((0, 0, HEAD_TOP * scale)))
+    chin = bm.verts.new(HEAD_C + CHIN * scale)
     verts = []
-    top = bm.verts.new(HEAD_C + Vector((0, 0, HEAD_R.z * scale)))
-    bottom = bm.verts.new(HEAD_C - Vector((0, 0, HEAD_R.z * scale * JAW)))
-    for r in range(1, rings):
-        phi = math.pi * r / rings
-        row = []
-        for s in range(seg):
-            th = 2 * math.pi * s / seg + math.pi / seg
-            x = math.sin(phi) * math.cos(th) * HEAD_R.x * scale
-            y = math.sin(phi) * math.sin(th) * HEAD_R.y * scale
-            z = HEAD_C.z + math.cos(phi) * HEAD_R.z * scale
-            tx, ty = head_taper(z)
-            if z < HEAD_C.z:
-                z = HEAD_C.z - (HEAD_C.z - z) * JAW
-            row.append(bm.verts.new((x * tx, y * ty, z)))
-        verts.append(row)
+    for dz, *_ in HEAD_PROFILE:
+        verts.append([bm.verts.new(head_point(2 * math.pi * s / seg + math.pi / seg, dz * scale, scale))
+                      for s in range(seg)])
     for s in range(seg):
         j = (s + 1) % seg
         bm.faces.new((top, verts[0][s], verts[0][j]))
-        bm.faces.new((bottom, verts[-1][j], verts[-1][s]))
-        for r in range(rings - 2):
+        bm.faces.new((chin, verts[-1][j], verts[-1][s]))
+        for r in range(len(verts) - 1):
             bm.faces.new((verts[r][s], verts[r + 1][s], verts[r + 1][j], verts[r][j]))
     if cut:
         bmesh.ops.delete(bm, geom=[v for v in bm.verts if cut(v.co)], context="VERTS")
@@ -434,111 +455,133 @@ def build_head(bm, scale=1.0, cut=None, seg=12, rings=8):
 
 def head_front_y(x, z, offset):
     """Y of the head's front surface at (x, z), pushed out by `offset` (for face decals)."""
-    if z < HEAD_C.z:  # undo the jaw squash to find the matching point on the unsquashed shape
-        z = HEAD_C.z - (HEAD_C.z - z) / JAW
-    tx, ty = head_taper(z)
-    u = x / (HEAD_R.x * tx)
-    w = (z - HEAD_C.z) / HEAD_R.z
-    inside = max(0.0, 1 - u * u - w * w)
-    return -(HEAD_R.y * ty * math.sqrt(inside)) - offset
+    rx, yf, _ = head_ring(z - HEAD_C.z)
+    if rx <= 1e-4:
+        return -offset
+    u = min(1.0, abs(x) / rx)
+    return -(yf * math.sqrt(1 - u * u)) - offset
 
 # ---------------------------------------------------------------- eyes (face decals)
 
 FACE_W, FACE_H = 0.16, 0.13          # decal size in meters
 FACE_Z0 = 1.395                      # decal bottom edge
-FACE_PX = 64
-EYE_Y = 32                           # eye center row in the face texture
+FACE_PX = 128                        # texels per layer (1.25 mm each)
+EYE_Y = 66                           # eye center row (z = 1.462)
+EYE_X = 30                           # eye center offset from the middle column
 EYE_STYLES = ("Sparkle", "Soft", "Sharp", "Sleepy")
+EYE_LAYERS = 5                       # face, eye base, iris (tinted), pupil+shine, closed (blink)
 
 
 def draw_eyes(style):
-    """Three 64x64 layers side by side (192x64): base (whites, lashes, brows, blush, mouth),
-    iris (grayscale, tinted by the eye color in Unity), top (pupil + highlights)."""
-    base = np.zeros((FACE_PX, FACE_PX, 4), np.float32)
-    iris = np.zeros_like(base)
-    top = np.zeros_like(base)
+    """Five 128x128 layers side by side:
+      0 face   - brows, nose, mouth, blush (always shown)
+      1 base   - whites + lash lines of the open eye
+      2 iris   - grayscale, tinted by the eye color in Unity
+      3 top    - pupil and highlights
+      4 closed - the blink pose, hidden until Unity's blink swaps it in"""
+    L = [np.zeros((FACE_PX, FACE_PX, 4), np.float32) for _ in range(EYE_LAYERS)]
 
     def put(layer, x, y, c):
+        x, y = int(round(x)), int(round(y))
         if 0 <= x < FACE_PX and 0 <= y < FACE_PX:
-            layer[y, x] = (*c, 1) if len(c) == 3 else c
+            L[layer][y, x] = (*c, 1)
 
-    lash = (0.10, 0.07, 0.14)
-    white = (1, 1, 1)
-    pupil = (0.08, 0.06, 0.18)
-    blush = (0.98, 0.62, 0.70)
-    mouth = (0.55, 0.25, 0.30)
+    lash = (0.12, 0.08, 0.16)
+    lash_soft = (0.38, 0.26, 0.36)
+    white = (0.98, 0.97, 1.0)
+    pupil = (0.10, 0.07, 0.18)
+    blush = (0.97, 0.60, 0.68)
+    mouth = (0.62, 0.30, 0.36)
+    lip = (0.92, 0.66, 0.66)
 
-    # per style: eye half-width, half-height, iris half-width, lid drop (rows hidden by the lid),
-    # outer-corner flick direction (+1 up = cat eye, -1 down = droopy)
-    ew, eh, iw, lid, flick = {
-        "Sparkle": (9, 11, 7, 0, 0),
-        "Soft": (9, 10, 7, 0, -1),
-        "Sharp": (9, 8, 6, 0, 1),
-        "Sleepy": (9, 10, 7, 6, -1),
+    # style shape: half-width, half-height, lid peak, outer corner lift (+ cat, - droopy), lid drop (sleepy)
+    hw, hh, peak, lift, drop = {
+        "Sparkle": (14, 16, 16, 1, 0),
+        "Soft":    (14, 16, 15, -4, 0),
+        "Sharp":   (15, 12, 12, 6, 0),
+        "Sleepy":  (14, 15, 15, -1, 7),
     }[style]
+
+    def lid(x):
+        """Upper lid line height at x (x>0 = outer side): arched, tilted by `lift`."""
+        return peak - drop - ((x - 1) / (hw + 1)) ** 2 * 8 + lift * max(0, x) / hw
 
     def eye(cx, outer):
         cy = EYE_Y
-        lid_top = cy + eh - lid      # rows above this are covered by the eyelid
-        for y in range(-eh, eh + 1):
-            for x in range(-ew, ew + 1):
-                # Sharp eyes tilt up toward the outer corner
-                yy = y - (flick * x * outer * 0.25 if style == "Sharp" else 0)
-                if (x / (ew + 0.5)) ** 2 + (yy / (eh + 0.5)) ** 2 <= 1 and cy + y < lid_top:
-                    put(base, cx + x, cy + y, white)
-        for y in range(-eh + 1, eh - 1):
-            for x in range(-iw, iw + 1):
-                if (x / (iw + 0.5)) ** 2 + (y / (eh - 0.5)) ** 2 <= 1 and cy + y < lid_top:
-                    g = 0.45 if y > 3 else 0.72 if y > -4 else 1.0   # dark top -> light bottom
-                    put(iris, cx + x, cy + y, (g, g, g))
-        for y in range(-3, 4):
-            for x in range(-2, 3):
-                if cy + y < lid_top:
-                    put(top, cx + x, cy + y, pupil)
-        if lid < 4:
-            for hx, hy in ((-3, 4), (-4, 4), (-3, 3), (-4, 3), (-3, 5)):
-                put(top, cx + hx * outer, cy + hy - lid, white)
-        put(top, cx + 3 * outer, cy - 4, white)
-        # thick upper lash (sits on the lid line), with a flick at the outer corner
-        for x in range(-ew - 1, ew + 2):
-            arch = 1 if abs(x) < ew - 2 and lid == 0 else 0
-            tilt = round(flick * x * outer * 0.25) if style == "Sharp" else 0
-            y0 = (lid_top if lid else cy + eh) + arch + tilt
-            put(base, cx + x, y0, lash)
-            put(base, cx + x, y0 - 1, lash)
-        fy = (lid_top if lid else cy + eh) - 1
-        put(base, cx + (ew + 2) * outer, fy + flick, lash)
-        put(base, cx + (ew + 2) * outer, fy - 1 + flick, lash)
-        put(base, cx + (ew + 3) * outer, fy - 2 + 2 * flick, lash)
-        for x in range(-2, 4):  # lower lash hint
-            put(base, cx + x * outer + 2 * outer, cy - eh, lash)
-        for x in range(-5, 5):  # thin brow (often under the bangs)
-            put(base, cx + x * outer, cy + eh + 6 + (1 if abs(x) < 3 else 0) - (1 if style == "Soft" else 0), lash)
+        for dx in range(-hw - 1, hw + 2):
+            x = dx * outer                      # x measured toward this eye's outer corner
+            top = lid(dx)
+            bottom = -hh + ((dx - 2) / (hw + 1)) ** 2 * 6
+            for dy in range(-hh - 1, hh + 1):
+                inside = (dx / (hw + 0.5)) ** 2 + (dy / (hh + 0.5)) ** 2 <= 1.15 and bottom <= dy <= top
+                if inside:
+                    put(1, cx + x, cy + dy, white)
+                    # iris: tall oval touching the upper lid, dark top -> light bottom
+                    ix, iy = dx / 9.5, (dy + 1) / 14.0
+                    if ix * ix + iy * iy <= 1:
+                        edge = ix * ix + iy * iy > 0.78
+                        g = 0.30 if edge else 0.38 if dy > top - 4 else 0.62 if dy > -3 else 0.95
+                        put(2, cx + x, cy + dy, (g, g, g))
+                        if (dx / 4.2) ** 2 + ((dy - 1) / 6.8) ** 2 <= 1:
+                            put(3, cx + x, cy + dy, pupil)
+            # upper lash line: thick, thicker toward the outer corner
+            t = 3 if dx < hw / 3 else 4
+            for k in range(t):
+                put(1, cx + x, cy + round(top) + k, lash)
+            # lower lash: short soft line on the outer half
+            if dx > 0:
+                put(1, cx + x, cy + round(bottom) - 1, lash_soft)
+            # closed eye for blinking: a gentle downward curve at mid-height
+            closed_y = -2 - ((dx) / (hw + 1)) ** 2 * -4 + lift * max(0, dx) / hw * 0.5
+            for k in range(3 if abs(dx) < hw - 1 else 2):
+                put(4, cx + x, cy + round(closed_y) + k, lash)
+        # outer flick
+        for k in range(4):
+            put(1, cx + (hw + 1 + k) * outer, cy + round(lid(hw)) + 1 + k * (1 if lift >= 0 else -1) * 0.6, lash)
+            put(4, cx + (hw + 1 + k) * outer, cy - 1 + k * 0.5, lash)
+        # highlights
+        for (hx, hy, r) in ((-4, 6, 3.2), (4, -7, 1.6)):
+            for yy in range(-3, 4):
+                for xx in range(-3, 4):
+                    if xx * xx + yy * yy <= r * r:
+                        put(3, cx + (hx + xx) * outer, cy + hy + yy - drop * 0.6, white)
+        if style == "Sparkle":
+            for d in (-2, -1, 0, 1, 2):
+                put(3, cx + 5 * outer + d, cy + 1, white)
+                put(3, cx + 5 * outer, cy + 1 + d, white)
+        # brow: thin soft arc well above the eye (usually under the bangs)
+        for dx in range(-8, 10):
+            put(0, cx + dx * outer, cy + 25 - (dx / 9) ** 2 * 3 + (lift * 0.3 if dx > 0 else 0), lash_soft)
+            put(0, cx + dx * outer, cy + 26 - (dx / 9) ** 2 * 3 + (lift * 0.3 if dx > 0 else 0), lash_soft)
 
-    eye(17, -1)   # image left = character's right eye
-    eye(47, +1)
-    for cx in (11, 53):
-        for x in range(-3, 4):
-            if x % 2 == 0:
-                put(base, cx + x, 17, blush)
-                put(base, cx + x + 1, 16, blush)
-    put(base, 32, 15, (0.82, 0.58, 0.55))  # nose hint
-    put(base, 31, 14, (0.90, 0.70, 0.66))
-    # small cat-like smile, a little wider
-    for x in range(29, 36):
-        put(base, x, 8 if x in (32,) else 9, mouth)
-    put(base, 28, 10, mouth)
-    put(base, 36, 10, mouth)
+    eye(64 - EYE_X, -1)   # image left = character's right eye
+    eye(64 + EYE_X, +1)
 
-    TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", np.concatenate([base, iris, top], axis=1))
+    # blush: three soft diagonal strokes under each eye
+    for cx in (64 - 40, 64 + 40):
+        for k in (-4, 0, 4):
+            for d in range(3):
+                put(0, cx + k + d, 38 + d, blush)
+    # nose: two shadow pixels, lit from the right
+    put(0, 62, 36, (0.86, 0.64, 0.60))
+    put(0, 62, 35, (0.86, 0.64, 0.60))
+    # mouth: small soft "w"-ish smile and a hint of lower lip
+    for x, y in ((57, 13), (58, 12), (59, 12), (60, 12), (61, 13), (62, 13), (63, 12), (64, 12),
+                 (65, 12), (66, 12), (67, 13), (68, 13), (69, 12), (70, 12), (71, 13)):
+        put(0, x, y, mouth)
+    for x in range(61, 68):
+        put(0, x, 10, lip)
+
+    TEXTURES[f"Eyes{style}"] = save_png(f"Eyes{style}", np.concatenate(L, axis=1))
 
 
-def build_eye_layers(bm, style):
-    """Three stacked curved grids on the face; each uses one third of the eye atlas and its
-    own material slot (0 base, 1 iris, 2 top), so Unity can tint just the iris."""
+def build_eye_layers(bm):
+    """Stacked curved grids on the face; each uses one fifth of the atlas and its own
+    material slot, so Unity can tint just the iris and hide/show layers to blink."""
     uv_layer = bm.loops.layers.uv.new("UVMap")
-    nx, nz = 8, 6
-    for layer, offset in enumerate((0.004, 0.0048, 0.0056)):
+    nx, nz = 12, 10
+    for layer in range(EYE_LAYERS):
+        offset = 0.004 + 0.0007 * min(layer, 3)       # closed lids sit on the eye-base level
         grid = []
         for j in range(nz + 1):
             row = []
@@ -546,13 +589,12 @@ def build_eye_layers(bm, style):
                 u, v = i / nx, j / nz
                 x = (u - 0.5) * FACE_W
                 z = FACE_Z0 + v * FACE_H
-                row.append((bm.verts.new((x, head_front_y(x, z, offset), z)), ((u + layer) / 3, v)))
+                row.append((bm.verts.new((x, head_front_y(x, z, offset), z)), ((u + layer) / EYE_LAYERS, v)))
             grid.append(row)
         for j in range(nz):
             for i in range(nx):
                 quad = (grid[j][i], grid[j][i + 1], grid[j + 1][i + 1], grid[j + 1][i])
                 f = bm.faces.new([q[0] for q in quad])
-                f.material_index = layer
                 for loop, q in zip(f.loops, quad):
                     loop[uv_layer].uv = q[1]
 
@@ -560,25 +602,23 @@ def build_eye_layers(bm, style):
 def eyes(style):
     draw_eyes(style)
     tex = f"Eyes{style}"
-    obj = part(f"eyes{style}", "Head", lambda bm: build_eye_layers(bm, style), material(tex, tint=False))
-    # same atlas in all three slots; only the iris slot is tinted
+    obj = part(f"eyes{style}", "Head", build_eye_layers, material(tex, tint=False))
     obj.data.materials.clear()
-    for tint in (False, True, False):
-        m = bpy.data.materials.new(f"{tex}_{'iris' if tint else 'fixed'}")
+    for layer in range(EYE_LAYERS):
+        m = bpy.data.materials.new(f"{tex}_L{layer}")
         m.use_nodes = True
         node = m.node_tree.nodes.new("ShaderNodeTexImage")
         node.image, node.interpolation = TEXTURES[tex], "Closest"
         bsdf = m.node_tree.nodes["Principled BSDF"]
         m.node_tree.links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
         m.node_tree.links.new(node.outputs["Alpha"], bsdf.inputs["Alpha"])
-        m["texture"], m["tint"] = tex, tint
+        m["texture"], m["tint"] = tex, layer == 2
         obj.data.materials.append(m)
-    # Blender clamped the layer indices while the mesh had one slot; recover them from the
-    # UVs (each layer uses its own third of the atlas).
+    # each layer uses its own fifth of the atlas: recover the layer from the UVs
     uv = obj.data.uv_layers[0].data
     for poly in obj.data.polygons:
         u = sum(uv[li].uv[0] for li in poly.loop_indices) / len(poly.loop_indices)
-        poly.material_index = min(2, int(u * 3))
+        poly.material_index = min(EYE_LAYERS - 1, int(u * EYE_LAYERS))
     return join(f"Eyes_{style}", [obj], keep_uv=True)
 
 # ---------------------------------------------------------------- body
@@ -632,136 +672,149 @@ def body():
 # ---------------------------------------------------------------- hair
 
 hair_mat = material("Hair")
-HAIR_UV = dict(tile=0.3, uv_origin=(0, 0, 1.38))  # puts the angel-ring band around z = 1.56
-CAP = 1.12  # hair shell size relative to the head
+HAIR_UV = dict(tile=0.6, uv_origin=(0, 0, 1.20))  # one angel-ring band around z = 1.56
+CAP = 1.10   # hair shell size relative to the head
+FRONT = -math.pi / 2
 
 
 def hair_cap(bm):
-    """Slightly bigger head shell, opened only where the face is. The opening stops at the
-    brow line and at the temples (|x| < 0.09), so no scalp shows from the side or above."""
+    """Hair shell over the skull. Open only at the face: below the hairline at the front,
+    and at the cheeks/jaw, so nothing bald shows from the side, back or top."""
     def cut(co):
         r = co - HEAD_C
-        ny = r.y / (HEAD_R.y * CAP)
-        nz = r.z / (HEAD_R.z * CAP)
-        face = ny < -0.45 and nz < 0.15 and abs(r.x) < 0.09
-        cheeks = ny < -0.1 and nz < -0.35
-        bottom = nz < -0.85
-        return face or cheeks or bottom
-    build_head(bm, scale=CAP, cut=cut, seg=16, rings=10)
+        front = r.y < -0.02
+        face = front and r.z < 0.045 and abs(r.x) < 0.085
+        jaw = r.y < 0.01 and r.z < -0.035
+        bottom = r.z < -0.11
+        return face or jaw or bottom
+    build_head(bm, scale=CAP, cut=cut)
 
 
-def on_cap(theta, z, push=0.0):
-    """Point on the hair shell at angle theta (radians; -90deg = front, +90deg = back) and height z."""
-    nz = max(-1.0, min(1.0, (z - HEAD_C.z) / (HEAD_R.z * CAP)))
-    ring = math.sqrt(max(0.0, 1 - nz * nz))
-    tx, ty = head_taper(z)
-    return Vector((math.cos(theta) * HEAD_R.x * CAP * ring * tx * (1 + push),
-                   math.sin(theta) * HEAD_R.y * CAP * ring * ty * (1 + push), z))
+def surf(theta, z, scale, offset):
+    """Point on the (scaled) head surface pushed out by `offset`. Below the cheekbones the
+    surface stops shrinking, so hair hangs straight down instead of hugging the jaw."""
+    dz = max(z - HEAD_C.z, -0.03 * scale)
+    p = head_point(theta, dz, scale)
+    radial = Vector((p.x - HEAD_C.x, p.y - HEAD_C.y, 0))
+    if radial.length > 1e-6:
+        p += radial.normalized() * offset
+    return Vector((p.x, p.y, z))
 
 
-def lock(bm, theta, z_root, z_tip, width, out=0.02, depth=0.02, flat_tip=0.0):
-    """Hair lock rooted on the shell at angle theta, hanging to z_tip and flaring `out`
-    meters away from the head (gives shaggy volume)."""
-    root = on_cap(theta, z_root, 0.02)
-    radial = Vector((math.cos(theta), math.sin(theta), 0))
-    tangent = Vector((-math.sin(theta), math.cos(theta), 0))
-    tip = Vector((root.x, root.y, z_tip)) + radial * out
-    strand_v(bm, root, tip, tangent * width, radial * depth, flat_tip)
+def lock(bm, th0, z0, th1, z1, w0, tip=0.25, thick=0.014, s0=CAP, s1=CAP, off0=0.004, off1=0.004,
+         flare=0.0, steps=5, curl=0.0):
+    """A flat hair lock laid on the head: starts at (th0, z0) on a shell of scale s0 and
+    runs to (th1, z1), narrowing from width w0 to w0*tip. `flare` pushes the end away from
+    the head (volume), `curl` tucks the very tip back in (bob ends)."""
+    rings = []
+    for k in range(steps + 1):
+        t = k / steps
+        th = th0 + (th1 - th0) * t
+        z = z0 + (z1 - z0) * t
+        off = off0 + (off1 - off0) * t + flare * t * t - curl * max(0, t - 0.75) * 4
+        c = surf(th, z, s0 + (s1 - s0) * t, off)
+        side = (surf(th + 0.01, z, s0 + (s1 - s0) * t, off) - c)
+        side = side.normalized() if side.length > 1e-6 else Vector((1, 0, 0))
+        normal = Vector((c.x - HEAD_C.x, c.y - HEAD_C.y, 0))
+        normal = normal.normalized() if normal.length > 1e-6 else Vector((0, -1, 0))
+        w = w0 * (1 - (1 - tip) * t ** 1.3) / 2
+        rings.append([bm.verts.new(c - side * w), bm.verts.new(c + side * w),
+                      bm.verts.new(c + side * w + normal * thick), bm.verts.new(c - side * w + normal * thick)])
+    for a, b in zip(rings, rings[1:]):
+        for i in range(4):
+            j = (i + 1) % 4
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+    bm.faces.new(rings[0][::-1])
+    bm.faces.new(rings[-1])
 
 
-def fringe_plate(bm):
-    """Hair-colored band over the upper forehead behind the bangs, so no skin shows
-    between the locks."""
-    rows = []
-    for z in (1.50, 1.52, 1.545):
-        rows.append([bm.verts.new((x, head_front_y(x, z, 0.007), z)) for x in np.linspace(-0.088, 0.088, 7)])
-    for a, b in zip(rows, rows[1:]):
-        for i in range(6):
-            bm.faces.new((a[i], a[i + 1], b[i + 1], b[i]))
+def bangs(bm, kind="spiky"):
+    """Fringe locks from the crown down over the forehead, lying on the head: they start on
+    the hair shell and end just in front of the skin (offset stays above the face decal)."""
+    if kind == "blunt":
+        spec = [(x, 1.508, 0.95) for x in (-0.072, -0.036, 0.0, 0.036, 0.072)]
+        width = 0.042
+    elif kind == "curtain":   # parted in the middle, longer toward the sides
+        spec = [(-0.08, 1.43, 0.2), (-0.055, 1.46, 0.25), (-0.028, 1.50, 0.3),
+                (0.028, 1.50, 0.3), (0.055, 1.46, 0.25), (0.08, 1.43, 0.2)]
+        width = 0.036
+    else:                     # spiky anime fringe with uneven tips
+        spec = [(-0.082, 1.47, 0.2), (-0.055, 1.495, 0.2), (-0.027, 1.485, 0.15), (0.0, 1.50, 0.2),
+                (0.027, 1.48, 0.15), (0.055, 1.495, 0.2), (0.082, 1.47, 0.2)]
+        width = 0.034
+    for x, tip_z, tip in spec:
+        th_tip = FRONT + math.asin(max(-0.95, min(0.95, x / 0.104)))
+        th_root = FRONT + (th_tip - FRONT) * 0.6
+        if kind == "curtain":   # sweep outward from the part
+            th_root = FRONT + (th_tip - FRONT) * 0.25
+        lock(bm, th_root, 1.61, th_tip, tip_z, width, tip=tip, s0=CAP, s1=1.0, off0=-0.008, off1=0.0075, steps=6)
 
 
-def spiky_bangs(bm, lengths=(1.47, 1.50, 1.485, 1.495, 1.48, 1.50, 1.47)):
-    fringe_plate(bm)
-    n = len(lengths)
-    for k, tip_z in enumerate(lengths):
-        x = -0.09 + 0.18 * k / (n - 1)
-        root = (x * 0.8, head_front_y(x * 0.8, 1.56, 0.02), 1.60)
-        strand(bm, root, (x * 1.08, head_front_y(x, tip_z, 0.012), tip_z), 0.026)
-
-
-def curtain_bangs(bm):
-    """Parted in the middle, longer toward the sides (wolf cut)."""
-    spiky_bangs(bm, lengths=(1.43, 1.46, 1.49, 1.515, 1.49, 1.46, 1.43))
-
-
-def blunt_bangs(bm):
-    """Straight-cut 'hime' fringe: wide flat panels that end in a level line."""
-    fringe_plate(bm)
-    for x in (-0.07, -0.035, 0.0, 0.035, 0.07):
-        root = (x * 0.8, head_front_y(x * 0.8, 1.56, 0.02), 1.60)
-        strand(bm, root, (x * 1.05, head_front_y(x, 1.512, 0.011), 1.512), 0.022, flat_tip=0.95)
-
-
-def side_locks(bm, tip_z, blunt=False):
+def side_locks(bm, tip_z, width=0.04, tip=0.3):
+    """Anime side locks framing the face, in front of the ears."""
     for sx in (1, -1):
-        strand(bm, (0.105 * sx, -0.03, 1.55), (0.10 * sx, -0.05, tip_z), 0.028, 0.03, flat_tip=0.9 if blunt else 0)
+        th = FRONT + sx * math.radians(58)
+        lock(bm, th, 1.58, th + sx * math.radians(4), tip_z, width, tip=tip, off0=-0.006, off1=0.012)
+
+
+def hang(bm, bottom_z, count=11, width=0.075, tip=0.3, start=-35, end=215, root_z=1.615, rnd=None,
+         jitter=0.0, flare=0.015, curl=0.0):
+    """A curtain of locks around the sides and back, hanging to bottom_z."""
+    for k in range(count):
+        th = math.radians(start + (end - start) * k / (count - 1))
+        z1 = bottom_z + (rnd.uniform(-jitter, jitter) if rnd else 0)
+        lock(bm, th, root_z, th, z1, width, tip=tip, flare=flare, curl=curl, steps=6, off0=-0.008)
 
 
 def tail(bm, root, tip_drop, out, thickness=0.05, back=0.0, n=8):
     """A hanging tail (twintail/ponytail): bulges below the tie, tapers to a point."""
     x0, y0, z0 = root
     sections = []
-    for k, t in enumerate((0.0, 0.08, 0.3, 0.6, 0.85, 1.0)):
-        r = thickness * (0.55, 1.0, 1.05, 0.85, 0.5, 0.12)[k]
+    for k, t in enumerate((0.0, 0.08, 0.25, 0.5, 0.75, 0.92, 1.0)):
+        r = thickness * (0.55, 1.0, 1.08, 0.95, 0.7, 0.35, 0.08)[k]
         sections.append(((x0 + out * math.sin(t * math.pi / 2), y0 + back * t, z0 - tip_drop * t), r, r * 0.8))
     loft(bm, sections, n)
     torus(bm, (x0, y0, z0 - 0.005), thickness * 0.55, 0.008, seg=8, tube=3)  # hair tie
 
 
-def hair_style(name, extra, bangs=spiky_bangs):
+def hair_style(name, extra, kind="spiky"):
     def build(bm):
         hair_cap(bm)
-        bangs(bm)
+        bangs(bm, kind)
         extra(bm)
     return join(name, [part(name.lower(), "Head", build, hair_mat)], **HAIR_UV)
 
 
-def back_panel(bm, bottom_z, width=0.13, depth=0.05):
-    loft(bm, [((0, 0.04, 1.50), 0.12, 0.095), ((0, 0.075, (1.50 + bottom_z) / 2 + 0.05), width, depth + 0.01),
-              ((0, 0.09, bottom_z), width * 0.8, depth * 0.6)], 8, cap_start=False)
-
-
 def wolf_extra(bm):
-    """Shaggy long wolf cut: choppy short layers flicking out around the crown, then long
-    thin uneven pieces from the sides and nape."""
+    """Shaggy long wolf cut: choppy short layers flicking out at the crown, a mid layer,
+    then long thin uneven ends."""
     rnd = random.Random(11)
-    side_locks(bm, 1.36)
-    for k in range(14):  # short upper layer, everywhere but the face
-        th = math.radians(-65 + k * (310 / 13))
-        lock(bm, th, 1.575, 1.41 + rnd.uniform(-0.035, 0.035), 0.034, out=0.04, depth=0.02)
-    for k in range(9):   # mid layer
-        th = math.radians(-35 + k * (250 / 8))
-        lock(bm, th, 1.52, 1.27 + rnd.uniform(-0.05, 0.05), 0.032, out=0.045, depth=0.02)
-    for k in range(11):  # long choppy ends at the back and sides
-        th = math.radians(-15 + k * (210 / 10))
-        lock(bm, th, 1.46, 1.08 + rnd.uniform(-0.07, 0.07), 0.03, out=0.035, depth=0.018)
+    side_locks(bm, 1.38, width=0.036, tip=0.2)
+    hang(bm, 1.40, count=14, width=0.05, tip=0.15, start=-40, end=220, root_z=1.62, rnd=rnd, jitter=0.03, flare=0.035)
+    hang(bm, 1.25, count=11, width=0.055, tip=0.15, start=-30, end=210, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.04)
+    hang(bm, 1.08, count=10, width=0.05, tip=0.12, start=-15, end=195, root_z=1.50, rnd=rnd, jitter=0.07, flare=0.03)
 
 
 def build_hair():
+    rnd = random.Random(5)
     return [
-        hair_style("Hair_Bob", lambda bm: (side_locks(bm, 1.40), loft(
-            bm, [((0, 0.03, 1.50), 0.125, 0.10), ((0, 0.045, 1.38), 0.13, 0.085)], 8, cap_start=False))),
-        hair_style("Hair_Long", lambda bm: (side_locks(bm, 1.22), back_panel(bm, 1.05))),
-        hair_style("Hair_WolfCut", wolf_extra, curtain_bangs),
-        hair_style("Hair_Hime", lambda bm: (side_locks(bm, 1.36, blunt=True), back_panel(bm, 0.98, 0.135)), blunt_bangs),
-        hair_style("Hair_Twintails", lambda bm: (side_locks(bm, 1.42), [
+        hair_style("Hair_Bob", lambda bm: (side_locks(bm, 1.40, tip=0.6),
+                                           hang(bm, 1.39, count=12, width=0.07, tip=0.8, curl=0.012))),
+        hair_style("Hair_Long", lambda bm: (side_locks(bm, 1.22), hang(bm, 1.05, rnd=rnd, jitter=0.04, tip=0.3))),
+        hair_style("Hair_WolfCut", wolf_extra, "curtain"),
+        hair_style("Hair_Hime", lambda bm: (side_locks(bm, 1.38, width=0.05, tip=1.0),
+                                            hang(bm, 0.98, count=11, width=0.08, tip=1.0, start=-20, end=200)), "blunt"),
+        hair_style("Hair_Twintails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
             tail(bm, (0.115 * sx, 0.03, 1.60), 0.62, 0.07 * sx, 0.055, back=0.03) for sx in (1, -1)])),
-        hair_style("Hair_Pigtails", lambda bm: (side_locks(bm, 1.42), [
+        hair_style("Hair_Pigtails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
             tail(bm, (0.11 * sx, 0.06, 1.41), 0.42, 0.04 * sx, 0.045) for sx in (1, -1)])),
-        hair_style("Hair_Ponytail", lambda bm: (side_locks(bm, 1.44), tail(bm, (0, 0.13, 1.57), 0.45, 0.0, 0.055, back=0.04))),
-        hair_style("Hair_Buns", lambda bm: (side_locks(bm, 1.40), [bmesh.ops.create_icosphere(
-            bm, subdivisions=1, radius=0.055, matrix=Matrix.Translation((0.09 * sx, 0.02, 1.63))) for sx in (1, -1)])),
-        hair_style("Hair_Pixie", lambda bm: side_locks(bm, 1.48)),
+        hair_style("Hair_Ponytail", lambda bm: (side_locks(bm, 1.44), hang(bm, 1.38, count=9, width=0.07, tip=0.5),
+                                                tail(bm, (0, 0.13, 1.57), 0.45, 0.0, 0.055, back=0.04))),
+        hair_style("Hair_Buns", lambda bm: (side_locks(bm, 1.40), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
+            bmesh.ops.create_icosphere(bm, subdivisions=2, radius=0.055, matrix=Matrix.Translation((0.09 * sx, 0.02, 1.63)))
+            for sx in (1, -1)])),
+        hair_style("Hair_Pixie", lambda bm: (side_locks(bm, 1.46, width=0.03, tip=0.2),
+                                             hang(bm, 1.40, count=12, width=0.05, tip=0.2, flare=0.02))),
     ]
 
 # ---------------------------------------------------------------- clothes
@@ -1305,6 +1358,14 @@ scene.collection.objects.link(cam)
 scene.camera = cam
 
 
+for m in bpy.data.materials:   # the blink (closed-eye) layer stays hidden in previews
+    if m.name.endswith("_L4"):
+        bsdf = m.node_tree.nodes["Principled BSDF"]
+        for link in list(bsdf.inputs["Alpha"].links):
+            m.node_tree.links.remove(link)
+        bsdf.inputs["Alpha"].default_value = 0.0
+
+
 def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
     for obj in rig.children:
         obj.hide_render = obj.name not in shown
@@ -1328,7 +1389,8 @@ for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)
     preview(f"look_{look}_back.png", shown, angle=160)
 for s in EYE_STYLES:
-    preview(f"eyes_{s}.png", {"Skin_Body", f"Eyes_{s}", "Hair_Pixie"}, angle=0, z=1.47, ortho=0.32, res=(300, 300))
+    preview(f"eyes_{s}.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=0, z=1.47, ortho=0.36, res=(360, 360))
+    preview(f"eyes_{s}_q.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=35, z=1.47, ortho=0.36, res=(360, 360))
 for g in ("Round", "CatEye", "Slim", "Pixel", "Shutter"):
     preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Sparkle", "Hair_Pixie", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
 

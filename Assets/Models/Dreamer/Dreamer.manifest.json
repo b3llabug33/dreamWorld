@@ -18,7 +18,15 @@
     },
     {
      "texture": "EyesSparkle",
+     "tint": false
+    },
+    {
+     "texture": "EyesSparkle",
      "tint": true
+    },
+    {
+     "texture": "EyesSparkle",
+     "tint": false
     },
     {
      "texture": "EyesSparkle",
@@ -35,7 +43,15 @@
     },
     {
      "texture": "EyesSoft",
+     "tint": false
+    },
+    {
+     "texture": "EyesSoft",
      "tint": true
+    },
+    {
+     "texture": "EyesSoft",
+     "tint": false
     },
     {
      "texture": "EyesSoft",
@@ -52,7 +68,15 @@
     },
     {
      "texture": "EyesSharp",
+     "tint": false
+    },
+    {
+     "texture": "EyesSharp",
      "tint": true
+    },
+    {
+     "texture": "EyesSharp",
+     "tint": false
     },
     {
      "texture": "EyesSharp",
@@ -69,7 +93,15 @@
     },
     {
      "texture": "EyesSleepy",
+     "tint": false
+    },
+    {
+     "texture": "EyesSleepy",
      "tint": true
+    },
+    {
+     "texture": "EyesSleepy",
+     "tint": false
     },
     {
      "texture": "EyesSleepy",

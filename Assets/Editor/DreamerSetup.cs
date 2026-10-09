@@ -78,6 +78,8 @@ namespace DreamWorld.EditorTools
                     mats[i] = PsxMaterial(piece.submeshes[i].texture);
                     tints[i] = piece.submeshes[i].tint;
                 }
+                // Eyes: layer 4 is the closed-lid blink pose, hidden until EyeBlink swaps it in.
+                if (piece.name.StartsWith("Eyes_") && mats.Length >= 5) mats[4] = HiddenMaterial();
                 r.sharedMaterials = mats;
                 t.gameObject.AddComponent<TintMask>().tintSubmesh = tints;
 
@@ -103,6 +105,14 @@ namespace DreamWorld.EditorTools
             EditorUtility.SetDirty(appearance);
 
             RelaxArms(model.GetComponent<Animator>());
+            model.AddComponent<IdleMotion>();
+            // No animation controller yet: a running humanoid Animator would snap the hips to the floor.
+            model.GetComponent<Animator>().enabled = false;
+            var blink = root.GetComponent<EyeBlink>();
+            if (blink == null) blink = root.AddComponent<EyeBlink>();
+            blink.appearance = appearance;
+            blink.hiddenMaterial = HiddenMaterial();
+            EditorUtility.SetDirty(blink);
             SetupCreatorScreen();
             PlayerPrefs.DeleteKey("dreamWorld.character");   // old saves point at old slot layouts
             EditorSceneManager.MarkSceneDirty(root.scene);
@@ -148,6 +158,21 @@ namespace DreamWorld.EditorTools
         static OutfitSlot Slot(OutfitCategory c, Dictionary<OutfitCategory, List<GameObject>> styles,
                                Color[] colors, int style, int color, bool optional = false) =>
             new OutfitSlot { category = c, styles = styles[c], colors = colors, styleIndex = style, colorIndex = color, optional = optional };
+
+        // Fully clipped material: used to hide a submesh (the blink layer).
+        static Material HiddenMaterial()
+        {
+            const string path = MaterialDir + "/PSX_Hidden.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
+                mat.SetFloat("_Cutoff", 1.01f);
+                mat.SetColor("_Color", new Color(1, 1, 1, 0));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            return mat;
+        }
 
         static Material PsxMaterial(string texture)
         {
