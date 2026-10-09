@@ -28,3 +28,6 @@ crashlytics-build.properties
 
 # Blender auto-backups
 *.blend1
+
+# Game builds (Windows client, Linux server)
+/Builds/

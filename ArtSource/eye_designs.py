@@ -41,6 +41,7 @@ FACES = {
 }
 
 # --- second round of drafts: angular, almond-family, and a few unique ideas ---------------
+# (picked ones are added to FACES below)
 DRAFTS_2 = {
     "G  cat eye":       dict(hu=14, hl=10, q=1.0, tilt=6, lid=4, wing=8, lower=True, iris=0.9, mouth="smirk", brow="angled"),
     "H  hooded":        dict(hu=15, hl=12, q=0.8, hood=0.42, lid=5, iris=0.95, shine=3.0, mouth="flat", brow="straight"),
@@ -219,3 +220,9 @@ def draw(params):
         ellipse(0, 64, 12, 4, 2.5, MOUTH)
         ellipse(0, 64, 11, 2.5, 1.2, (0.92, 0.55, 0.60))
     return np.concatenate(L, axis=1)
+
+
+# Round 2 picks join the eye menu (names as they show in the game)
+for _draft, _name in (("J  upturned", "Upturned"), ("N  starry almond", "Starry"), ("G  cat eye", "CatEye"),
+                      ("M  monolid", "Monolid"), ("L  pixel hex", "PixelHex"), ("K  puppy", "Puppy")):
+    FACES[_name] = DRAFTS_2[_draft]

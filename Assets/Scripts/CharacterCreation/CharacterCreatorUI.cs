@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DreamWorld.Net;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -39,8 +40,21 @@ namespace DreamWorld.CharacterCreation
         Sprite frameSprite, solidSprite;
         float cursorTimer;
 
+        GameObject eyeControls;
+        Slider eyeSize, eyeSpacing, eyeHeight;
+        bool syncingSliders;
+        NetMode chosenMode;
+        readonly Dictionary<NetMode, Image> modeButtons = new Dictionary<NetMode, Image>();
+        InputField addressField;
+
         void Start()
         {
+            // Servers and test clients started with -server/-host/-join skip the creator.
+            if (NetSession.FromCommandLine(out _, out _) && Application.CanStreamedLevelBeLoaded(worldScene))
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(worldScene);
+                return;
+            }
             if (titleFont == null) titleFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (bodyFont == null) bodyFont = titleFont;
             frameSprite = MakeFrameSprite();
@@ -54,6 +68,7 @@ namespace DreamWorld.CharacterCreation
             BuildCategoryPanel(canvas);
             BuildStylePanel(canvas);
             BuildBottomBar(canvas);
+            BuildNetRow(canvas);
             BuildScanlines(canvas);
 
             appearance.Changed += Refresh;
@@ -67,6 +82,8 @@ namespace DreamWorld.CharacterCreation
 
         void Update()
         {
+            if (cursorLabel == null) return;                               // skipped Start (command-line boot)
+            if (addressField != null && addressField.isFocused) return;    // typing an address, not shortcuts
             // blinking terminal cursor
             cursorTimer += Time.deltaTime;
             cursorLabel.text = "> character_setup.exe" + (cursorTimer % 1f < 0.5f ? "_" : " ");
@@ -158,6 +175,80 @@ namespace DreamWorld.CharacterCreation
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 6;
             grid.childAlignment = TextAnchor.UpperCenter;
+
+            BuildEyeControls(panel);
+        }
+
+        // Eye sliders (only shown on the eyes tab): size, spacing, height + reset.
+        void BuildEyeControls(RectTransform panel)
+        {
+            eyeControls = new GameObject("EyeControls", typeof(RectTransform));
+            var rect = (RectTransform)eyeControls.transform;
+            rect.SetParent(panel, false);
+            Stretch(rect, 0);
+            Header(rect, "== SHAPE ==", -452);
+            eyeSize = SliderRow(rect, "size", -500, 0.75f, 1.35f);
+            eyeSpacing = SliderRow(rect, "spacing", -546, -0.06f, 0.06f);
+            eyeHeight = SliderRow(rect, "height", -592, -0.05f, 0.06f);
+            var reset = MakeButton(rect, "ResetEyes", () => { appearance.ResetEyes(); SyncSliders(); });
+            Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -642), new Vector2(220, 46));
+            Stretch(MakeText((RectTransform)reset.transform, "L", "reset eyes", bodyFont, 30, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+        }
+
+        Slider SliderRow(RectTransform parent, string label, float y, float min, float max)
+        {
+            var text = MakeText(parent, label, label, bodyFont, 32, textColor, TextAnchor.MiddleLeft);
+            Place(text.rectTransform, new Vector2(0.5f, 1), new Vector2(-130, y), new Vector2(120, 40));
+
+            var go = new GameObject(label + "Slider", typeof(RectTransform), typeof(Slider));
+            go.transform.SetParent(parent, false);
+            Place((RectTransform)go.transform, new Vector2(0.5f, 1), new Vector2(60, y), new Vector2(250, 22));
+            var track = new GameObject("Track", typeof(RectTransform), typeof(Image));
+            track.transform.SetParent(go.transform, false);
+            Stretch((RectTransform)track.transform, 0);
+            track.GetComponent<Image>().sprite = solidSprite;
+            track.GetComponent<Image>().color = new Color(0, 0, 0, 0.55f);
+
+            var fillArea = new GameObject("FillArea", typeof(RectTransform));
+            fillArea.transform.SetParent(go.transform, false);
+            Stretch((RectTransform)fillArea.transform, 3);
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(fillArea.transform, false);
+            ((RectTransform)fill.transform).sizeDelta = Vector2.zero;
+            fill.GetComponent<Image>().sprite = solidSprite;
+            fill.GetComponent<Image>().color = new Color(accentColor.r, accentColor.g, accentColor.b, 0.6f);
+
+            var handleArea = new GameObject("HandleArea", typeof(RectTransform));
+            handleArea.transform.SetParent(go.transform, false);
+            Stretch((RectTransform)handleArea.transform, 0);
+            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handle.transform.SetParent(handleArea.transform, false);
+            ((RectTransform)handle.transform).sizeDelta = new Vector2(16, 14);
+            handle.GetComponent<Image>().sprite = solidSprite;
+            handle.GetComponent<Image>().color = textColor;
+
+            var slider = go.GetComponent<Slider>();
+            slider.fillRect = (RectTransform)fill.transform;
+            slider.handleRect = (RectTransform)handle.transform;
+            slider.targetGraphic = handle.GetComponent<Image>();
+            slider.minValue = min;
+            slider.maxValue = max;
+            slider.onValueChanged.AddListener(_ => OnEyeSlider());
+            return slider;
+        }
+
+        void OnEyeSlider()
+        {
+            if (!syncingSliders) appearance.SetEyes(eyeSize.value, eyeSpacing.value, eyeHeight.value);
+        }
+
+        void SyncSliders()
+        {
+            syncingSliders = true;
+            eyeSize.value = appearance.eyeScale;
+            eyeSpacing.value = appearance.eyeSpacing;
+            eyeHeight.value = appearance.eyeHeight;
+            syncingSliders = false;
         }
 
         void BuildBottomBar(RectTransform canvas)
@@ -185,7 +276,49 @@ namespace DreamWorld.CharacterCreation
             Stretch(MakeText((RectTransform)ready.transform, "Label", "[ READY ]", bodyFont, 52, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
 
             statusLabel = MakeText(canvas, "Status", "", bodyFont, 32, accentColor, TextAnchor.MiddleRight);
-            Place(statusLabel.rectTransform, new Vector2(1, 0), new Vector2(-64, 168), new Vector2(400, 40), new Vector2(1, 0));
+            Place(statusLabel.rectTransform, new Vector2(1, 0), new Vector2(-384, 160), new Vector2(400, 40), new Vector2(1, 0));
+        }
+
+        // solo / host / join, plus a server address box (only shown for join)
+        void BuildNetRow(RectTransform canvas)
+        {
+            var modes = new[] { NetMode.Solo, NetMode.Host, NetMode.Join };
+            for (int i = 0; i < modes.Length; i++)
+            {
+                var mode = modes[i];
+                var button = MakeButton(canvas, "Mode_" + mode, () => SetMode(mode));
+                Place((RectTransform)button.transform, new Vector2(1, 0), new Vector2(-64 - (modes.Length - 1 - i) * 102, 160),
+                      new Vector2(96, 46), new Vector2(1, 0));
+                Stretch(MakeText((RectTransform)button.transform, "L", mode.ToString().ToLower(), bodyFont, 30, textColor,
+                                 TextAnchor.MiddleCenter).rectTransform, 0);
+                modeButtons[mode] = button.GetComponent<Image>();
+            }
+
+            var field = new GameObject("Address", typeof(RectTransform), typeof(Image), typeof(InputField));
+            field.transform.SetParent(canvas, false);
+            var image = field.GetComponent<Image>();
+            image.sprite = frameSprite;
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 0.5f;
+            Place((RectTransform)field.transform, new Vector2(1, 0), new Vector2(-384, 64), new Vector2(276, 84), new Vector2(1, 0));
+            var text = MakeText((RectTransform)field.transform, "Text", "", bodyFont, 34, textColor, TextAnchor.MiddleLeft);
+            Stretch(text.rectTransform, 16, 0);
+            text.supportRichText = false;
+            var hint = MakeText((RectTransform)field.transform, "Placeholder", "server address", bodyFont, 34, dimColor, TextAnchor.MiddleLeft);
+            Stretch(hint.rectTransform, 16, 0);
+            addressField = field.GetComponent<InputField>();
+            addressField.textComponent = text;
+            addressField.placeholder = hint;
+            addressField.text = NetSession.Address;
+
+            SetMode(NetSession.Mode == NetMode.Server ? NetMode.Solo : NetSession.Mode);
+        }
+
+        void SetMode(NetMode mode)
+        {
+            chosenMode = mode;
+            foreach (var pair in modeButtons) pair.Value.color = pair.Key == mode ? accentColor : Color.white;
+            addressField.gameObject.SetActive(mode == NetMode.Join);
         }
 
         // Faint horizontal lines over everything, like an old CRT. Ignores clicks.
@@ -209,6 +342,8 @@ namespace DreamWorld.CharacterCreation
         void SelectCategory(OutfitCategory category)
         {
             currentCategory = category;
+            eyeControls.SetActive(category == OutfitCategory.Eyes);
+            SyncSliders();
             RebuildSwatches();
             Refresh();
         }
@@ -264,6 +399,8 @@ namespace DreamWorld.CharacterCreation
         void OnReady()
         {
             CharacterSave.Save(appearance);
+            NetSession.Mode = chosenMode;
+            if (chosenMode == NetMode.Join) NetSession.Address = addressField.text.Trim();
             statusLabel.text = "saved_ok :)";
             Debug.Log("[dreamWorld] Character saved.");
             if (Application.CanStreamedLevelBeLoaded(worldScene))

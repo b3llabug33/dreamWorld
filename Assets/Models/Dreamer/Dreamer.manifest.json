@@ -160,6 +160,156 @@
    ]
   },
   {
+   "name": "Eyes_Upturned",
+   "submeshes": [
+    {
+     "texture": "EyesUpturned",
+     "tint": false
+    },
+    {
+     "texture": "EyesUpturned",
+     "tint": false
+    },
+    {
+     "texture": "EyesUpturned",
+     "tint": true
+    },
+    {
+     "texture": "EyesUpturned",
+     "tint": false
+    },
+    {
+     "texture": "EyesUpturned",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Starry",
+   "submeshes": [
+    {
+     "texture": "EyesStarry",
+     "tint": false
+    },
+    {
+     "texture": "EyesStarry",
+     "tint": false
+    },
+    {
+     "texture": "EyesStarry",
+     "tint": true
+    },
+    {
+     "texture": "EyesStarry",
+     "tint": false
+    },
+    {
+     "texture": "EyesStarry",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_CatEye",
+   "submeshes": [
+    {
+     "texture": "EyesCatEye",
+     "tint": false
+    },
+    {
+     "texture": "EyesCatEye",
+     "tint": false
+    },
+    {
+     "texture": "EyesCatEye",
+     "tint": true
+    },
+    {
+     "texture": "EyesCatEye",
+     "tint": false
+    },
+    {
+     "texture": "EyesCatEye",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Monolid",
+   "submeshes": [
+    {
+     "texture": "EyesMonolid",
+     "tint": false
+    },
+    {
+     "texture": "EyesMonolid",
+     "tint": false
+    },
+    {
+     "texture": "EyesMonolid",
+     "tint": true
+    },
+    {
+     "texture": "EyesMonolid",
+     "tint": false
+    },
+    {
+     "texture": "EyesMonolid",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_PixelHex",
+   "submeshes": [
+    {
+     "texture": "EyesPixelHex",
+     "tint": false
+    },
+    {
+     "texture": "EyesPixelHex",
+     "tint": false
+    },
+    {
+     "texture": "EyesPixelHex",
+     "tint": true
+    },
+    {
+     "texture": "EyesPixelHex",
+     "tint": false
+    },
+    {
+     "texture": "EyesPixelHex",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Puppy",
+   "submeshes": [
+    {
+     "texture": "EyesPuppy",
+     "tint": false
+    },
+    {
+     "texture": "EyesPuppy",
+     "tint": false
+    },
+    {
+     "texture": "EyesPuppy",
+     "tint": true
+    },
+    {
+     "texture": "EyesPuppy",
+     "tint": false
+    },
+    {
+     "texture": "EyesPuppy",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Hair_Bob",
    "submeshes": [
     {

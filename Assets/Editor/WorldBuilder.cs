@@ -2,7 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using DreamWorld.CharacterCreation;
+using DreamWorld.Net;
 using DreamWorld.Rendering;
+using FishNet.Component.Spawning;
+using FishNet.Component.Transforming;
+using FishNet.Managing;
+using FishNet.Object;
+using FishNet.Transporting.Tugboat;
 using DreamWorld.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -22,6 +28,7 @@ namespace DreamWorld.EditorTools
         const string WorldScene = "Assets/Scenes/World_MushroomHollow.unity";
         const string CreatorScene = "Assets/Scenes/CharacterCreation.unity";
         const string PlayerPrefab = "Assets/Prefabs/Dreamer.prefab";
+        const string NetPlayerPrefab = "Assets/Prefabs/NetDreamer.prefab";
 
         [Serializable] class Sub { public string texture; public bool unlit; }
         [Serializable] class Prop { public string name; public string collider; public Sub[] submeshes; }
@@ -137,9 +144,54 @@ namespace DreamWorld.EditorTools
             hud.titleFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/PixelifySans.ttf");
             hud.bodyFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/VT323-Regular.ttf");
 
+            // multiplayer: solo keeps the offline Player above; host/join/server spawn NetDreamers
+            var netPrefab = BuildNetPlayerPrefab();
+            var nmGo = new GameObject("NetworkManager");
+            var nm = nmGo.AddComponent<NetworkManager>();
+            nmGo.AddComponent<Tugboat>();
+            var nmSo = new SerializedObject(nm);
+            nmSo.FindProperty("_dontDestroyOnLoad").boolValue = false;   // lives and dies with this scene
+            nmSo.ApplyModifiedPropertiesWithoutUndo();
+            var spawner = nmGo.AddComponent<PlayerSpawner>();
+            spawner.SetPlayerPrefab(netPrefab.GetComponent<NetworkObject>());
+            var spawns = new List<Transform>();
+            foreach (var x in new[] { -1.2f, 0f, 1.2f })
+            {
+                var sp = new GameObject("NetSpawn").transform;
+                sp.SetParent(nmGo.transform);
+                sp.SetPositionAndRotation(new Vector3(x, 0.05f, -13 + Mathf.Abs(x)), Quaternion.identity);
+                spawns.Add(sp);
+            }
+            spawner.Spawns = spawns.ToArray();
+            var launcher = new GameObject("NetLauncher").AddComponent<NetLauncher>();
+            launcher.networkManager = nm;
+            launcher.offlinePlayer = player;
+            launcher.hud = hud;
+            PlayerSettings.runInBackground = true;   // a server/host must keep running when unfocused
+
             EditorSceneManager.SaveScene(scene, WorldScene);
             AddToBuildSettings(WorldScene);
             Debug.Log("[World] built " + WorldScene);
+        }
+
+        // The online version of the character: same Dreamer, plus movement and FishNet sync.
+        static GameObject BuildNetPlayerPrefab()
+        {
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));
+            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            go.name = "NetDreamer";
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            var turntable = go.GetComponent<CharacterTurntable>();
+            if (turntable != null) UnityEngine.Object.DestroyImmediate(turntable);
+            var cc = go.AddComponent<CharacterController>();
+            cc.height = 1.6f; cc.radius = 0.25f; cc.center = new Vector3(0, 0.82f, 0);
+            go.AddComponent<PlayerController>();
+            go.AddComponent<NetworkObject>();
+            go.AddComponent<NetworkTransform>();   // owner-driven position/rotation, synced to everyone
+            go.AddComponent<NetPlayer>();
+            var prefab = PrefabUtility.SaveAsPrefabAsset(go, NetPlayerPrefab);
+            UnityEngine.Object.DestroyImmediate(go);
+            return prefab;
         }
 
         // ---------------------------------------------------------------- creator backdrop

@@ -188,6 +188,8 @@ namespace DreamWorld.EditorTools
                 mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
                 AssetDatabase.CreateAsset(mat, path);
             }
+            // Faces use the PSX Face shader (PSX Lit + the eye size/spacing/height sliders).
+            mat.shader = Shader.Find(texture.StartsWith("Eyes") ? "DreamWorld/PSX Face" : "DreamWorld/PSX Lit");
             mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{ModelDir}/Textures/{texture}.png");
             // Eye atlases and fishnets have see-through pixels; everything else is solid.
             mat.SetFloat("_Cutoff", texture.StartsWith("Eyes") || texture == "Fishnet" ? 0.5f : 0f);

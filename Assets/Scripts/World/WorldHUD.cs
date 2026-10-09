@@ -18,7 +18,7 @@ namespace DreamWorld.World
         public Color dimColor = new Color(0.78f, 0.74f, 0.92f, 1f);
         public Color accentColor = new Color(0.98f, 0.66f, 0.78f, 1f);
 
-        Text banner, subtitle;
+        Text banner, subtitle, status;
         CanvasGroup bannerGroup;
         float timer;
         string fullBanner;
@@ -53,6 +53,19 @@ namespace DreamWorld.World
             hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0.5f, 0);
             hint.rectTransform.anchoredPosition = new Vector2(0, 30);
             banner.text = "";
+
+            status = MakeText(canvas, "", bodyFont, 30, accentColor, Vector2.zero);
+            status.alignment = TextAnchor.UpperRight;
+            status.rectTransform.anchorMin = status.rectTransform.anchorMax = new Vector2(1, 1);
+            status.rectTransform.pivot = new Vector2(1, 1);
+            status.rectTransform.sizeDelta = new Vector2(700, 40);
+            status.rectTransform.anchoredPosition = new Vector2(-40, -30);
+        }
+
+        // Small status line in the top-right corner (used for multiplayer: "online: host | players: 2").
+        public void SetStatus(string text)
+        {
+            if (status != null) status.text = text;
         }
 
         Text MakeText(RectTransform parent, string content, Font font, int size, Color color, Vector2 pos)

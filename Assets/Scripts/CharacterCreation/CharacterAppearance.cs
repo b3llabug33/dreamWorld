@@ -49,11 +49,19 @@ namespace DreamWorld.CharacterCreation
     {
         public List<OutfitSlot> slots = new List<OutfitSlot>();
 
+        [Header("Eye sliders (face shader)")]
+        [Range(0.75f, 1.35f)] public float eyeScale = 1f;
+        [Range(-0.06f, 0.06f)] public float eyeSpacing = 0f;
+        [Range(-0.05f, 0.06f)] public float eyeHeight = 0f;
+
         // Fired after any style/color change so the UI can refresh its labels.
         public event Action Changed;
 
         // MaterialPropertyBlock tints a renderer without creating a new material copy.
         static readonly int ColorId = Shader.PropertyToID("_Color");
+        static readonly int EyeScaleId = Shader.PropertyToID("_EyeScale");
+        static readonly int EyeSpacingId = Shader.PropertyToID("_EyeSpacing");
+        static readonly int EyeHeightId = Shader.PropertyToID("_EyeHeight");
         MaterialPropertyBlock block;
 
         void Awake()
@@ -65,6 +73,14 @@ namespace DreamWorld.CharacterCreation
 
         public OutfitSlot GetSlot(OutfitCategory category) => slots.Find(s => s.category == category);
 
+        // Re-applies every slot (after loading a look from a save or from the network).
+        public void ApplyAll()
+        {
+            if (block == null) block = new MaterialPropertyBlock();
+            foreach (var slot in slots) Apply(slot);
+            Changed?.Invoke();
+        }
+
         public void ChangeStyle(OutfitCategory category, int direction)
         {
             var slot = GetSlot(category);
@@ -74,6 +90,18 @@ namespace DreamWorld.CharacterCreation
             Apply(slot);
             Changed?.Invoke();
         }
+
+        public void SetEyes(float scale, float spacing, float height)
+        {
+            eyeScale = scale;
+            eyeSpacing = spacing;
+            eyeHeight = height;
+            var slot = GetSlot(OutfitCategory.Eyes);
+            if (slot != null) Apply(slot);
+            Changed?.Invoke();
+        }
+
+        public void ResetEyes() => SetEyes(1f, 0f, 0f);
 
         public void SetColor(OutfitCategory category, int colorIndex)
         {
@@ -94,15 +122,26 @@ namespace DreamWorld.CharacterCreation
                 style.SetActive(style == current);
             if (current == null) return;
 
-            block.SetColor(ColorId, slot.colors[slot.colorIndex]);
+            bool eyes = slot.category == OutfitCategory.Eyes;
             foreach (var r in current.GetComponentsInChildren<Renderer>(true))
             {
                 // Two-tone pieces (a sailor collar, a sneaker sole...) keep some submeshes untinted.
                 var mask = r.GetComponent<TintMask>();
                 int count = r.sharedMaterials.Length;
                 for (int i = 0; i < count; i++)
-                    if (mask == null || mask.Tints(i))
-                        r.SetPropertyBlock(block, i);
+                {
+                    bool tint = mask == null || mask.Tints(i);
+                    if (!tint && !eyes) continue;
+                    block.Clear();
+                    block.SetColor(ColorId, tint ? slot.colors[slot.colorIndex] : Color.white);
+                    if (eyes)   // every face layer moves with the eye sliders
+                    {
+                        block.SetFloat(EyeScaleId, eyeScale);
+                        block.SetFloat(EyeSpacingId, eyeSpacing);
+                        block.SetFloat(EyeHeightId, eyeHeight);
+                    }
+                    r.SetPropertyBlock(block, i);
+                }
             }
         }
     }
