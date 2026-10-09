@@ -1,0 +1,181 @@
+"""
+Cuts the recorded gameplay frames into a ~27 second vertical (1080x1920) ad for TikTok/Reels:
+pixel-font captions that type themselves out, CRT scanlines, glitch cuts, and an end card.
+  python make_ad.py <frames root> <output.mp4>
+<frames root> holds one folder of 1920x1080 JPEG frames per clip (creator, walk, fight, death, town),
+as written by dreamWorld's ClipRecorder. Needs Pillow + imageio-ffmpeg (for H.264).
+"""
+import glob
+import os
+import random
+import subprocess
+import sys
+
+import imageio_ffmpeg
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+ROOT, OUT = sys.argv[1], sys.argv[2]
+HERE = os.path.dirname(os.path.abspath(__file__))
+FONTS = os.path.join(HERE, "..", "..", "..", "Assets", "Fonts")
+TITLE = os.path.join(FONTS, "PixelifySans.ttf")
+BODY = os.path.join(FONTS, "VT323-Regular.ttf")
+
+W, H, FPS = 1080, 1920, 30
+CREAM, PINK, LAVENDER, DIM = (255, 245, 235), (250, 140, 190), (200, 184, 250), (160, 148, 200)
+WIN = (40, 300, 1040, 1550)          # video window: 1000 x 1250 (4:5)
+
+# (clip, first frame, frames, focus x 0-1, big caption, small caption)
+SEGMENTS = [
+    ("town", 0, 75, 0.5, "i'm making a cozy ps1 game", "> dreamWorld  (in development)"),
+    ("creator", 10, 160, 0.5, "make you", "build your own character"),
+    ("creator", 288, 58, 0.5, "every little detail", "brows, freckles, piercings + more"),
+    ("walk", 0, 72, 0.5, "explore mushroom hollow", "a glowing village in the dream woods"),
+    ("fight", 270, 110, 0.55, "elden ring style combat", "roll, lock on, bonk the shroomling"),
+    ("fight", 380, 75, 0.5, "level up from 0", "health, stamina, magic, strength, luck"),
+    ("death", 120, 110, 0.5, "dying in a dream?", "you just wake up at home"),
+]
+END_FRAMES = 105
+
+
+def font(path, size):
+    return ImageFont.truetype(path, size)
+
+
+F_BIG, F_SMALL, F_FOOT = font(TITLE, 74), font(BODY, 50), font(BODY, 44)
+F_LOGO, F_END, F_URL = font(TITLE, 150), font(BODY, 58), font(TITLE, 64)
+
+
+def frames(clip):
+    return sorted(glob.glob(os.path.join(ROOT, clip, "*.jpg")), key=lambda f: int(f.split("_")[-1].split(".")[0]))
+
+
+CLIPS = {c: frames(c) for c in {s[0] for s in SEGMENTS}}
+
+
+def background():
+    bg = Image.new("RGB", (W, H))
+    d = ImageDraw.Draw(bg)
+    for y in range(H):   # twilight gradient
+        t = y / H
+        d.line([(0, y), (W, y)], fill=(int(20 + 26 * t), int(12 + 8 * t), int(42 + 26 * t)))
+    rng = random.Random(4)
+    for _ in range(140):   # pixel stars
+        x, y = rng.randrange(W), rng.randrange(H)
+        s = rng.choice((2, 3, 4))
+        d.rectangle([x, y, x + s, y + s], fill=(255, 240, 255) if rng.random() < 0.7 else LAVENDER)
+    return bg
+
+
+BG = background()
+SCAN = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+_d = ImageDraw.Draw(SCAN)
+for y in range(0, H, 4):
+    _d.line([(0, y), (W, y)], fill=(0, 0, 0, 46))
+
+
+def shadow_text(d, xy, text, f, fill, shadow=PINK, off=6, anchor="mm"):
+    d.text((xy[0] + off, xy[1] + off), text, font=f, fill=shadow, anchor=anchor)
+    d.text(xy, text, font=f, fill=fill, anchor=anchor)
+
+
+def game_frame(path, focus, zoom):
+    src = Image.open(path).convert("RGB")
+    ch = 1040 / zoom                      # drop the bottom hint line, then a slow push-in
+    cw = ch * (WIN[2] - WIN[0]) / (WIN[3] - WIN[1])
+    cx = min(max(focus * 1920, cw / 2), 1920 - cw / 2)
+    cy = 520
+    box = (cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2)
+    return src.resize((WIN[2] - WIN[0], WIN[3] - WIN[1]), Image.LANCZOS, box=box)
+
+
+def frame_border(d):
+    x0, y0, x1, y1 = WIN
+    for i, c in enumerate((LAVENDER, (60, 40, 100), LAVENDER)):
+        d.rectangle([x0 - 8 + i * 3, y0 - 8 + i * 3, x1 + 7 - i * 3, y1 + 7 - i * 3], outline=c, width=2)
+    for cx, cy in ((x0 - 8, y0 - 8), (x1 + 2, y0 - 8), (x0 - 8, y1 + 2), (x1 + 2, y1 + 2)):   # notched corners
+        d.rectangle([cx, cy, cx + 5, cy + 5], fill=BG.getpixel((cx, cy)))
+
+
+def footer(d, i):
+    cursor = "_" if (i // 15) % 2 == 0 else " "
+    d.text((W // 2, 1660), "> dreamWorld.exe" + cursor, font=F_FOOT, fill=CREAM, anchor="mm")
+    d.text((W // 2, 1730), "follow the devlog  |  bellabug.dev", font=F_FOOT, fill=DIM, anchor="mm")
+
+
+def glitch(img, k, rng):
+    """First few frames of a cut: torn horizontal bands + a flash."""
+    if k >= 4:
+        return img
+    out = img.copy()
+    for _ in range(10 - k * 2):
+        y = rng.randrange(WIN[1], WIN[3] - 40)
+        h = rng.randrange(8, 40)
+        band = img.crop((0, y, W, y + h))
+        out.paste(band, (rng.randrange(-40, 40), y))
+    if k == 0:
+        out = Image.blend(out, Image.new("RGB", out.size, (255, 230, 250)), 0.35)
+    return out
+
+
+def segment_frames():
+    rng = random.Random(7)
+    n = 0
+    for clip, start, count, focus, big, small in SEGMENTS:
+        files = CLIPS[clip]
+        for k in range(count):
+            path = files[min(start + k, len(files) - 1)]
+            img = BG.copy()
+            img.paste(game_frame(path, focus, 1.0 + 0.06 * k / count), (WIN[0], WIN[1]))
+            d = ImageDraw.Draw(img)
+            frame_border(d)
+            typed = big[: max(0, int(k * 32 / FPS) + 1)]
+            shadow_text(d, (W // 2, 140), typed, F_BIG, CREAM)
+            if k > 8:
+                d.text((W // 2, 232), small, font=F_SMALL, fill=LAVENDER, anchor="mm")
+            footer(d, n)
+            img = glitch(img, k, rng)
+            img.paste(SCAN, (0, 0), SCAN)
+            n += 1
+            yield img
+    # end card: the town, blurred and dimmed, with the logo
+    last = Image.open(CLIPS["town"][len(CLIPS["town"]) // 2]).convert("RGB")
+    scale = H / last.height
+    back = last.resize((int(last.width * scale), H), Image.LANCZOS)
+    back = back.crop(((back.width - W) // 2, 0, (back.width - W) // 2 + W, H)).filter(ImageFilter.GaussianBlur(10))
+    back = Image.blend(back, Image.new("RGB", (W, H), (16, 8, 34)), 0.6)
+    for k in range(END_FRAMES):
+        img = back.copy()
+        d = ImageDraw.Draw(img)
+        logo = "dreamWorld"[: max(0, int(k * 20 / FPS) + 1)]
+        shadow_text(d, (W // 2, 760), logo, F_LOGO, CREAM, off=9)
+        if k > 18:
+            d.text((W // 2, 900), "a cozy ps1 world in the making", font=F_END, fill=LAVENDER, anchor="mm")
+        if k > 32:
+            d.text((W // 2, 990), "follow along for the devlog", font=F_END, fill=CREAM, anchor="mm")
+        if k > 46:
+            cursor = "_" if (k // 12) % 2 == 0 else " "
+            shadow_text(d, (W // 2, 1130), "bellabug.dev" + cursor, F_URL, PINK, shadow=(40, 20, 70), off=5)
+        img = glitch(img, k, rng)
+        img.paste(SCAN, (0, 0), SCAN)
+        yield img
+
+
+def main():
+    os.makedirs(os.path.dirname(os.path.abspath(OUT)), exist_ok=True)
+    cmd = [imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
+           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+           "-pix_fmt", "yuv420p", "-movflags", "+faststart", OUT]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    count = 0
+    for img in segment_frames():
+        proc.stdin.write(img.tobytes())
+        count += 1
+        if count % 100 == 0:
+            print("frames", count, flush=True)
+    proc.stdin.close()
+    proc.wait()
+    print("wrote", OUT, count, "frames", f"{count / FPS:.1f}s")
+
+
+if __name__ == "__main__":
+    main()
