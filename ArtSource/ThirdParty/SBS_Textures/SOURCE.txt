@@ -1,0 +1,4 @@
+Screaming Brain Studios texture packs (CC0)
+https://opengameart.org/content/base-material-texture-pack
+https://opengameart.org/content/synthetic-texture-pack
+Converted to grayscale by build_dreamer.py so Unity can tint them.

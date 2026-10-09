@@ -5,46 +5,52 @@ using UnityEngine.UI;
 
 namespace DreamWorld.CharacterCreation
 {
-    // Builds the character-creator screen in code when the scene starts:
-    //   left:   category tabs (Skin / Hair / Top / Bottom / Shoes)
-    //   bottom: "< style 1/3 >" picker + a row of color dots for the selected category
-    //   sides:  turn buttons for the turntable
-    //   corner: Ready button (saves the character)
-    // Building it in code keeps the skeleton easy to change; it can become a prefab once the look settles.
+    // Builds the "make you" character-creator screen in code when the scene starts.
+    // Look: a cozy pixel terminal. Framed panels, pixel fonts, faint CRT scanlines.
+    //   left:   == CATEGORY == list (click, or W/S / up/down)
+    //   right:  == STYLE == picker (A/D / left/right) and == COLOR == swatches (Q/E)
+    //   bottom: turn buttons + key hints, [ READY ] (Enter) saves the character
     public class CharacterCreatorUI : MonoBehaviour
     {
         public CharacterAppearance appearance;
         public CharacterTurntable turntable;
 
+        [Header("Fonts (fall back to Unity's built-in font)")]
+        public Font titleFont;
+        public Font bodyFont;
+
         [Header("Theme")]
-        public Color panelColor = new Color(0.16f, 0.12f, 0.26f, 0.85f);  // night purple
-        public Color buttonColor = new Color(0.36f, 0.30f, 0.52f, 1f);    // dusty lavender
-        public Color selectedColor = new Color(0.96f, 0.66f, 0.76f, 1f);  // soft pink
+        public Color panelColor = new Color(0.07f, 0.06f, 0.13f, 0.88f);  // night
+        public Color frameColor = new Color(0.78f, 0.72f, 0.98f, 1f);     // lavender line
         public Color textColor = new Color(1f, 0.96f, 0.92f, 1f);         // cream
+        public Color dimColor = new Color(0.62f, 0.58f, 0.78f, 1f);       // muted lavender
+        public Color accentColor = new Color(0.98f, 0.66f, 0.78f, 1f);    // soft pink
+        public Color hiliteColor = new Color(0.98f, 0.66f, 0.78f, 0.18f); // selected row glow
 
         OutfitCategory currentCategory = OutfitCategory.Hair;
-        readonly Dictionary<OutfitCategory, Image> tabImages = new Dictionary<OutfitCategory, Image>();
-        readonly List<GameObject> colorDots = new List<GameObject>();
-        RectTransform colorRow;
-        Text styleLabel;
-        Text statusLabel;
-        Font font;
-        Sprite roundedSprite;
-        Sprite circleSprite;
+        readonly Dictionary<OutfitCategory, (Text label, Image bar)> rows = new Dictionary<OutfitCategory, (Text, Image)>();
+        readonly List<(Image ring, Image swatch)> swatches = new List<(Image, Image)>();
+        OutfitCategory[] categories;
+        RectTransform swatchGrid;
+        Text styleName, styleCount, statusLabel, cursorLabel;
+        Sprite frameSprite, solidSprite;
+        float cursorTimer;
 
         void Start()
         {
-            font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            roundedSprite = MakeRoundedSprite(64, 18);
-            circleSprite = MakeRoundedSprite(64, 32);
+            if (titleFont == null) titleFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (bodyFont == null) bodyFont = titleFont;
+            frameSprite = MakeFrameSprite();
+            solidSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.one * 0.5f, 100f);
+            categories = (OutfitCategory[])System.Enum.GetValues(typeof(OutfitCategory));
 
             EnsureEventSystem();
             var canvas = BuildCanvas();
             BuildTitle(canvas);
-            BuildTabs(canvas);
-            BuildPickerPanel(canvas);
-            BuildTurnButtons(canvas);
-            BuildReadyButton(canvas);
+            BuildCategoryPanel(canvas);
+            BuildStylePanel(canvas);
+            BuildBottomBar(canvas);
+            BuildScanlines(canvas);
 
             appearance.Changed += Refresh;
             SelectCategory(currentCategory);
@@ -53,6 +59,27 @@ namespace DreamWorld.CharacterCreation
         void OnDestroy()
         {
             if (appearance != null) appearance.Changed -= Refresh;
+        }
+
+        void Update()
+        {
+            // blinking terminal cursor
+            cursorTimer += Time.deltaTime;
+            cursorLabel.text = "> character_setup.exe" + (cursorTimer % 1f < 0.5f ? "_" : " ");
+
+            int c = System.Array.IndexOf(categories, currentCategory);
+            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+                SelectCategory(categories[(c - 1 + categories.Length) % categories.Length]);
+            if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+                SelectCategory(categories[(c + 1) % categories.Length]);
+            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) appearance.ChangeStyle(currentCategory, -1);
+            if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) appearance.ChangeStyle(currentCategory, +1);
+            var slot = appearance.GetSlot(currentCategory);
+            if (slot != null && Input.GetKeyDown(KeyCode.Q)) appearance.SetColor(currentCategory, (slot.colorIndex - 1 + slot.colors.Length) % slot.colors.Length);
+            if (slot != null && Input.GetKeyDown(KeyCode.E)) appearance.SetColor(currentCategory, (slot.colorIndex + 1) % slot.colors.Length);
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) OnReady();
+            for (int i = 0; i < categories.Length && i < 9; i++)
+                if (Input.GetKeyDown(KeyCode.Alpha1 + i)) SelectCategory(categories[i]);
         }
 
         // ---------- layout ----------
@@ -70,65 +97,101 @@ namespace DreamWorld.CharacterCreation
 
         void BuildTitle(RectTransform canvas)
         {
-            var title = MakeText(canvas, "Title", "make you", 64);
-            Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -90), new Vector2(900, 100));
+            var title = MakeText(canvas, "Title", "make you", titleFont, 96, textColor, TextAnchor.UpperLeft);
+            Place(title.rectTransform, new Vector2(0, 1), new Vector2(64, -36), new Vector2(700, 120), new Vector2(0, 1));
+            var shadow = title.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = accentColor;
+            shadow.effectDistance = new Vector2(5, -5);
+
+            cursorLabel = MakeText(canvas, "Cursor", "", bodyFont, 34, dimColor, TextAnchor.UpperLeft);
+            Place(cursorLabel.rectTransform, new Vector2(0, 1), new Vector2(70, -150), new Vector2(700, 44), new Vector2(0, 1));
         }
 
-        void BuildTabs(RectTransform canvas)
+        void BuildCategoryPanel(RectTransform canvas)
         {
-            var panel = MakePanel(canvas, "Tabs");
-            Place(panel, new Vector2(0f, 0.5f), new Vector2(210, 0), new Vector2(300, 520));
+            var panel = MakePanel(canvas, "Categories");
+            float height = 96 + categories.Length * 58;
+            Place(panel, new Vector2(0, 0.5f), new Vector2(64, 10), new Vector2(380, height), new Vector2(0, 0.5f));
+            Header(panel, "== CATEGORY ==", -26);
 
-            var categories = (OutfitCategory[])System.Enum.GetValues(typeof(OutfitCategory));
             for (int i = 0; i < categories.Length; i++)
             {
                 var category = categories[i];
-                var button = MakeButton(panel, category.ToString().ToLower(), 36, () => SelectCategory(category));
-                Place((RectTransform)button.transform, new Vector2(0.5f, 1f), new Vector2(0, -70 - i * 95), new Vector2(240, 76));
-                tabImages[category] = button.GetComponent<Image>();
+                var row = MakeButton(panel, $"Row_{category}", () => SelectCategory(category), transparent: true);
+                Place((RectTransform)row.transform, new Vector2(0.5f, 1), new Vector2(0, -92 - i * 58), new Vector2(340, 52));
+                var bar = row.GetComponent<Image>();
+                var label = MakeText((RectTransform)row.transform, "Label", "", bodyFont, 40, textColor, TextAnchor.MiddleLeft);
+                Stretch(label.rectTransform, 18, 0);   // side padding only, so the 40px text fits
+                rows[category] = (label, bar);
             }
         }
 
-        void BuildPickerPanel(RectTransform canvas)
+        void BuildStylePanel(RectTransform canvas)
         {
-            var panel = MakePanel(canvas, "Picker");
-            Place(panel, new Vector2(0.5f, 0f), new Vector2(0, 150), new Vector2(760, 220));
+            var panel = MakePanel(canvas, "Style");
+            Place(panel, new Vector2(1, 0.5f), new Vector2(-64, 10), new Vector2(460, 600), new Vector2(1, 0.5f));
+            Header(panel, "== STYLE ==", -26);
 
-            var prev = MakeButton(panel, "<", 44, () => appearance.ChangeStyle(currentCategory, -1));
-            Place((RectTransform)prev.transform, new Vector2(0.5f, 1f), new Vector2(-230, -60), new Vector2(84, 76));
-            var next = MakeButton(panel, ">", 44, () => appearance.ChangeStyle(currentCategory, +1));
-            Place((RectTransform)next.transform, new Vector2(0.5f, 1f), new Vector2(230, -60), new Vector2(84, 76));
+            var prev = MakeButton(panel, "Prev", () => appearance.ChangeStyle(currentCategory, -1));
+            Place((RectTransform)prev.transform, new Vector2(0, 1), new Vector2(54, -118), new Vector2(64, 64));
+            Stretch(MakeText((RectTransform)prev.transform, "L", "<", bodyFont, 48, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            var next = MakeButton(panel, "Next", () => appearance.ChangeStyle(currentCategory, +1));
+            Place((RectTransform)next.transform, new Vector2(1, 1), new Vector2(-54, -118), new Vector2(64, 64));
+            Stretch(MakeText((RectTransform)next.transform, "R", ">", bodyFont, 48, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
 
-            styleLabel = MakeText(panel, "StyleLabel", "", 36);
-            Place(styleLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(360, 76));
+            styleName = MakeText(panel, "StyleName", "", bodyFont, 48, accentColor, TextAnchor.MiddleCenter);
+            Place(styleName.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -112), new Vector2(280, 60));
+            styleCount = MakeText(panel, "StyleCount", "", bodyFont, 30, dimColor, TextAnchor.MiddleCenter);
+            Place(styleCount.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -156), new Vector2(280, 34));
 
-            colorRow = new GameObject("Colors", typeof(RectTransform), typeof(HorizontalLayoutGroup)).GetComponent<RectTransform>();
-            colorRow.SetParent(panel, false);
-            Place(colorRow, new Vector2(0.5f, 0f), new Vector2(0, 60), new Vector2(700, 70));
-            var layout = colorRow.GetComponent<HorizontalLayoutGroup>();
-            layout.spacing = 16;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = layout.childControlHeight = false;
-            layout.childForceExpandWidth = layout.childForceExpandHeight = false;
+            Header(panel, "== COLOR ==", -216);
+            swatchGrid = new GameObject("Swatches", typeof(RectTransform), typeof(GridLayoutGroup)).GetComponent<RectTransform>();
+            swatchGrid.SetParent(panel, false);
+            Place(swatchGrid, new Vector2(0.5f, 1), new Vector2(0, -400), new Vector2(400, 300));
+            var grid = swatchGrid.GetComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(56, 56);
+            grid.spacing = new Vector2(12, 12);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 6;
+            grid.childAlignment = TextAnchor.UpperCenter;
         }
 
-        void BuildTurnButtons(RectTransform canvas)
+        void BuildBottomBar(RectTransform canvas)
         {
-            var left = MakeButton(canvas, "< turn", 32, () => turntable.Turn(-1));
-            Place((RectTransform)left.transform, new Vector2(0.5f, 0.5f), new Vector2(-380, 0), new Vector2(170, 70));
-            var right = MakeButton(canvas, "turn >", 32, () => turntable.Turn(+1));
-            Place((RectTransform)right.transform, new Vector2(0.5f, 0.5f), new Vector2(380, 0), new Vector2(170, 70));
+            var left = MakeButton(canvas, "TurnLeft", () => turntable.Turn(-1));
+            Place((RectTransform)left.transform, new Vector2(0.5f, 0), new Vector2(-110, 84), new Vector2(150, 58));
+            Stretch(MakeText((RectTransform)left.transform, "L", "< turn", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            var right = MakeButton(canvas, "TurnRight", () => turntable.Turn(+1));
+            Place((RectTransform)right.transform, new Vector2(0.5f, 0), new Vector2(110, 84), new Vector2(150, 58));
+            Stretch(MakeText((RectTransform)right.transform, "R", "turn >", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+
+            var hint = MakeText(canvas, "Hint", "drag: spin   W/S: category   A/D: style   Q/E: color   enter: ready",
+                bodyFont, 26, dimColor, TextAnchor.MiddleCenter);
+            Place(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(1100, 34));
+
+            var ready = MakeButton(canvas, "Ready", OnReady);
+            ready.GetComponent<Image>().color = accentColor;
+            Place((RectTransform)ready.transform, new Vector2(1, 0), new Vector2(-64, 64), new Vector2(300, 84), new Vector2(1, 0));
+            Stretch(MakeText((RectTransform)ready.transform, "Label", "[ READY ]", bodyFont, 52, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+
+            statusLabel = MakeText(canvas, "Status", "", bodyFont, 32, accentColor, TextAnchor.MiddleRight);
+            Place(statusLabel.rectTransform, new Vector2(1, 0), new Vector2(-64, 168), new Vector2(400, 40), new Vector2(1, 0));
         }
 
-        void BuildReadyButton(RectTransform canvas)
+        // Faint horizontal lines over everything, like an old CRT. Ignores clicks.
+        void BuildScanlines(RectTransform canvas)
         {
-            var ready = MakeButton(canvas, "ready!", 44, OnReady);
-            ready.GetComponent<Image>().color = selectedColor;
-            ready.GetComponentInChildren<Text>().color = panelColor;
-            Place((RectTransform)ready.transform, new Vector2(1f, 0f), new Vector2(-200, 110), new Vector2(260, 100));
-
-            statusLabel = MakeText(canvas, "Status", "", 28);
-            Place(statusLabel.rectTransform, new Vector2(1f, 0f), new Vector2(-200, 200), new Vector2(360, 50));
+            var tex = new Texture2D(1, 4, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat };
+            tex.SetPixels(new[] { new Color(0, 0, 0, 0.35f), Color.clear, Color.clear, Color.clear });
+            tex.Apply();
+            var go = new GameObject("Scanlines", typeof(RectTransform), typeof(RawImage));
+            go.transform.SetParent(canvas, false);
+            var raw = go.GetComponent<RawImage>();
+            raw.texture = tex;
+            raw.raycastTarget = false;
+            raw.color = new Color(1, 1, 1, 0.5f);
+            raw.uvRect = new Rect(0, 0, 1, 1080 / 4f);
+            Stretch(raw.rectTransform, 0);
         }
 
         // ---------- behavior ----------
@@ -136,57 +199,62 @@ namespace DreamWorld.CharacterCreation
         void SelectCategory(OutfitCategory category)
         {
             currentCategory = category;
-            foreach (var pair in tabImages)
-                pair.Value.color = pair.Key == category ? selectedColor : buttonColor;
-            RebuildColorDots();
+            RebuildSwatches();
             Refresh();
         }
 
-        void RebuildColorDots()
+        void RebuildSwatches()
         {
-            foreach (var dot in colorDots) Destroy(dot);
-            colorDots.Clear();
-
+            foreach (var s in swatches) Destroy(s.ring.gameObject);
+            swatches.Clear();
             var slot = appearance.GetSlot(currentCategory);
             if (slot == null) return;
             for (int i = 0; i < slot.colors.Length; i++)
             {
                 int index = i;
-                // A white ring behind each dot; it's only visible on the selected color.
-                var ring = new GameObject("Dot" + i, typeof(RectTransform), typeof(Image));
-                ring.transform.SetParent(colorRow, false);
-                ((RectTransform)ring.transform).sizeDelta = new Vector2(64, 64);
+                // square pixel chip with a frame that lights up when selected
+                var ring = new GameObject("Swatch" + i, typeof(RectTransform), typeof(Image), typeof(Button));
+                ring.transform.SetParent(swatchGrid, false);
                 var ringImage = ring.GetComponent<Image>();
-                ringImage.sprite = circleSprite;
+                ringImage.sprite = solidSprite;
+                ring.GetComponent<Button>().onClick.AddListener(() => appearance.SetColor(currentCategory, index));
 
-                var dot = new GameObject("Color", typeof(RectTransform), typeof(Image), typeof(Button));
-                dot.transform.SetParent(ring.transform, false);
-                ((RectTransform)dot.transform).sizeDelta = new Vector2(50, 50);
-                var dotImage = dot.GetComponent<Image>();
-                dotImage.sprite = circleSprite;
-                dotImage.color = slot.colors[i];
-                dot.GetComponent<Button>().onClick.AddListener(() => appearance.SetColor(currentCategory, index));
-
-                colorDots.Add(ring);
+                var chip = new GameObject("Chip", typeof(RectTransform), typeof(Image));
+                chip.transform.SetParent(ring.transform, false);
+                Stretch((RectTransform)chip.transform, 5);
+                var chipImage = chip.GetComponent<Image>();
+                chipImage.sprite = solidSprite;
+                chipImage.color = slot.colors[i];
+                chipImage.raycastTarget = false;
+                swatches.Add((ringImage, chipImage));
             }
         }
 
         void Refresh()
         {
+            for (int i = 0; i < categories.Length; i++)
+            {
+                var category = categories[i];
+                bool selected = category == currentCategory;
+                var (label, bar) = rows[category];
+                label.text = $"{(selected ? ">" : " ")} [{i + 1}] {category.ToString().ToLower()}";
+                label.color = selected ? accentColor : textColor;
+                bar.color = selected ? hiliteColor : Color.clear;
+            }
+
             var slot = appearance.GetSlot(currentCategory);
             if (slot == null) return;
-            styleLabel.text = slot.styles.Count > 0
-                ? $"style {slot.styleIndex + 1} / {slot.styles.Count}"
-                : "no styles yet";
-            for (int i = 0; i < colorDots.Count; i++)
-                colorDots[i].GetComponent<Image>().color = i == slot.colorIndex ? textColor : Color.clear;
+            styleName.text = slot.CurrentStyleName;
+            styleCount.text = $"{slot.styleIndex + 1} / {slot.StyleCount}";
+            for (int i = 0; i < swatches.Count; i++)
+                swatches[i].ring.color = i == slot.colorIndex ? textColor : new Color(0, 0, 0, 0.6f);
             statusLabel.text = "";
         }
 
         void OnReady()
         {
             CharacterSave.Save(appearance);
-            statusLabel.text = "saved!";
+            statusLabel.text = "saved_ok :)";
             // TODO: load the next scene (house / world) once it exists.
             Debug.Log("[dreamWorld] Character saved.");
         }
@@ -199,12 +267,27 @@ namespace DreamWorld.CharacterCreation
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
         }
 
-        static void Place(RectTransform rect, Vector2 anchor, Vector2 position, Vector2 size)
+        static void Place(RectTransform rect, Vector2 anchor, Vector2 position, Vector2 size, Vector2? pivot = null)
         {
             rect.anchorMin = rect.anchorMax = anchor;
-            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.pivot = pivot ?? new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
+        }
+
+        static void Stretch(RectTransform rect, float inset, float insetY = -1)
+        {
+            if (insetY < 0) insetY = inset;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(inset, insetY);
+            rect.offsetMax = new Vector2(-inset, -insetY);
+        }
+
+        void Header(RectTransform panel, string text, float y)
+        {
+            var header = MakeText(panel, "Header", text, bodyFont, 34, dimColor, TextAnchor.MiddleCenter);
+            Place(header.rectTransform, new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(400, 40));
         }
 
         RectTransform MakePanel(RectTransform parent, string name)
@@ -212,65 +295,67 @@ namespace DreamWorld.CharacterCreation
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
             var image = go.GetComponent<Image>();
-            image.sprite = roundedSprite;
+            image.sprite = frameSprite;
             image.type = Image.Type.Sliced;
-            image.color = panelColor;
+            image.pixelsPerUnitMultiplier = 0.5f;   // draws the 2px frame at 4px on screen
             return (RectTransform)go.transform;
         }
 
-        Text MakeText(RectTransform parent, string name, string content, int size)
+        Text MakeText(RectTransform parent, string name, string content, Font font, int size, Color color, TextAnchor anchor)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Text));
             go.transform.SetParent(parent, false);
             var text = go.GetComponent<Text>();
             text.font = font;
             text.fontSize = size;
-            text.color = textColor;
-            text.alignment = TextAnchor.MiddleCenter;
+            text.color = color;
+            text.alignment = anchor;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.raycastTarget = false;
             text.text = content;
             return text;
         }
 
-        Button MakeButton(RectTransform parent, string label, int fontSize, UnityEngine.Events.UnityAction onClick)
+        Button MakeButton(RectTransform parent, string name, UnityEngine.Events.UnityAction onClick, bool transparent = false)
         {
-            var go = new GameObject("Button_" + label, typeof(RectTransform), typeof(Image), typeof(Button));
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             var image = go.GetComponent<Image>();
-            image.sprite = roundedSprite;
-            image.type = Image.Type.Sliced;
-            image.color = buttonColor;
+            if (transparent)
+            {
+                image.sprite = solidSprite;
+                image.color = Color.clear;
+            }
+            else
+            {
+                image.sprite = frameSprite;
+                image.type = Image.Type.Sliced;
+                image.pixelsPerUnitMultiplier = 0.5f;
+            }
             var button = go.GetComponent<Button>();
+            var colors = button.colors;
+            colors.highlightedColor = new Color(1f, 0.85f, 0.92f);
+            colors.pressedColor = accentColor;
+            button.colors = colors;
             button.onClick.AddListener(onClick);
-
-            var text = MakeText((RectTransform)go.transform, "Label", label, fontSize);
-            var rect = text.rectTransform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
             return button;
         }
 
-        // Generates a white rounded-rectangle sprite (radius = size/2 gives a circle) with
-        // 9-slice borders, so we don't need any image files for the placeholder UI.
-        static Sprite MakeRoundedSprite(int size, int radius)
+        // 12x12 pixel frame: 2px lavender border around a translucent night fill, 9-sliced.
+        Sprite MakeFrameSprite()
         {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
-            var pixels = new Color32[size * size];
+            const int size = 12, border = 2;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
             for (int y = 0; y < size; y++)
             for (int x = 0; x < size; x++)
             {
-                // Distance from the pixel to the nearest point of the inner (unrounded) rectangle.
-                float cx = Mathf.Clamp(x + 0.5f, radius, size - radius);
-                float cy = Mathf.Clamp(y + 0.5f, radius, size - radius);
-                float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cx, cy));
-                byte alpha = (byte)(Mathf.Clamp01(radius - d + 0.5f) * 255);
-                pixels[y * size + x] = new Color32(255, 255, 255, alpha);
+                bool edge = x < border || y < border || x >= size - border || y >= size - border;
+                bool corner = (x < border || x >= size - border) && (y < border || y >= size - border);
+                tex.SetPixel(x, y, corner ? Color.clear : edge ? frameColor : panelColor);  // notched pixel corners
             }
-            tex.SetPixels32(pixels);
             tex.Apply();
-            float border = Mathf.Min(radius, size / 2f - 1);
-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0,
-                SpriteMeshType.FullRect, new Vector4(border, border, border, border));
+            return Sprite.Create(tex, new Rect(0, 0, size, size), Vector2.one * 0.5f, 100f, 0,
+                SpriteMeshType.FullRect, new Vector4(border + 1, border + 1, border + 1, border + 1));
         }
     }
 }

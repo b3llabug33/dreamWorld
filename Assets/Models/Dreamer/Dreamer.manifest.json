@@ -1,0 +1,429 @@
+{
+ "pieces": [
+  {
+   "name": "Skin_Body",
+   "submeshes": [
+    {
+     "texture": "Skin",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Sparkle",
+   "submeshes": [
+    {
+     "texture": "EyesSparkle",
+     "tint": false
+    },
+    {
+     "texture": "EyesSparkle",
+     "tint": true
+    },
+    {
+     "texture": "EyesSparkle",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Soft",
+   "submeshes": [
+    {
+     "texture": "EyesSoft",
+     "tint": false
+    },
+    {
+     "texture": "EyesSoft",
+     "tint": true
+    },
+    {
+     "texture": "EyesSoft",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Sharp",
+   "submeshes": [
+    {
+     "texture": "EyesSharp",
+     "tint": false
+    },
+    {
+     "texture": "EyesSharp",
+     "tint": true
+    },
+    {
+     "texture": "EyesSharp",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Eyes_Sleepy",
+   "submeshes": [
+    {
+     "texture": "EyesSleepy",
+     "tint": false
+    },
+    {
+     "texture": "EyesSleepy",
+     "tint": true
+    },
+    {
+     "texture": "EyesSleepy",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Hime",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Ponytail",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Buns",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pixie",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_Tee",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_Crop",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_Sweater",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Top_Hoodie",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    },
+    {
+     "texture": "White",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Top_Sailor",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "Navy",
+     "tint": false
+    },
+    {
+     "texture": "Red",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Skirt",
+   "submeshes": [
+    {
+     "texture": "Tweed",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Pleated",
+   "submeshes": [
+    {
+     "texture": "Plaid",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Bottom_LongSkirt",
+   "submeshes": [
+    {
+     "texture": "Tartan",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Jeans",
+   "submeshes": [
+    {
+     "texture": "Denim",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Shorts",
+   "submeshes": [
+    {
+     "texture": "Denim",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Legwear_KneeSocks",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Legwear_ThighHighs",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Legwear_Tights",
+   "submeshes": [
+    {
+     "texture": "Mesh",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Legwear_LegWarmers",
+   "submeshes": [
+    {
+     "texture": "Knit",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Shoes_Sneakers",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "SoleWhite",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Shoes_Boots",
+   "submeshes": [
+    {
+     "texture": "Leather",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Shoes_Platforms",
+   "submeshes": [
+    {
+     "texture": "Leather",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Shoes_Loafers",
+   "submeshes": [
+    {
+     "texture": "Leather",
+     "tint": true
+    },
+    {
+     "texture": "Black",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Shoes_MaryJanes",
+   "submeshes": [
+    {
+     "texture": "Leather",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Glasses_Round",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Glasses_CatEye",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Glasses_Slim",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Glasses_Pixel",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Glasses_Shutter",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Headwear_Halo",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Headwear_Bow",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Headwear_CatEars",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    },
+    {
+     "texture": "Pink",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Headwear_Headphones",
+   "submeshes": [
+    {
+     "texture": "White",
+     "tint": true
+    }
+   ]
+  }
+ ]
+}
