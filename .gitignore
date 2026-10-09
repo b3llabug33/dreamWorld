@@ -25,3 +25,6 @@
 *.aab
 *.unitypackage
 crashlytics-build.properties
+
+# Blender auto-backups
+*.blend1
