@@ -1,8 +1,8 @@
 """
-Cuts the recorded gameplay frames into a ~27 second vertical (1080x1920) ad for TikTok/Reels:
+Cuts the recorded gameplay frames into a ~35 second vertical (1080x1920) ad for TikTok/Reels:
 pixel-font captions that type themselves out, CRT scanlines, glitch cuts, and an end card.
   python make_ad.py <frames root> <output.mp4>
-<frames root> holds one folder of 1920x1080 JPEG frames per clip (creator, walk, fight, death, town),
+<frames root> holds one folder of 1920x1080 JPEG frames per clip (creator, hair, eyes, walk, fight, death, town),
 as written by dreamWorld's ClipRecorder. Needs Pillow + imageio-ffmpeg (for H.264).
 """
 import glob
@@ -26,15 +26,18 @@ WIN = (40, 300, 1040, 1550)          # video window: 1000 x 1250 (4:5)
 
 # (clip, first frame, frames, focus x 0-1, big caption, small caption)
 SEGMENTS = [
-    ("town", 0, 75, 0.5, "i'm making a cozy ps1 game", "> dreamWorld  (in development)"),
-    ("creator", 10, 160, 0.5, "make you", "build your own character"),
-    ("creator", 288, 58, 0.5, "every little detail", "brows, freckles, piercings + more"),
+    ("town", 0, 75, 0.5, "i'm making a cozy retro game", "> dreamWorld  (in development)"),
+    ("hair", 0, 205, 0.5, "make you", "every hairstyle, any color"),
+    ("creator", 117, 90, 0.5, "mix + match outfits", "stripes, hearts, leopard + more"),
+    ("eyes", 20, 150, 0.5, "every little detail", "12 eye styles + any eye color"),
     ("walk", 0, 72, 0.5, "explore mushroom hollow", "a glowing village in the dream woods"),
-    ("fight", 270, 110, 0.55, "elden ring style combat", "roll, lock on, bonk the shroomling"),
-    ("fight", 380, 75, 0.5, "level up from 0", "health, stamina, magic, strength, luck"),
-    ("death", 120, 110, 0.5, "dying in a dream?", "you just wake up at home"),
+    ("fight", 262, 80, 0.55, "elden ring style combat", "roll, lock on, bonk the shroomling"),
+    ("fight", 342, 75, 0.5, "level up from 0", "health, stamina, magic, strength, luck"),
+    ("death", 120, 100, 0.5, "respawn at your home base", "bank your coins at home to keep them safe"),
 ]
-END_FRAMES = 105
+END_FRAMES = 100
+SOON_FRAMES = 120
+COMING_SOON = ["pvp", "base customization", "fashion design", "quests", "vampires"]
 
 
 def font(path, size):
@@ -43,6 +46,13 @@ def font(path, size):
 
 F_BIG, F_SMALL, F_FOOT = font(TITLE, 74), font(BODY, 50), font(BODY, 44)
 F_LOGO, F_END, F_URL = font(TITLE, 150), font(BODY, 58), font(TITLE, 64)
+
+
+def fit(d, text, size, width):
+    """The title font at the biggest size (up to `size`) where the full caption fits in `width`."""
+    while size > 40 and d.textlength(text, font=font(TITLE, size)) > width:
+        size -= 2
+    return font(TITLE, size)
 
 
 def frames(clip):
@@ -129,7 +139,7 @@ def segment_frames():
             d = ImageDraw.Draw(img)
             frame_border(d)
             typed = big[: max(0, int(k * 32 / FPS) + 1)]
-            shadow_text(d, (W // 2, 140), typed, F_BIG, CREAM)
+            shadow_text(d, (W // 2, 140), typed, fit(d, big, 74, 960), CREAM)
             if k > 8:
                 d.text((W // 2, 232), small, font=F_SMALL, fill=LAVENDER, anchor="mm")
             footer(d, n)
@@ -143,13 +153,28 @@ def segment_frames():
     back = last.resize((int(last.width * scale), H), Image.LANCZOS)
     back = back.crop(((back.width - W) // 2, 0, (back.width - W) // 2 + W, H)).filter(ImageFilter.GaussianBlur(10))
     back = Image.blend(back, Image.new("RGB", (W, H), (16, 8, 34)), 0.6)
+    # coming soon: the roadmap typed out like a terminal checklist
+    for k in range(SOON_FRAMES):
+        img = back.copy()
+        d = ImageDraw.Draw(img)
+        shadow_text(d, (W // 2, 560), "coming soon"[: max(0, int(k * 24 / FPS) + 1)], F_LOGO, CREAM, off=8)
+        for j, item in enumerate(COMING_SOON):
+            appear = 14 + j * 12
+            if k < appear:
+                continue
+            typed = item[: max(0, int((k - appear) * 30 / FPS) + 1)]
+            d.text((300, 760 + j * 92), "[ ] " + typed, font=F_URL, fill=CREAM if j % 2 == 0 else LAVENDER, anchor="lm")
+        footer(d, n + k)
+        img = glitch(img, k, rng)
+        img.paste(SCAN, (0, 0), SCAN)
+        yield img
     for k in range(END_FRAMES):
         img = back.copy()
         d = ImageDraw.Draw(img)
         logo = "dreamWorld"[: max(0, int(k * 20 / FPS) + 1)]
         shadow_text(d, (W // 2, 760), logo, F_LOGO, CREAM, off=9)
         if k > 18:
-            d.text((W // 2, 900), "a cozy ps1 world in the making", font=F_END, fill=LAVENDER, anchor="mm")
+            d.text((W // 2, 900), "a cozy retro world in the making", font=F_END, fill=LAVENDER, anchor="mm")
         if k > 32:
             d.text((W // 2, 990), "follow along for the devlog", font=F_END, fill=CREAM, anchor="mm")
         if k > 46:

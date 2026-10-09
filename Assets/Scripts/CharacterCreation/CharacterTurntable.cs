@@ -11,13 +11,16 @@ namespace DreamWorld.CharacterCreation
         public float buttonStepDegrees = 45f;
         public float smoothing = 12f;
 
-        float targetYaw;
+        float targetYaw, frontYaw;
         bool dragging;
         float lastMouseX;
 
-        void Start() => targetYaw = transform.eulerAngles.y;
+        void Start() => frontYaw = targetYaw = transform.eulerAngles.y;
 
         public void Turn(int direction) => targetYaw += direction * buttonStepDegrees;
+
+        // Turn back to facing the camera, plus an optional angle (used when recording clips).
+        public void FaceFront(float offset = 0f) => targetYaw = frontYaw + offset;
 
         void Update()
         {

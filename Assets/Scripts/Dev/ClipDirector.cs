@@ -15,6 +15,8 @@ namespace DreamWorld.Dev
     //   fight:   lock on to a shroomling, roll through its hop, combo + heavy to finish it, level up
     //   death:   low on health in the wilds, "YOU WOKE UP", waking at home
     //   town:    slow orbit around her in the town square with the menus hidden
+    //   hair:    every hairstyle in a row (3/4 view, menus hidden)
+    //   eyes:    every eye style and a few colors, up close (menus hidden)
     public class ClipDirector : MonoBehaviour
     {
         public static bool Running { get; private set; }
@@ -40,6 +42,8 @@ namespace DreamWorld.Dev
                 case "fight": yield return Fight(); break;
                 case "death": yield return Death(); break;
                 case "town": yield return Town(); break;
+                case "hair": yield return Hair(); break;
+                case "eyes": yield return Eyes(); break;
                 default: Debug.LogWarning("[ClipDirector] unknown scene " + scene); break;
             }
             Running = false;
@@ -104,6 +108,79 @@ namespace DreamWorld.Dev
             yield return Wait(0.6f);
             app.ChangeStyle(OutfitCategory.Extra3, 6);   // sparkles
             yield return Wait(1.2f);
+        }
+
+        // Logs in offline if needed and opens make-you (a new player, or editing the first one; never saved).
+        IEnumerator OpenCreator()
+        {
+            var flow = FindAnyObjectByType<AccountFlow>();
+            if (flow != null && !AccountService.LoggedIn) AccountService.PlayOffline();
+            if (flow != null) flow.ShowSelect();
+            yield return null;
+            UnityEngine.UI.Button make = null, edit = null;
+            foreach (var b in FindObjectsByType<UnityEngine.UI.Button>(FindObjectsSortMode.None))
+            {
+                var t = b.GetComponentInChildren<UnityEngine.UI.Text>();
+                if (t == null) continue;
+                if (t.text == "make a new player") make = b;
+                if (t.text == "edit") edit = b;
+            }
+            if (make != null) make.onClick.Invoke();
+            else if (edit != null) edit.onClick.Invoke();
+            yield return null;
+        }
+
+        IEnumerator Hair()
+        {
+            yield return OpenCreator();
+            PhotoMode.Set(true);
+            var app = FindAnyObjectByType<CharacterAppearance>();
+            var zoom = FindAnyObjectByType<CreatorCameraZoom>();
+            var turntable = FindAnyObjectByType<CharacterTurntable>();
+            if (zoom != null) { zoom.Zoom(-1f); zoom.Zoom(0.72f); }   // head and shoulders
+            if (turntable != null) turntable.FaceFront(28f);         // slightly turned shows the hair shape
+            var hair = app.GetSlot(OutfitCategory.Hair);
+            int[] colors = { 5, 4, 12, 0, 7, 6, 13, 10, 2 };
+            yield return Wait(0.7f);
+            var bases = hair.BaseNames;
+            for (int i = 0; i < bases.Count; i++)
+            {
+                hair.SelectBase(bases[i]);
+                hair.useCustom = false;
+                hair.colorIndex = colors[i % colors.Length];
+                app.ApplyAll();
+                yield return Wait(0.85f);
+            }
+            PhotoMode.Set(false);
+        }
+
+        IEnumerator Eyes()
+        {
+            yield return OpenCreator();
+            PhotoMode.Set(true);
+            var app = FindAnyObjectByType<CharacterAppearance>();
+            var zoom = FindAnyObjectByType<CreatorCameraZoom>();
+            var blink = FindAnyObjectByType<EyeBlink>();
+            if (blink != null) blink.secondsBetweenBlinks = new Vector2(60f, 60f);
+            var hair = app.GetSlot(OutfitCategory.Hair);
+            hair.SelectBase("Long");
+            if (hair.axes.Count > 0) hair.axes[0].index = 5;   // micro bangs: the whole face shows
+            app.ApplyAll();
+            var turntable = FindAnyObjectByType<CharacterTurntable>();
+            if (turntable != null) turntable.FaceFront();
+            if (zoom != null) zoom.Zoom(1f);
+            yield return Wait(0.9f);
+            var eyes = app.GetSlot(OutfitCategory.Eyes);
+            for (int i = 0; i < eyes.StyleCount; i++)
+            {
+                eyes.styleIndex = i;
+                eyes.useCustom = false;
+                eyes.colorIndex = i % eyes.colors.Length;
+                app.ApplyAll();
+                yield return Wait(0.5f);
+            }
+            if (blink != null) blink.secondsBetweenBlinks = new Vector2(2.2f, 5.5f);
+            PhotoMode.Set(false);
         }
 
         // ---------- world ----------
