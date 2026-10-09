@@ -9,7 +9,7 @@ namespace DreamWorld.Account
 {
     // Runs in the creator scene, in front of the character creator:
     //   1. log in / sign up / play offline   (skipped if this computer is still logged in)
-    //   2. "your dreamers": up to 4 saved characters; pick one to play or edit, or make a new one
+    //   2. "your players": up to 4 saved characters; pick one to play or edit, or make a new one
     //   3. the character creator; READY saves the character to the account and enters the world
     public class AccountFlow : MonoBehaviour
     {
@@ -89,10 +89,8 @@ namespace DreamWorld.Account
 
             loginStatus = ui.Label(loginPanel, "", 30, TerminalUI.Accent);
             loginStatus.horizontalOverflow = HorizontalWrapMode.Wrap;
-            TerminalUI.Place(loginStatus.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -462), new Vector2(560, 70));
-            var hint = ui.Label(loginPanel, "username: 3-20 letters, like bellabug (numbers optional)\npassword: 8+ characters with A-Z, a-z, 0-9 and a symbol",
-                                24, TerminalUI.Dim);
-            TerminalUI.Place(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(600, 60));
+            // no rules shown up front; a username/password that breaks them gets its rule in this status line
+            TerminalUI.Place(loginStatus.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -462), new Vector2(560, 90));
         }
 
         void ShowLogin()
@@ -130,13 +128,13 @@ namespace DreamWorld.Account
             ShowSelect();
         }
 
-        // ---------- your dreamers ----------
+        // ---------- your players ----------
 
         void BuildSelect()
         {
             selectPanel = ui.PanelBox(canvas, "Select");
             TerminalUI.Place(selectPanel, new Vector2(0, 0.5f), new Vector2(64, 0), new Vector2(560, 760), new Vector2(0, 0.5f));
-            var header = ui.Label(selectPanel, "== YOUR DREAMERS ==", 36, TerminalUI.Dim);
+            var header = ui.Label(selectPanel, "== YOUR PLAYERS ==", 36, TerminalUI.Dim);
             TerminalUI.Place(header.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -36), new Vector2(500, 44));
             accountLabel = ui.Label(selectPanel, "", 28, TerminalUI.Dim, TextAnchor.MiddleLeft);
             TerminalUI.Place(accountLabel.rectTransform, new Vector2(0.5f, 1), new Vector2(-60, -86), new Vector2(380, 36));
@@ -161,7 +159,7 @@ namespace DreamWorld.Account
             TerminalUI.Place((RectTransform)editButton.transform, new Vector2(0.5f, 0), new Vector2(0, 120), new Vector2(150, 66));
             deleteButton = ui.Button(selectPanel, "delete", 34, Delete);
             TerminalUI.Place((RectTransform)deleteButton.transform, new Vector2(0.5f, 0), new Vector2(160, 120), new Vector2(150, 66));
-            createButton = ui.Button(selectPanel, "make a new dreamer", 36, Create);
+            createButton = ui.Button(selectPanel, "make a new player", 36, Create);
             createButton.GetComponent<Image>().color = TerminalUI.Accent;
             TerminalUI.Place((RectTransform)createButton.transform, new Vector2(0.5f, 0), new Vector2(0, 120), new Vector2(420, 66));
 

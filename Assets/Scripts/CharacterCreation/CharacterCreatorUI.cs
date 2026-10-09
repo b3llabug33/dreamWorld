@@ -539,7 +539,7 @@ namespace DreamWorld.CharacterCreation
             }
         }
 
-        // Character name (saved with the character) and a button back to "your dreamers".
+        // Character name (saved with the character) and a button back to "your players".
         void BuildNameAndBack(RectTransform canvas)
         {
             var field = new GameObject("Name", typeof(RectTransform), typeof(Image), typeof(InputField));
@@ -552,7 +552,7 @@ namespace DreamWorld.CharacterCreation
             var text = MakeText((RectTransform)field.transform, "Text", "", bodyFont, 40, accentColor, TextAnchor.MiddleCenter);
             Stretch(text.rectTransform, 16, 0);
             text.supportRichText = false;
-            var hint = MakeText((RectTransform)field.transform, "Placeholder", "name your dreamer", bodyFont, 40, dimColor, TextAnchor.MiddleCenter);
+            var hint = MakeText((RectTransform)field.transform, "Placeholder", "name your player", bodyFont, 40, dimColor, TextAnchor.MiddleCenter);
             Stretch(hint.rectTransform, 16, 0);
             nameField = field.GetComponent<InputField>();
             nameField.textComponent = text;
@@ -562,7 +562,7 @@ namespace DreamWorld.CharacterCreation
 
             var back = MakeButton(canvas, "Back", () => { var flow = FindAnyObjectByType<AccountFlow>(); if (flow) flow.ShowSelect(); });
             Place((RectTransform)back.transform, new Vector2(0, 0), new Vector2(64, 64), new Vector2(240, 66), new Vector2(0, 0));
-            Stretch(MakeText((RectTransform)back.transform, "L", "< dreamers", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            Stretch(MakeText((RectTransform)back.transform, "L", "< players", bodyFont, 36, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
         }
 
         async void OnReady()
@@ -572,7 +572,7 @@ namespace DreamWorld.CharacterCreation
                 var name = nameField.text.Trim();
                 if (name.Length == 0)
                 {
-                    statusLabel.text = "give your dreamer a name";
+                    statusLabel.text = "give your player a name";
                     return;
                 }
                 if (AccountService.CurrentSlot < 0) AccountService.CurrentSlot = 0;

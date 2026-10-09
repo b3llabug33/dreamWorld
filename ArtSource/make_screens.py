@@ -33,7 +33,7 @@ SCREENS = {
         (TEXT, "RAM  |||||      33%"),
         (TEXT, "TEMP 41C   FANS ON"),
         (DIM, ""),
-        (TEXT, "dreamers online: 1"),
+        (TEXT, "players online: 1"),
         (PINK, "status: dreaming <3"),
     ],
 }

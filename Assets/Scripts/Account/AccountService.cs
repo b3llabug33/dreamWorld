@@ -89,11 +89,27 @@ namespace DreamWorld.Account
             return null;
         }
 
+        // Same rule the account server enforces, checked here so sign-up can say what's wrong right away.
+        static bool GoodPassword(string p)
+        {
+            bool upper = false, lower = false, digit = false, symbol = false;
+            foreach (char c in p)
+            {
+                if (char.IsUpper(c)) upper = true;
+                else if (char.IsLower(c)) lower = true;
+                else if (char.IsDigit(c)) digit = true;
+                else symbol = true;
+            }
+            return p.Length >= 8 && p.Length <= 30 && upper && lower && digit && symbol;
+        }
+
         public static async Task<string> SignIn(string username, string password, bool createAccount)
         {
             username = username.Trim();
             var nameError = CheckUsername(username);
             if (nameError != null) return nameError;
+            if (createAccount && !GoodPassword(password))
+                return "password needs 8-30 characters with an uppercase, a lowercase, a number and a symbol";
             var initError = await Init();
             if (initError != null) return initError;
             try
