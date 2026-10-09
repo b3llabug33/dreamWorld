@@ -64,6 +64,16 @@ pupil type, lid/wing/lashes, mouth, brows, blush), so mixing ("H's eyes with N's
 
 Blender previews show clothes in a neutral lilac; real colors come from the in-game palette.
 
+## Hair options
+
+Every hairstyle has a **length** row (short / medium / long; bun size for buns). Long, bob, wolf cut,
+twintails and pigtails also have a **bangs** row: straight, choppy, middle part, left part, right part,
+plus micro for long hair (replaces the old hime cut). Ponytail and buns no longer have the extra
+back/side strands; twintails and pigtails lost the straight back curtain but keep the side pieces.
+The pixie was rebuilt (cropped sides, tapered nape, side-swept fringe). Hair and eyes have a
+full-spectrum color picker (hue / saturation / light) next to the swatches.
+See `Hair/hair_bangs_lengths_check.png`, `Hair/pixie_lengths.png`, `Hair/hairstyles_in_game.png`.
+
 ## Clothing audit
 
 `Audit/` has every piece rendered on a red body (front/side/back) to catch clipping. Fixed in the

@@ -27,6 +27,9 @@ meshes = [o for o in scene.objects if o.type == "MESH"]
 for o in meshes:
     o.color = (1, 0, 0, 1) if o.name == "Skin_Body" else (0.25, 0.22, 0.35, 1)
 hairs = [o.name for o in meshes if o.name.startswith("Hair_")]
+if len(sys.argv) > sys.argv.index("--") + 2:          # optional: only these hair meshes (comma list)
+    wanted = sys.argv[sys.argv.index("--") + 2].split(",")
+    hairs = [h for h in hairs if h in wanted]
 
 # (label, yaw degrees, pitch degrees down)
 VIEWS = (("front", 0, 0), ("q", 45, 0), ("side", 90, 0), ("back", 180, 0), ("high", 20, 35), ("top", 0, 89))

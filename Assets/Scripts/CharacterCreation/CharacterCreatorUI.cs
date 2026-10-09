@@ -40,10 +40,11 @@ namespace DreamWorld.CharacterCreation
         Sprite frameSprite, solidSprite;
         float cursorTimer;
 
-        GameObject eyeControls, variantRow;
-        readonly List<Image> variantButtons = new List<Image>();
-        Slider eyeSize, eyeSpacing, eyeHeight;
-        bool syncingSliders;
+        GameObject eyeControls;
+        RectTransform optionsRoot, colorHeader, pickerRoot;
+        Slider eyeSize, eyeSpacing, eyeHeight, hueSlider, satSlider, valSlider;
+        Texture2D hueTex, satTex, valTex;
+        bool syncingSliders, syncingPicker, pickerDriving;
         NetMode chosenMode;
         readonly Dictionary<NetMode, Image> modeButtons = new Dictionary<NetMode, Image>();
         InputField addressField;
@@ -151,73 +152,178 @@ namespace DreamWorld.CharacterCreation
         void BuildStylePanel(RectTransform canvas)
         {
             var panel = MakePanel(canvas, "Style");
-            Place(panel, new Vector2(1, 0.5f), new Vector2(-64, 10), new Vector2(460, 680), new Vector2(1, 0.5f));
+            Place(panel, new Vector2(1, 1), new Vector2(-64, -24), new Vector2(460, 830), new Vector2(1, 1));
             Header(panel, "== STYLE ==", -26);
 
             var prev = MakeButton(panel, "Prev", () => appearance.ChangeStyle(currentCategory, -1));
-            Place((RectTransform)prev.transform, new Vector2(0, 1), new Vector2(54, -118), new Vector2(64, 64));
+            Place((RectTransform)prev.transform, new Vector2(0, 1), new Vector2(54, -104), new Vector2(64, 64));
             Stretch(MakeText((RectTransform)prev.transform, "L", "<", bodyFont, 48, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
             var next = MakeButton(panel, "Next", () => appearance.ChangeStyle(currentCategory, +1));
-            Place((RectTransform)next.transform, new Vector2(1, 1), new Vector2(-54, -118), new Vector2(64, 64));
+            Place((RectTransform)next.transform, new Vector2(1, 1), new Vector2(-54, -104), new Vector2(64, 64));
             Stretch(MakeText((RectTransform)next.transform, "R", ">", bodyFont, 48, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
 
             styleName = MakeText(panel, "StyleName", "", bodyFont, 48, accentColor, TextAnchor.MiddleCenter);
-            Place(styleName.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -112), new Vector2(280, 60));
+            Place(styleName.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -98), new Vector2(280, 60));
             styleCount = MakeText(panel, "StyleCount", "", bodyFont, 30, dimColor, TextAnchor.MiddleCenter);
-            Place(styleCount.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -156), new Vector2(280, 34));
+            Place(styleCount.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -142), new Vector2(280, 34));
 
-            BuildVariantRow(panel);
-            Header(panel, "== COLOR ==", -256);
+            optionsRoot = Container(panel, "Options", 160);
+            colorHeader = Container(panel, "ColorHeader", 40);
+            Header(colorHeader, "== COLOR ==", -20);
+
             swatchGrid = new GameObject("Swatches", typeof(RectTransform), typeof(GridLayoutGroup)).GetComponent<RectTransform>();
             swatchGrid.SetParent(panel, false);
-            Place(swatchGrid, new Vector2(0.5f, 1), new Vector2(0, -476), new Vector2(400, 380));
+            swatchGrid.anchorMin = swatchGrid.anchorMax = new Vector2(0.5f, 1);
+            swatchGrid.pivot = new Vector2(0.5f, 1);
+            swatchGrid.sizeDelta = new Vector2(416, 300);
             var grid = swatchGrid.GetComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(50, 50);
-            grid.spacing = new Vector2(10, 10);
+            grid.cellSize = new Vector2(44, 44);
+            grid.spacing = new Vector2(8, 8);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 6;
+            grid.constraintCount = 8;
             grid.childAlignment = TextAnchor.UpperCenter;
 
+            BuildColorPicker(panel);
             BuildEyeControls(panel);
+        }
+
+        // A full-width strip inside the style panel whose top edge we move around in LayoutPanel().
+        RectTransform Container(RectTransform parent, string name, float height)
+        {
+            var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = new Vector2(0, 1);
+            rect.anchorMax = new Vector2(1, 1);
+            rect.pivot = new Vector2(0.5f, 1);
+            rect.sizeDelta = new Vector2(0, height);
+            return rect;
+        }
+
+        // Full-spectrum color (hair and eyes): hue, saturation and brightness sliders.
+        void BuildColorPicker(RectTransform panel)
+        {
+            pickerRoot = Container(panel, "ColorPicker", 130);
+            hueSlider = SliderRow(pickerRoot, "hue", -20, 0, 1, _ => OnPicker());
+            satSlider = SliderRow(pickerRoot, "sat", -62, 0, 1, _ => OnPicker());
+            valSlider = SliderRow(pickerRoot, "light", -104, 0, 1, _ => OnPicker());
+            hueTex = new Texture2D(64, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            for (int x = 0; x < 64; x++) hueTex.SetPixel(x, 0, Color.HSVToRGB(x / 63f, 1, 1));
+            hueTex.Apply();
+            Track(hueSlider).texture = hueTex;
+            satTex = new Texture2D(64, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            valTex = new Texture2D(64, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            Track(satSlider).texture = satTex;
+            Track(valSlider).texture = valTex;
+        }
+
+        static RawImage Track(Slider slider) => slider.transform.Find("Track").GetComponent<RawImage>();
+
+        void OnPicker()
+        {
+            if (syncingPicker) return;
+            pickerDriving = true;
+            appearance.SetCustomColor(currentCategory, Color.HSVToRGB(hueSlider.value, satSlider.value, valSlider.value));
+            pickerDriving = false;
+            PaintPickerTracks();
+        }
+
+        void SyncPicker()
+        {
+            var slot = appearance.GetSlot(currentCategory);
+            if (slot == null || !slot.customAllowed || pickerDriving) return;
+            Color.RGBToHSV(slot.CurrentColor, out float h, out float s, out float v);
+            syncingPicker = true;
+            hueSlider.value = h;
+            satSlider.value = s;
+            valSlider.value = v;
+            syncingPicker = false;
+            PaintPickerTracks();
+        }
+
+        void PaintPickerTracks()
+        {
+            for (int x = 0; x < 64; x++)
+            {
+                satTex.SetPixel(x, 0, Color.HSVToRGB(hueSlider.value, x / 63f, Mathf.Max(0.35f, valSlider.value)));
+                valTex.SetPixel(x, 0, Color.HSVToRGB(hueSlider.value, satSlider.value, x / 63f));
+            }
+            satTex.Apply();
+            valTex.Apply();
         }
 
         // Eye sliders (only shown on the eyes tab): size, spacing, height + reset.
         void BuildEyeControls(RectTransform panel)
         {
-            eyeControls = new GameObject("EyeControls", typeof(RectTransform));
-            var rect = (RectTransform)eyeControls.transform;
-            rect.SetParent(panel, false);
-            Stretch(rect, 0);
-            Header(rect, "== SHAPE ==", -470);
-            eyeSize = SliderRow(rect, "size", -514, 0.75f, 1.35f);
-            eyeSpacing = SliderRow(rect, "spacing", -556, -0.06f, 0.06f);
-            eyeHeight = SliderRow(rect, "height", -598, -0.05f, 0.06f);
+            var rect = Container(panel, "EyeControls", 210);
+            eyeControls = rect.gameObject;
+            Header(rect, "== SHAPE ==", -20);
+            eyeSize = SliderRow(rect, "size", -62, 0.75f, 1.35f, _ => OnEyeSlider());
+            eyeSpacing = SliderRow(rect, "spacing", -104, -0.06f, 0.06f, _ => OnEyeSlider());
+            eyeHeight = SliderRow(rect, "height", -146, -0.05f, 0.06f, _ => OnEyeSlider());
             var reset = MakeButton(rect, "ResetEyes", () => { appearance.ResetEyes(); SyncSliders(); });
-            Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -646), new Vector2(220, 44));
+            Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -192), new Vector2(220, 42));
             Stretch(MakeText((RectTransform)reset.transform, "L", "reset eyes", bodyFont, 30, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
         }
 
-        // Variant buttons (pants rise: high / mid / low), only shown when the current style has variants.
-        void BuildVariantRow(RectTransform panel)
+        static readonly Dictionary<string, string> OptionNames = new Dictionary<string, string>
         {
-            variantRow = new GameObject("Variants", typeof(RectTransform));
-            var rect = (RectTransform)variantRow.transform;
-            rect.SetParent(panel, false);
-            Stretch(rect, 0);
-            var label = MakeText(rect, "Label", "rise", bodyFont, 30, dimColor, TextAnchor.MiddleLeft);
-            Place(label.rectTransform, new Vector2(0.5f, 1), new Vector2(-170, -204), new Vector2(80, 40));
-            var names = new[] { "high", "mid", "low" };
-            for (int i = 0; i < names.Length; i++)
+            { "Straight", "straight" }, { "Choppy", "choppy" }, { "Middle", "middle" }, { "Left", "left" },
+            { "Right", "right" }, { "Micro", "micro" }, { "Short", "short" }, { "Medium", "medium" }, { "Long", "long" },
+            { "High", "high" }, { "Mid", "mid" }, { "Low", "low" },
+        };
+
+        // Option rows (bangs / length / rise) for the current style: three buttons per line,
+        // only the values this style actually comes in. Returns how many lines were used.
+        int RebuildOptions(OutfitSlot slot)
+        {
+            foreach (Transform child in optionsRoot) Destroy(child.gameObject);
+            int line = 0;
+            for (int a = 0; a < slot.axes.Count; a++)
             {
-                int index = i;
-                var b = MakeButton(rect, "Variant_" + names[i], () => appearance.SetVariant(currentCategory, index));
-                Place((RectTransform)b.transform, new Vector2(0.5f, 1), new Vector2(-50 + i * 100, -204), new Vector2(92, 42));
-                Stretch(MakeText((RectTransform)b.transform, "L", names[i], bodyFont, 30, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
-                variantButtons.Add(b.GetComponent<Image>());
+                var axis = slot.axes[a];
+                var values = slot.AvailableValues(axis);
+                if (values.Count < 2) continue;
+                int shown = slot.ShownValue(axis);
+                var label = MakeText(optionsRoot, "Label_" + axis.label, axis.label, bodyFont, 30, dimColor, TextAnchor.MiddleLeft);
+                Place(label.rectTransform, new Vector2(0.5f, 1), new Vector2(-170, -20 - line * 48), new Vector2(90, 40));
+                for (int k = 0; k < values.Count; k++)
+                {
+                    int axisIndex = a, value = values[k];
+                    var name = axis.values[value];
+                    var b = MakeButton(optionsRoot, $"Opt_{axis.label}_{name}", () => appearance.SetOption(currentCategory, axisIndex, value));
+                    Place((RectTransform)b.transform, new Vector2(0.5f, 1), new Vector2(-50 + (k % 3) * 108, -20 - (line + k / 3) * 48),
+                          new Vector2(102, 40));
+                    Stretch(MakeText((RectTransform)b.transform, "L", OptionNames.TryGetValue(name, out var n) ? n : name.ToLower(),
+                                     bodyFont, 28, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+                    b.GetComponent<Image>().color = value == shown ? accentColor : Color.white;
+                }
+                line += (values.Count + 2) / 3;
             }
+            return line;
         }
 
-        Slider SliderRow(RectTransform parent, string label, float y, float min, float max)
+        // Stacks the panel sections under the style name for the current category.
+        void LayoutPanel(OutfitSlot slot)
+        {
+            float y = -172;
+            int lines = RebuildOptions(slot);
+            optionsRoot.anchoredPosition = new Vector2(0, y);
+            if (lines > 0) y -= lines * 48 + 6;
+            colorHeader.anchoredPosition = new Vector2(0, y);
+            y -= 44;
+            swatchGrid.anchoredPosition = new Vector2(0, y);
+            y -= Mathf.CeilToInt(slot.colors.Length / 8f) * 52 + 8;
+            pickerRoot.gameObject.SetActive(slot.customAllowed);
+            if (slot.customAllowed)
+            {
+                pickerRoot.anchoredPosition = new Vector2(0, y);
+                y -= 136;
+            }
+            eyeControls.SetActive(slot.category == OutfitCategory.Eyes);
+            ((RectTransform)eyeControls.transform).anchoredPosition = new Vector2(0, y);
+        }
+
+        Slider SliderRow(RectTransform parent, string label, float y, float min, float max, UnityEngine.Events.UnityAction<float> onChange)
         {
             var text = MakeText(parent, label, label, bodyFont, 32, textColor, TextAnchor.MiddleLeft);
             Place(text.rectTransform, new Vector2(0.5f, 1), new Vector2(-130, y), new Vector2(120, 40));
@@ -225,37 +331,28 @@ namespace DreamWorld.CharacterCreation
             var go = new GameObject(label + "Slider", typeof(RectTransform), typeof(Slider));
             go.transform.SetParent(parent, false);
             Place((RectTransform)go.transform, new Vector2(0.5f, 1), new Vector2(60, y), new Vector2(250, 22));
-            var track = new GameObject("Track", typeof(RectTransform), typeof(Image));
+            var track = new GameObject("Track", typeof(RectTransform), typeof(RawImage));
             track.transform.SetParent(go.transform, false);
             Stretch((RectTransform)track.transform, 0);
-            track.GetComponent<Image>().sprite = solidSprite;
-            track.GetComponent<Image>().color = new Color(0, 0, 0, 0.55f);
-
-            var fillArea = new GameObject("FillArea", typeof(RectTransform));
-            fillArea.transform.SetParent(go.transform, false);
-            Stretch((RectTransform)fillArea.transform, 3);
-            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-            fill.transform.SetParent(fillArea.transform, false);
-            ((RectTransform)fill.transform).sizeDelta = Vector2.zero;
-            fill.GetComponent<Image>().sprite = solidSprite;
-            fill.GetComponent<Image>().color = new Color(accentColor.r, accentColor.g, accentColor.b, 0.6f);
+            track.GetComponent<RawImage>().color = new Color(1, 1, 1, 0.9f);
+            track.GetComponent<RawImage>().texture = Texture2D.grayTexture;
 
             var handleArea = new GameObject("HandleArea", typeof(RectTransform));
             handleArea.transform.SetParent(go.transform, false);
             Stretch((RectTransform)handleArea.transform, 0);
-            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image), typeof(Outline));
             handle.transform.SetParent(handleArea.transform, false);
-            ((RectTransform)handle.transform).sizeDelta = new Vector2(16, 14);
+            ((RectTransform)handle.transform).sizeDelta = new Vector2(14, 30);
             handle.GetComponent<Image>().sprite = solidSprite;
             handle.GetComponent<Image>().color = textColor;
+            handle.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
 
             var slider = go.GetComponent<Slider>();
-            slider.fillRect = (RectTransform)fill.transform;
             slider.handleRect = (RectTransform)handle.transform;
             slider.targetGraphic = handle.GetComponent<Image>();
             slider.minValue = min;
             slider.maxValue = max;
-            slider.onValueChanged.AddListener(_ => OnEyeSlider());
+            slider.onValueChanged.AddListener(onChange);
             return slider;
         }
 
@@ -364,7 +461,6 @@ namespace DreamWorld.CharacterCreation
         void SelectCategory(OutfitCategory category)
         {
             currentCategory = category;
-            eyeControls.SetActive(category == OutfitCategory.Eyes);
             SyncSliders();
             RebuildSwatches();
             Refresh();
@@ -372,7 +468,11 @@ namespace DreamWorld.CharacterCreation
 
         void RebuildSwatches()
         {
-            foreach (var s in swatches) Destroy(s.ring.gameObject);
+            foreach (var s in swatches)
+            {
+                s.ring.transform.SetParent(null, false);   // out of the grid now; Destroy only happens at frame end
+                Destroy(s.ring.gameObject);
+            }
             swatches.Clear();
             var slot = appearance.GetSlot(currentCategory);
             if (slot == null) return;
@@ -395,6 +495,7 @@ namespace DreamWorld.CharacterCreation
                 chipImage.raycastTarget = false;
                 swatches.Add((ringImage, chipImage));
             }
+            LayoutRebuilder.ForceRebuildLayoutImmediate(swatchGrid);   // lay chips out now, not next frame
         }
 
         void Refresh()
@@ -414,11 +515,9 @@ namespace DreamWorld.CharacterCreation
             styleName.text = slot.CurrentStyleName;
             styleCount.text = $"{slot.styleIndex + 1} / {slot.StyleCount}";
             for (int i = 0; i < swatches.Count; i++)
-                swatches[i].ring.color = i == slot.colorIndex ? textColor : new Color(0, 0, 0, 0.6f);
-            bool variants = slot.CurrentHasVariants;
-            variantRow.SetActive(variants);
-            for (int i = 0; i < variantButtons.Count; i++)
-                variantButtons[i].color = variants && i == slot.variantIndex ? accentColor : Color.white;
+                swatches[i].ring.color = !slot.useCustom && i == slot.colorIndex ? textColor : new Color(0, 0, 0, 0.6f);
+            LayoutPanel(slot);
+            SyncPicker();
             statusLabel.text = "";
         }
 

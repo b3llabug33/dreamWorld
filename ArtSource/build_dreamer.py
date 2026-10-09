@@ -608,17 +608,19 @@ CAP = 1.10   # hair shell size relative to the head
 FRONT = -math.pi / 2
 
 
-def hair_cap(bm):
+def hair_cap(bm, hairline=0.018, nape=-0.11, side_cut=None, scale=CAP):
     """Hair shell over the skull. Open only at the face: below the hairline at the front,
     and at the cheeks/jaw, so nothing bald shows from the side, back or top."""
     def cut(co):
         r = co - HEAD_C
         front = r.y < -0.02
-        face = front and r.z < 0.018 and abs(r.x) < 0.085   # hairline sits just above the brows
+        face = front and r.z < hairline and abs(r.x) < 0.085
         jaw = r.y < 0.01 and r.z < -0.035
-        bottom = r.z < -0.11
-        return face or jaw or bottom
-    build_head(bm, scale=CAP, cut=cut)
+        bottom = r.z < nape
+        # cropped sides (pixie): a diagonal line behind the ear, lower toward the back
+        sides = side_cut is not None and r.y < 0.05 and r.z < side_cut - 0.25 * (r.y + 0.05)
+        return face or jaw or bottom or sides
+    build_head(bm, scale=scale, cut=cut)
 
 
 def surf(theta, z, scale, offset):
@@ -659,42 +661,57 @@ def lock(bm, th0, z0, th1, z1, w0, tip=0.25, thick=0.014, s0=CAP, s1=CAP, off0=0
     bm.faces.new(rings[-1])
 
 
-def bangs(bm, kind="spiky"):
-    """Fringe locks from the crown down over the forehead, lying on the head: they start on
-    the hair shell and end just in front of the skin (offset stays above the face decal)."""
-    if kind == "blunt":
-        spec = [(x, 1.508, 0.95) for x in (-0.072, -0.036, 0.0, 0.036, 0.072)]
-        width = 0.042
-    elif kind == "curtain":   # parted in the middle, longer toward the sides
-        spec = [(-0.08, 1.43, 0.2), (-0.055, 1.46, 0.25), (-0.028, 1.50, 0.3),
-                (0.028, 1.50, 0.3), (0.055, 1.46, 0.25), (0.08, 1.43, 0.2)]
-        width = 0.036
-    else:                     # spiky anime fringe with uneven tips
-        spec = [(-0.082, 1.47, 0.2), (-0.055, 1.495, 0.2), (-0.027, 1.485, 0.15), (0.0, 1.50, 0.2),
-                (0.027, 1.48, 0.15), (0.055, 1.495, 0.2), (0.082, 1.47, 0.2)]
-        width = 0.034
-    for x, tip_z, tip in spec:
-        th_tip = FRONT + math.asin(max(-0.95, min(0.95, x / 0.104)))
-        th_root = FRONT + (th_tip - FRONT) * 0.6
-        if kind == "curtain":   # sweep outward from the part
-            th_root = FRONT + (th_tip - FRONT) * 0.25
-        lock(bm, th_root, 1.61, th_tip, tip_z, width, tip=tip, s0=CAP, s1=1.0, off0=-0.008, off1=0.0075, steps=6)
+def theta_at(x):
+    """Head angle for a point `x` meters across the forehead."""
+    return FRONT + math.asin(max(-0.95, min(0.95, x / 0.104)))
 
 
-def side_locks(bm, tip_z, width=0.04, tip=0.3):
-    """Anime side locks framing the face, in front of the ears."""
+def fringe_lock(bm, x_root, x_tip, tip_z, width, tip=0.6):
+    """One bang lock from the crown down onto the forehead."""
+    lock(bm, theta_at(x_root), 1.615, theta_at(x_tip), tip_z, width, tip=tip, s0=CAP, s1=1.0,
+         off0=-0.008, off1=0.0075, steps=6)
+
+
+# bang styles (the "bangs" option in the creator), used as mesh name suffixes
+BANGS = ("Straight", "Choppy", "Middle", "Left", "Right", "Micro")
+
+
+def bangs(bm, kind):
+    if kind == "Straight":    # full blunt fringe, one level line just above the brows
+        for x in np.linspace(-0.075, 0.075, 6):
+            fringe_lock(bm, x * 0.6, x * 1.04, 1.506, 0.036, tip=1.0)
+    elif kind == "Micro":     # very short blunt fringe high on the forehead
+        for x in np.linspace(-0.075, 0.075, 6):
+            fringe_lock(bm, x * 0.6, x * 1.04, 1.535, 0.036, tip=1.0)
+    elif kind == "Choppy":    # textured but even: small length differences, soft points
+        lengths = (1.492, 1.500, 1.494, 1.502, 1.495, 1.499, 1.491)
+        for x, z in zip(np.linspace(-0.08, 0.08, 7), lengths):
+            fringe_lock(bm, x * 0.6, x * 1.06, z, 0.032, tip=0.45)
+    elif kind == "Middle":    # middle part: curtains sweeping out to the sides, longer at the edges
+        for x, z in ((-0.085, 1.44), (-0.06, 1.47), (-0.035, 1.50), (0.035, 1.50), (0.06, 1.47), (0.085, 1.44)):
+            fringe_lock(bm, x * 0.25, x, z, 0.036, tip=0.45)
+    else:                     # side part: sweeps from a part on one side across the forehead
+        s = 1 if kind == "Left" else -1      # character's left is +X
+        for k, x in enumerate(np.linspace(0.075, -0.085, 7)):
+            t = k / 6
+            fringe_lock(bm, s * 0.045, s * x, 1.535 - 0.07 * t, 0.034 + 0.006 * t, tip=0.5)
+
+
+def side_locks(bm, tip_z, width=0.05, tip=0.7, angle=58):
+    """Face-framing pieces in front of the ears."""
     for sx in (1, -1):
-        th = FRONT + sx * math.radians(58)
+        th = FRONT + sx * math.radians(angle)
         lock(bm, th, 1.58, th + sx * math.radians(4), tip_z, width, tip=tip, off0=-0.006, off1=0.012)
 
 
 def hang(bm, bottom_z, count=11, width=0.075, tip=0.3, start=-35, end=215, root_z=1.615, rnd=None,
-         jitter=0.0, flare=0.015, curl=0.0, thick=0.018):
+         jitter=0.0, flare=0.015, curl=0.0, thick=0.018, scale=CAP):
     """A curtain of locks around the sides and back, hanging to bottom_z."""
     for k in range(count):
         th = math.radians(start + (end - start) * k / (count - 1))
         z1 = bottom_z + (rnd.uniform(-jitter, jitter) if rnd else 0)
-        lock(bm, th, root_z, th, z1, width, tip=tip, flare=flare, curl=curl, steps=6, off0=-0.008, thick=thick)
+        lock(bm, th, root_z, th, z1, width, tip=tip, flare=flare, curl=curl, steps=6, off0=-0.008, thick=thick,
+             s0=scale, s1=scale)
 
 
 def tail(bm, root, tip_drop, out, thickness=0.05, back=0.0, n=8):
@@ -708,52 +725,110 @@ def tail(bm, root, tip_drop, out, thickness=0.05, back=0.0, n=8):
     torus(bm, (x0, y0, z0 - 0.005), thickness * 0.55, 0.008, seg=8, tube=3)  # hair tie
 
 
-def hair_style(name, extra, kind="spiky"):
-    def build(bm):
-        hair_cap(bm)
-        bangs(bm, kind)
-        extra(bm)
-    return join(name, [part(name.lower(), "Head", build, hair_mat)], **HAIR_UV)
-
-
 def under_layer(bm, bottom_z):
-    """Hair-colored inner curtain behind the locks, so gaps never show the neck or scalp."""
+    """Hair-colored inner curtain behind the locks (back half only), so gaps never show the neck."""
     loft(bm, [((0, 0.045, 1.52), 0.105, 0.09), ((0, 0.06, 1.40), 0.11, 0.07),
               ((0, 0.07, bottom_z), 0.10, 0.05)], 12, cap_start=False, cap_end=False, skip={5, 6, 7, 8, 9, 10, 11})
 
 
-def wolf_extra(bm):
-    """Shaggy long wolf cut: full choppy layers flicking out at the crown, a fluffy mid
-    layer, then long uneven (but still full) ends."""
+LENGTHS = ("Short", "Medium", "Long")
+
+
+def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut=None, cap_scale=CAP):
+    """Every bangs x length combination of one hairstyle, named Hair_<Base>[_<Bangs>]_<Length>.
+    extra(bm, length_index) builds the rest of the hair; bang_kinds=None means no bangs option
+    (the style draws its own fringe in `extra`)."""
+    out = []
+    for li, length in enumerate(LENGTHS):
+        for kind in (bang_kinds or (None,)):
+            name = f"Hair_{base}_{kind}_{length}" if kind else f"Hair_{base}_{length}"
+
+            def build(bm, kind=kind, li=li):
+                hair_cap(bm, hairline=0.035 if kind == "Micro" else hairline, nape=nape, side_cut=side_cut, scale=cap_scale)
+                if kind:
+                    bangs(bm, kind)
+                extra(bm, li)
+            out.append(join(name, [part(name.lower(), "Head", build, hair_mat)], **HAIR_UV))
+    return out
+
+
+def long_extra(bm, li):
+    """Long straight hair: even, full ends (no stringy taper), face-framing layers."""
+    bottom = (1.16, 1.02, 0.86)[li]
+    under_layer(bm, bottom + 0.02)
+    side_locks(bm, 1.33, width=0.05, tip=0.75)
+    side_locks(bm, max(bottom + 0.1, 1.2), width=0.06, tip=0.85, angle=74)
+    hang(bm, bottom, count=16, width=0.085, tip=0.85, start=-12, end=192, flare=0.012)
+
+
+def bob_extra(bm, li):
+    bottom = (1.40, 1.34, 1.27)[li]
+    under_layer(bm, bottom + 0.02)
+    side_locks(bm, bottom + 0.02, width=0.05, tip=0.9)
+    hang(bm, bottom, count=14, width=0.08, tip=0.95, start=-20, end=200, curl=0.012)
+
+
+def wolf_extra(bm, li):
+    """Shaggy wolf cut: choppy layers flicking out at the crown, a fluffy mid layer, long ends."""
     rnd = random.Random(11)
-    under_layer(bm, 1.16)
-    side_locks(bm, 1.36, width=0.05, tip=0.45)
-    hang(bm, 1.40, count=13, width=0.08, tip=0.5, start=-40, end=220, root_z=1.62, rnd=rnd, jitter=0.03, flare=0.035)
-    hang(bm, 1.26, count=10, width=0.085, tip=0.45, start=-12, end=192, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.045)
-    hang(bm, 1.10, count=9, width=0.08, tip=0.4, start=5, end=175, root_z=1.50, rnd=rnd, jitter=0.06, flare=0.035)
+    top, mid, end = ((1.44, 1.34, 1.22), (1.40, 1.26, 1.10), (1.36, 1.18, 0.96))[li]
+    under_layer(bm, end + 0.06)
+    side_locks(bm, mid + 0.08, width=0.05, tip=0.45)
+    hang(bm, top, count=13, width=0.08, tip=0.5, start=-40, end=220, root_z=1.62, rnd=rnd, jitter=0.03, flare=0.035)
+    hang(bm, mid, count=10, width=0.085, tip=0.45, start=-12, end=192, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.045)
+    hang(bm, end, count=9, width=0.08, tip=0.4, start=5, end=175, root_z=1.50, rnd=rnd, jitter=0.06, flare=0.035)
+
+
+def twintails_extra(bm, li):
+    side_locks(bm, 1.42, width=0.045, tip=0.6)
+    for sx in (1, -1):
+        tail(bm, (0.115 * sx, 0.03, 1.60), (0.42, 0.62, 0.85)[li], 0.07 * sx, 0.055, back=0.03)
+
+
+def pigtails_extra(bm, li):
+    side_locks(bm, 1.42, width=0.045, tip=0.6)
+    for sx in (1, -1):
+        tail(bm, (0.10 * sx, 0.075, 1.425), (0.25, 0.40, 0.58)[li], 0.035 * sx, 0.048, back=0.015)
+
+
+def ponytail_extra(bm, li):
+    tail(bm, (0, 0.13, 1.57), (0.30, 0.45, 0.65)[li], 0.0, 0.055, back=0.04)
+
+
+def buns_extra(bm, li):
+    r = (0.045, 0.055, 0.068)[li]      # "length" is bun size for buns
+    for sx in (1, -1):
+        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r, matrix=Matrix.Translation((0.09 * sx, 0.02, 1.62 + r * 0.2)))
+
+
+def pixie_extra(bm, li):
+    """Pixie cut: close-cropped back and sides, a soft side-swept fringe, textured crown.
+    Longer lengths get a longer fringe and a little more at the nape."""
+    fringe = (1.53, 1.51, 1.49)[li]
+    nape = (1.45, 1.42, 1.38)[li]
+    for k, x in enumerate(np.linspace(0.07, -0.085, 6)):     # short side-swept fringe
+        t = k / 5
+        fringe_lock(bm, 0.04, x, fringe + 0.03 - 0.035 * t, 0.036, tip=0.5)
+    for k in range(12):                                     # textured crown pieces lying flat
+        th = math.radians(-30 + k * 240 / 11)
+        lock(bm, th, 1.63, th + 0.08, 1.575, 0.06, tip=0.5, steps=4, off0=-0.008, off1=-0.002, s0=1.05, s1=1.05)
+    # tapered nape: short pieces lying close at the back only (sides stay cropped)
+    hang(bm, nape, count=9, width=0.075, tip=0.25, start=25, end=155, root_z=1.57, flare=-0.014, thick=0.012, scale=1.05)
+    for sx in (1, -1):                                      # little sideburn wisps in front of the ears
+        th = FRONT + sx * math.radians(66)
+        lock(bm, th, 1.54, th, 1.47 - 0.01 * li, 0.028, tip=0.3, off0=-0.006, off1=0.004)
 
 
 def build_hair():
-    rnd = random.Random(5)
-    return [
-        hair_style("Hair_Bob", lambda bm: (side_locks(bm, 1.40, tip=0.6),
-                                           hang(bm, 1.39, count=12, width=0.07, tip=0.8, curl=0.012))),
-        hair_style("Hair_Long", lambda bm: (side_locks(bm, 1.22), hang(bm, 1.05, rnd=rnd, jitter=0.04, tip=0.3))),
-        hair_style("Hair_WolfCut", wolf_extra, "curtain"),
-        hair_style("Hair_Hime", lambda bm: (side_locks(bm, 1.38, width=0.05, tip=1.0),
-                                            hang(bm, 0.98, count=11, width=0.08, tip=1.0, start=-20, end=200)), "blunt"),
-        hair_style("Hair_Twintails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
-            tail(bm, (0.115 * sx, 0.03, 1.60), 0.62, 0.07 * sx, 0.055, back=0.03) for sx in (1, -1)])),
-        hair_style("Hair_Pigtails", lambda bm: (side_locks(bm, 1.42), hang(bm, 1.405, count=10, width=0.07, tip=0.95, start=-25, end=205), [
-            tail(bm, (0.10 * sx, 0.075, 1.425), 0.40, 0.035 * sx, 0.048, back=0.015) for sx in (1, -1)])),
-        hair_style("Hair_Ponytail", lambda bm: (side_locks(bm, 1.44), hang(bm, 1.38, count=9, width=0.07, tip=0.5),
-                                                tail(bm, (0, 0.13, 1.57), 0.45, 0.0, 0.055, back=0.04))),
-        hair_style("Hair_Buns", lambda bm: (side_locks(bm, 1.40), hang(bm, 1.38, count=9, width=0.07, tip=0.5), [
-            bmesh.ops.create_icosphere(bm, subdivisions=2, radius=0.055, matrix=Matrix.Translation((0.09 * sx, 0.02, 1.63)))
-            for sx in (1, -1)])),
-        hair_style("Hair_Pixie", lambda bm: (side_locks(bm, 1.46, width=0.03, tip=0.2),
-                                             hang(bm, 1.40, count=12, width=0.05, tip=0.2, flare=0.02))),
-    ]
+    return (hair_set("Long", long_extra) +
+            hair_set("Bob", bob_extra, BANGS[:5]) +
+            hair_set("WolfCut", wolf_extra, BANGS[:5]) +
+            hair_set("Twintails", twintails_extra, BANGS[:5]) +
+            hair_set("Pigtails", pigtails_extra, BANGS[:5]) +
+            hair_set("Ponytail", ponytail_extra, ("Choppy",)) +
+            hair_set("Buns", buns_extra, ("Choppy",)) +
+            hair_set("Pixie", pixie_extra, None, hairline=0.03, nape=-0.08, side_cut=-0.005, cap_scale=1.05))
+
 
 # ---------------------------------------------------------------- clothes
 
@@ -1373,19 +1448,19 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 
 LOOKS = {
-    "grunge": {"Skin_Body", "Eyes_Toon", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeans_Low", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
-    "girly": {"Skin_Body", "Eyes_Almond", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
-    "twilight": {"Skin_Body", "Eyes_Doe", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
-    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Pigtails", "Top_Oversized", "Bottom_Cargo_Low", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
-    "y2k": {"Skin_Body", "Eyes_Almond", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeans_High", "Shoes_Platforms", "Headwear_Halo"},
+    "grunge": {"Skin_Body", "Eyes_Toon", "Hair_WolfCut_Middle_Medium", "Top_Flannel", "Bottom_BaggyJeans_Low", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
+    "girly": {"Skin_Body", "Eyes_Almond", "Hair_Twintails_Choppy_Medium", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
+    "twilight": {"Skin_Body", "Eyes_Doe", "Hair_Long_Micro_Long", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
+    "baggy": {"Skin_Body", "Eyes_Glossy", "Hair_Pigtails_Choppy_Medium", "Top_Oversized", "Bottom_Cargo_Low", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "y2k": {"Skin_Body", "Eyes_Almond", "Hair_Ponytail_Choppy_Medium", "Top_Cardigan", "Bottom_FlareJeans_High", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)
     preview(f"look_{look}_back.png", shown, angle=160)
 for s in EYE_STYLES:
-    preview(f"eyes_{s}.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=0, z=1.47, ortho=0.36, res=(360, 360))
-    preview(f"eyes_{s}_q.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long"}, angle=35, z=1.47, ortho=0.36, res=(360, 360))
+    preview(f"eyes_{s}.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long_Straight_Medium"}, angle=0, z=1.47, ortho=0.36, res=(360, 360))
+    preview(f"eyes_{s}_q.png", {"Skin_Body", f"Eyes_{s}", "Hair_Long_Straight_Medium"}, angle=35, z=1.47, ortho=0.36, res=(360, 360))
 for g in ("Round", "CatEye", "Slim", "Pixel", "Shutter"):
-    preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Almond", "Hair_Pixie", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
+    preview(f"glasses_{g}.png", {"Skin_Body", "Eyes_Almond", "Hair_Pixie_Medium", f"Glasses_{g}"}, angle=25, z=1.47, ortho=0.35, res=(300, 300))
 
 print("DONE", len(rig.children), "meshes")

@@ -103,11 +103,20 @@ namespace DreamWorld.EditorTools
                 Slot(OutfitCategory.Glasses, styles, Accessories, 0, 0, optional: true),
                 Slot(OutfitCategory.Headwear, styles, Accessories, 0, 2, optional: true),
             };
-            // pants come in three rises, picked separately from the style; default to pleated skirt, mid rise
+            // option rows: pants rise; hair bangs + length. Defaults: pleated skirt (mid rise), long hair
             var bottom = appearance.GetSlot(OutfitCategory.Bottom);
-            bottom.variants = new[] { "High", "Mid", "Low" };
-            bottom.variantIndex = 1;
+            bottom.axes = new List<OptionAxis> { new OptionAxis { label = "rise", values = new[] { "High", "Mid", "Low" }, index = 1 } };
             bottom.SelectBase("Pleated");
+            var hair = appearance.GetSlot(OutfitCategory.Hair);
+            hair.axes = new List<OptionAxis>
+            {
+                new OptionAxis { label = "bangs", values = new[] { "Straight", "Choppy", "Middle", "Left", "Right", "Micro" }, index = 1 },
+                new OptionAxis { label = "length", values = new[] { "Short", "Medium", "Long" }, index = 1 },
+            };
+            hair.SelectBase("Long");
+            // full-spectrum color pickers for hair and eyes
+            hair.customAllowed = true;
+            appearance.GetSlot(OutfitCategory.Eyes).customAllowed = true;
             foreach (var slot in appearance.slots)
                 foreach (var style in slot.styles) style.SetActive(style == slot.CurrentStyle);
             EditorUtility.SetDirty(appearance);

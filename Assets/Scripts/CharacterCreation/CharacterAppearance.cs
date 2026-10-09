@@ -7,6 +7,18 @@ namespace DreamWorld.CharacterCreation
 {
     public enum OutfitCategory { Skin, Eyes, Nose, Mouth, Hair, Top, Bottom, Legwear, Shoes, Neck, Glasses, Headwear }
 
+    // One extra choice row for a slot, e.g. hair "bangs" {Straight, Choppy, ...} or pants "rise"
+    // {High, Mid, Low}. Mesh names carry the chosen values after the base name:
+    // Hair_Long_Straight_Medium, Bottom_BaggyJeans_High. Styles that don't come in a value
+    // (skirts have no rise, ponytails have one bangs style) just hide that row.
+    [Serializable]
+    public class OptionAxis
+    {
+        public string label;
+        public string[] values = new string[0];
+        public int index;
+    }
+
     // One customizable part of the character. Each entry in `styles` is a child mesh of the
     // Dreamer model; only the selected one is shown. Optional slots get a "none" choice first.
     [Serializable]
@@ -18,20 +30,24 @@ namespace DreamWorld.CharacterCreation
         public bool optional;
         public int styleIndex;
         public int colorIndex;
+        public List<OptionAxis> axes = new List<OptionAxis>();
 
-        // Optional per-style variants, e.g. pants rises {"High","Mid","Low"}: meshes are named
-        // Bottom_BaggyJeans_High etc. The style list shows each base style once; the variant is
-        // picked separately. Styles without variant meshes (skirts) just ignore it.
-        public string[] variants = new string[0];
-        public int variantIndex;
+        // Full-spectrum color (hair, eyes): when on, customColor replaces the palette color.
+        public bool customAllowed;
+        public bool useCustom;
+        public Color customColor = Color.white;
 
-        // "Bottom_BaggyJeans_High" -> "BaggyJeans"
-        public string BaseName(GameObject style)
+        public Color CurrentColor => useCustom ? customColor : colors[Mathf.Clamp(colorIndex, 0, colors.Length - 1)];
+
+        // "Hair_Long_Straight_Medium" -> base "Long"
+        public string BaseName(GameObject style) => style.name.Split('_')[1];
+
+        bool HasValue(GameObject style, string value)
         {
-            var name = style.name.Substring(style.name.IndexOf('_') + 1);
-            foreach (var v in variants)
-                if (name.EndsWith("_" + v)) return name.Substring(0, name.Length - v.Length - 1);
-            return name;
+            var tokens = style.name.Split('_');
+            for (int i = 2; i < tokens.Length; i++)
+                if (tokens[i] == value) return true;
+            return false;
         }
 
         public List<string> BaseNames
@@ -60,29 +76,46 @@ namespace DreamWorld.CharacterCreation
             }
         }
 
-        // True when the current style comes in variants (so the UI shows the variant buttons).
-        public bool CurrentHasVariants
+        List<GameObject> CurrentBaseStyles
         {
             get
             {
                 var b = CurrentBase;
-                return b != null && variants.Length > 0 && styles.Exists(s => s.name.EndsWith($"_{b}_{variants[0]}"));
+                return b == null ? new List<GameObject>() : styles.FindAll(s => BaseName(s) == b);
             }
+        }
+
+        // Which values of an axis the current style actually comes in (the UI shows only these).
+        public List<int> AvailableValues(OptionAxis axis)
+        {
+            var found = new List<int>();
+            var mine = CurrentBaseStyles;
+            for (int v = 0; v < axis.values.Length; v++)
+                if (mine.Exists(s => HasValue(s, axis.values[v]))) found.Add(v);
+            return found;
+        }
+
+        // The value an axis is really showing: the chosen one if this style has it, else its first.
+        public int ShownValue(OptionAxis axis)
+        {
+            var available = AvailableValues(axis);
+            if (available.Count == 0) return -1;
+            return available.Contains(axis.index) ? axis.index : available[0];
         }
 
         public GameObject CurrentStyle
         {
             get
             {
-                var b = CurrentBase;
-                if (b == null) return null;
-                if (variants.Length > 0)
+                var candidates = CurrentBaseStyles;
+                foreach (var axis in axes)
                 {
-                    var v = variants[Mathf.Clamp(variantIndex, 0, variants.Length - 1)];
-                    var match = styles.Find(s => s.name.EndsWith($"_{b}_{v}"));
-                    if (match != null) return match;
+                    int v = ShownValue(axis);
+                    if (v < 0) continue;
+                    var narrowed = candidates.FindAll(s => HasValue(s, axis.values[v]));
+                    if (narrowed.Count > 0) candidates = narrowed;
                 }
-                return styles.Find(s => BaseName(s) == b);
+                return candidates.Count > 0 ? candidates[0] : null;
             }
         }
 
@@ -92,7 +125,7 @@ namespace DreamWorld.CharacterCreation
             if (i >= 0) styleIndex = i + (optional ? 1 : 0);
         }
 
-        // "Hair_Twintails" -> "twintails", "Shoes_MaryJanes" -> "mary janes"
+        // "Hair_WolfCut" -> "wolf cut", "Shoes_MaryJanes" -> "mary janes"
         public string CurrentStyleName
         {
             get
@@ -163,11 +196,12 @@ namespace DreamWorld.CharacterCreation
 
         public void ResetEyes() => SetEyes(1f, 0f, 0f);
 
-        public void SetVariant(OutfitCategory category, int variant)
+        // Picks a value on one of a slot's option rows (bangs, length, rise).
+        public void SetOption(OutfitCategory category, int axis, int value)
         {
             var slot = GetSlot(category);
-            if (slot == null || slot.variants.Length == 0) return;
-            slot.variantIndex = Mathf.Clamp(variant, 0, slot.variants.Length - 1);
+            if (slot == null || axis < 0 || axis >= slot.axes.Count) return;
+            slot.axes[axis].index = Mathf.Clamp(value, 0, slot.axes[axis].values.Length - 1);
             Apply(slot);
             Changed?.Invoke();
         }
@@ -177,6 +211,17 @@ namespace DreamWorld.CharacterCreation
             var slot = GetSlot(category);
             if (slot == null) return;
             slot.colorIndex = Mathf.Clamp(colorIndex, 0, slot.colors.Length - 1);
+            slot.useCustom = false;
+            Apply(slot);
+            Changed?.Invoke();
+        }
+
+        public void SetCustomColor(OutfitCategory category, Color color)
+        {
+            var slot = GetSlot(category);
+            if (slot == null || !slot.customAllowed) return;
+            slot.customColor = color;
+            slot.useCustom = true;
             Apply(slot);
             Changed?.Invoke();
         }
@@ -202,7 +247,7 @@ namespace DreamWorld.CharacterCreation
                     bool tint = mask == null || mask.Tints(i);
                     if (!tint && !eyes) continue;
                     block.Clear();
-                    block.SetColor(ColorId, tint ? slot.colors[slot.colorIndex] : Color.white);
+                    block.SetColor(ColorId, tint ? slot.CurrentColor : Color.white);
                     if (eyes)   // every face layer moves with the eye sliders
                     {
                         block.SetFloat(EyeScaleId, eyeScale);

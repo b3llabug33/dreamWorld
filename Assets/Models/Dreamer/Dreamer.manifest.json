@@ -517,7 +517,7 @@
    ]
   },
   {
-   "name": "Hair_Bob",
+   "name": "Hair_Long_Straight_Short",
    "submeshes": [
     {
      "texture": "Hair",
@@ -526,7 +526,7 @@
    ]
   },
   {
-   "name": "Hair_Long",
+   "name": "Hair_Long_Choppy_Short",
    "submeshes": [
     {
      "texture": "Hair",
@@ -535,7 +535,7 @@
    ]
   },
   {
-   "name": "Hair_WolfCut",
+   "name": "Hair_Long_Middle_Short",
    "submeshes": [
     {
      "texture": "Hair",
@@ -544,7 +544,7 @@
    ]
   },
   {
-   "name": "Hair_Hime",
+   "name": "Hair_Long_Left_Short",
    "submeshes": [
     {
      "texture": "Hair",
@@ -553,7 +553,7 @@
    ]
   },
   {
-   "name": "Hair_Twintails",
+   "name": "Hair_Long_Right_Short",
    "submeshes": [
     {
      "texture": "Hair",
@@ -562,7 +562,7 @@
    ]
   },
   {
-   "name": "Hair_Pigtails",
+   "name": "Hair_Long_Micro_Short",
    "submeshes": [
     {
      "texture": "Hair",
@@ -571,7 +571,7 @@
    ]
   },
   {
-   "name": "Hair_Ponytail",
+   "name": "Hair_Long_Straight_Medium",
    "submeshes": [
     {
      "texture": "Hair",
@@ -580,7 +580,7 @@
    ]
   },
   {
-   "name": "Hair_Buns",
+   "name": "Hair_Long_Choppy_Medium",
    "submeshes": [
     {
      "texture": "Hair",
@@ -589,7 +589,709 @@
    ]
   },
   {
-   "name": "Hair_Pixie",
+   "name": "Hair_Long_Middle_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Left_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Right_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Micro_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Straight_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Middle_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Left_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Right_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Long_Micro_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Straight_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Choppy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Middle_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Left_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Right_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Straight_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Choppy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Middle_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Left_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Right_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Straight_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Middle_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Left_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Bob_Right_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Straight_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Choppy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Middle_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Left_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Right_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Straight_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Choppy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Middle_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Left_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Right_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Straight_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Middle_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Left_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_WolfCut_Right_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Straight_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Choppy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Middle_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Left_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Right_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Straight_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Choppy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Middle_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Left_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Right_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Straight_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Middle_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Left_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Twintails_Right_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Straight_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Choppy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Middle_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Left_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Right_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Straight_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Choppy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Middle_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Left_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Right_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Straight_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Middle_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Left_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pigtails_Right_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Ponytail_Choppy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Ponytail_Choppy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Ponytail_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Buns_Choppy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Buns_Choppy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Buns_Choppy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pixie_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pixie_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Pixie_Long",
    "submeshes": [
     {
      "texture": "Hair",
