@@ -341,7 +341,7 @@
    ]
   },
   {
-   "name": "Bottom_SkinnyJeans",
+   "name": "Bottom_SkinnyJeansHigh",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -354,7 +354,7 @@
    ]
   },
   {
-   "name": "Bottom_BaggyJeans",
+   "name": "Bottom_BaggyJeansHigh",
    "submeshes": [
     {
      "texture": "Jeans",
@@ -367,7 +367,7 @@
    ]
   },
   {
-   "name": "Bottom_Cargo",
+   "name": "Bottom_CargoHigh",
    "submeshes": [
     {
      "texture": "Cotton",
@@ -380,7 +380,7 @@
    ]
   },
   {
-   "name": "Bottom_FlareJeans",
+   "name": "Bottom_FlareJeansHigh",
    "submeshes": [
     {
      "texture": "JeansDark",
@@ -393,7 +393,72 @@
    ]
   },
   {
-   "name": "Bottom_Shorts",
+   "name": "Bottom_ShortsHigh",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_SkinnyJeansLow",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_BaggyJeansLow",
+   "submeshes": [
+    {
+     "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_CargoLow",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_FlareJeansLow",
+   "submeshes": [
+    {
+     "texture": "JeansDark",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_ShortsLow",
    "submeshes": [
     {
      "texture": "Jeans",

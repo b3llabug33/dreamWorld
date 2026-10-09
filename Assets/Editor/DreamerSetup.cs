@@ -31,7 +31,8 @@ namespace DreamWorld.EditorTools
         static readonly Color[] HairColors = {
             C(0.15f, 0.12f, 0.14f), C(0.40f, 0.26f, 0.18f), C(0.95f, 0.82f, 0.50f), C(0.85f, 0.45f, 0.25f),
             C(0.96f, 0.66f, 0.76f), C(0.72f, 0.62f, 0.90f), C(0.60f, 0.88f, 0.80f), C(0.30f, 0.35f, 0.70f),
-            C(0.92f, 0.92f, 0.96f), C(0.25f, 0.55f, 0.45f), C(0.38f, 0.26f, 0.52f), C(0.62f, 0.42f, 0.58f) };
+            C(0.92f, 0.92f, 0.96f), C(0.25f, 0.55f, 0.45f), C(0.38f, 0.26f, 0.52f), C(0.62f, 0.42f, 0.58f),
+            C(0.98f, 0.95f, 0.86f), C(0.98f, 0.88f, 0.62f) };   // platinum (whitish blonde), light blonde
         static readonly Color[] Clothes = {
             C(0.97f, 0.96f, 0.94f), C(0.96f, 0.66f, 0.76f), C(0.72f, 0.62f, 0.90f), C(0.25f, 0.30f, 0.60f),
             C(0.50f, 0.65f, 0.45f), C(0.98f, 0.94f, 0.85f), C(0.60f, 0.88f, 0.80f), C(0.95f, 0.50f, 0.45f),

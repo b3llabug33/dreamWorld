@@ -769,8 +769,8 @@ def hair_style(name, extra, kind="spiky"):
 
 def under_layer(bm, bottom_z):
     """Hair-colored inner curtain behind the locks, so gaps never show the neck or scalp."""
-    loft(bm, [((0, 0.035, 1.52), 0.105, 0.10), ((0, 0.05, 1.40), 0.112, 0.085),
-              ((0, 0.06, bottom_z), 0.10, 0.06)], 12, cap_start=False, cap_end=False)
+    loft(bm, [((0, 0.045, 1.52), 0.105, 0.09), ((0, 0.06, 1.40), 0.11, 0.07),
+              ((0, 0.07, bottom_z), 0.10, 0.05)], 12, cap_start=False, cap_end=False, skip={5, 6, 7, 8, 9, 10, 11})
 
 
 def wolf_extra(bm):
@@ -780,8 +780,8 @@ def wolf_extra(bm):
     under_layer(bm, 1.16)
     side_locks(bm, 1.36, width=0.05, tip=0.45)
     hang(bm, 1.40, count=13, width=0.08, tip=0.5, start=-40, end=220, root_z=1.62, rnd=rnd, jitter=0.03, flare=0.035)
-    hang(bm, 1.26, count=11, width=0.085, tip=0.45, start=-30, end=210, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.045)
-    hang(bm, 1.10, count=10, width=0.08, tip=0.4, start=-15, end=195, root_z=1.50, rnd=rnd, jitter=0.06, flare=0.035)
+    hang(bm, 1.26, count=10, width=0.085, tip=0.45, start=-12, end=192, root_z=1.56, rnd=rnd, jitter=0.05, flare=0.045)
+    hang(bm, 1.10, count=9, width=0.08, tip=0.4, start=5, end=175, root_z=1.50, rnd=rnd, jitter=0.06, flare=0.035)
 
 
 def build_hair():
@@ -985,19 +985,38 @@ def bottom_ruffle(name, texture):
     return join(name, [part(name.lower(), "Hips", build, material(texture))])
 
 
-def waistband(m, button=True):
-    parts = [part("band", "Hips", lambda bm: loft(bm, [((0, 0, 0.955), 0.075 + G + 0.014, 0.055 + G + 0.014),
-                                                      ((0, 0, 1.0), 0.075 + G + 0.012, 0.055 + G + 0.012)], 12), m)]
-    if button:
-        parts.append(part("button", "Hips", lambda bm: box(bm, (-0.006, -0.087, 0.97), (0.006, -0.079, 0.985)),
-                          material("Gold", False)))
-    return parts
+def torso_at(z):
+    """Interpolated (half-width, half-depth) of the body at height z."""
+    for (z0, w0, d0), (z1, w1, d1) in zip(TORSO, TORSO[1:]):
+        if z0 <= z <= z1:
+            t = (z - z0) / (z1 - z0)
+            return w0 + (w1 - w0) * t, d0 + (d1 - d0) * t
+    return TORSO[-1][1:]
 
 
-def bottom_legs(name, texture, knee_z=None):
+# Waistlines: "high" sits above the natural waist (tops look tucked in), "low" rides on the hips.
+RISE = {"high": 1.06, "low": 0.875}
+
+
+def pants_top(m, rise, grow):
+    """Hip piece from the crotch up to the waistline, plus a waistband and a gold button."""
+    top = RISE[rise]
+    rings = [((0, 0, z), w + grow, d + grow) for z, w, d in TORSO if 0.76 <= z < top - 0.01]
+    w, d = torso_at(top)
+    rings.append(((0, 0, top), w + grow, d + grow))
+    band = [((0, 0, top - 0.04), torso_at(top - 0.04)[0] + grow + 0.007, torso_at(top - 0.04)[1] + grow + 0.007),
+            ((0, 0, top + 0.003), w + grow + 0.006, d + grow + 0.006)]
+    by = -(torso_at(top - 0.02)[1] + grow + 0.007)
+    return [part("hip", "Hips", lambda bm: loft(bm, rings, 12), m),
+            part("band", "Hips", lambda bm: loft(bm, band, 12), m),
+            part("button", "Hips", lambda bm: box(bm, (-0.006, by - 0.005, top - 0.03), (0.006, by + 0.002, top - 0.015)),
+                 material("Gold", False))]
+
+
+def bottom_legs(name, texture, knee_z=None, rise="high"):
     """Fitted pants (knee_z None) or shorts (legs end at knee_z)."""
     m = material(texture)
-    parts = [part("hip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99, G), 12), m)] + waistband(m)
+    parts = pants_top(m, rise, G)
     for side, sx in sides():
         if knee_z is None:
             parts += [part(f"u{side}", f"UpperLeg.{side}", lambda bm, sx=sx: loft(
@@ -1011,10 +1030,10 @@ def bottom_legs(name, texture, knee_z=None):
     return join(name, parts)
 
 
-def bottom_wide(name, texture, thigh=0.072, knee=0.07, hem=0.078, hem_z=0.03, pockets=False, fitted_thigh=False):
+def bottom_wide(name, texture, thigh=0.072, knee=0.07, hem=0.078, hem_z=0.03, pockets=False, fitted_thigh=False, rise="high"):
     """Baggy / cargo / flare pants: wide straight legs that bunch up at the hem over the shoes."""
     m = material(texture)
-    parts = [part("hip", "Hips", lambda bm: loft(bm, torso_sections(0.76, 0.99, G + 0.008), 12), m)] + waistband(m)
+    parts = pants_top(m, rise, G + 0.008)
     bunch = lambda i, k: (1.08 if i % 2 else 0.96) if k >= 2 else 1.0   # stacked fabric at the ankle
     for side, sx in sides():
         top_r = 0.054 + G if fitted_thigh else thigh
@@ -1274,11 +1293,14 @@ pieces += [bottom_skirt("Bottom_Skirt", "Tweed"),
            bottom_skirt("Bottom_Pleated", "Plaid", pleats=True),
            bottom_ruffle("Bottom_RuffleSkirt", "Gingham"),
            bottom_skirt("Bottom_LongSkirt", "Tartan", length_z=0.22, flare=0.10),
-           bottom_legs("Bottom_SkinnyJeans", "Jeans"),
-           bottom_wide("Bottom_BaggyJeans", "Jeans"),
-           bottom_wide("Bottom_Cargo", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True),
-           bottom_wide("Bottom_FlareJeans", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True),
-           bottom_legs("Bottom_Shorts", "Jeans", knee_z=0.66)]
+           ]
+for rise in ("High", "Low"):   # every pair of pants comes high-waisted and low-rise
+    r = rise.lower()
+    pieces += [bottom_legs(f"Bottom_SkinnyJeans{rise}", "Jeans", rise=r),
+               bottom_wide(f"Bottom_BaggyJeans{rise}", "Jeans", rise=r),
+               bottom_wide(f"Bottom_Cargo{rise}", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True, rise=r),
+               bottom_wide(f"Bottom_FlareJeans{rise}", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True, rise=r),
+               bottom_legs(f"Bottom_Shorts{rise}", "Jeans", knee_z=0.66, rise=r)]
 pieces += [legwear("Legwear_KneeSocks", "Knit", 0.42, z_bottom=0.0),
            legwear("Legwear_ThighHighs", "Knit", 0.66),
            legwear("Legwear_Tights", "Mesh", 0.92, grow=0.003),
@@ -1368,11 +1390,11 @@ def preview(name, shown, angle=20, z=0.85, ortho=1.9, res=(420, 700)):
 
 
 LOOKS = {
-    "grunge": {"Skin_Body", "Eyes_Sleepy", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeans", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
+    "grunge": {"Skin_Body", "Eyes_Sleepy", "Hair_WolfCut", "Top_Flannel", "Bottom_BaggyJeansLow", "Shoes_Combat", "Neck_Choker", "Headwear_Beanie"},
     "girly": {"Skin_Body", "Eyes_Round", "Hair_Twintails", "Top_PuffBlouse", "Bottom_RuffleSkirt", "Legwear_FrillySocks", "Shoes_MaryJanes", "Neck_Ribbon", "Headwear_StarClips"},
     "twilight": {"Skin_Body", "Eyes_Bean", "Hair_Hime", "Top_SlipDress", "Legwear_Fishnets", "Shoes_Platforms", "Neck_Chain", "Headwear_Beret"},
-    "baggy": {"Skin_Body", "Eyes_Dot", "Hair_Pigtails", "Top_Oversized", "Bottom_Cargo", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
-    "y2k": {"Skin_Body", "Eyes_Round", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeans", "Shoes_Platforms", "Headwear_Halo"},
+    "baggy": {"Skin_Body", "Eyes_Dot", "Hair_Pigtails", "Top_Oversized", "Bottom_CargoLow", "Legwear_LegWarmers", "Shoes_Sneakers", "Glasses_Round"},
+    "y2k": {"Skin_Body", "Eyes_Round", "Hair_Ponytail", "Top_Cardigan", "Bottom_FlareJeansHigh", "Shoes_Platforms", "Headwear_Halo"},
 }
 for look, shown in LOOKS.items():
     preview(f"look_{look}.png", shown)
