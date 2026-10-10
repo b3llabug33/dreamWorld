@@ -51,3 +51,9 @@ Phases (each system gets its own files so parallel work doesn't collide):
 3. Magic + abilities (magic bar spells), tougher enemies with new moves (options; she'll rearrange spawns later),
    more weapons, armor that can be reskinned to any look for a special currency
 4. Trading + player market, multiplayer for real (synced swings/outfits, shared monsters, PvP, public server)
+
+## Progress (2026-10-10 overnight)
+- Done: quests + bounty board, settings menu, music + sound, gathering + crafting (biome woods), home decor
+  placement, magic (3 spells), tougher enemies (special moves + elites), 4 new weapons
+- Next: armor + reskins (needs a decision on how the special currency works), trading + player market,
+  multiplayer for real
