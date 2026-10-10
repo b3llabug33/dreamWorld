@@ -603,8 +603,8 @@ namespace DreamWorld.EditorTools
                 int yaw = rng.Next(360);
                 float size = 0.9f + (float)rng.NextDouble() * 0.8f;
                 string kind = cone ? (yaw % 2 == 0 ? "RN_Tree7" : "RN_Tree8")
-                                   : new[] { "RN_Tree1", "RN_Tree2", "RN_Tree4", "RN_Tree5", "RN_Tree6", "AC_Birch1", "RN_Tree3" }[yaw % 7];
-                PutNature(woods, kind, p, yaw, 6.2f * size, yaw % 5 == 0 ? "fall" : "summer", NatureDusk);
+                                   : new[] { "RT_Tree1", "RT_Tree2", "RT_Tree3", "RT_Tree4", "RT_Tree5", "RT_Tree6", "RT_Tree7", "AC_Birch1", "RN_Tree3" }[yaw % 9];
+                PutNature(woods, kind, p, yaw, (kind.StartsWith("RT_") ? 7.5f : 6.2f) * size, yaw % 5 == 0 ? "fall" : "summer", NatureDusk);
                 trees++;
             }
             int giants = 0;

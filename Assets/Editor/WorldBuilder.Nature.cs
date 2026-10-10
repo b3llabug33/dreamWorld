@@ -19,6 +19,8 @@ namespace DreamWorld.EditorTools
     {
         const string ACDir = "Assets/ThirdParty/AberrantCurse_PSXForest";
         const string RNDir = "Assets/ThirdParty/ElegantCrow_RetroNature";
+        const string RTDir = "Assets/ThirdParty/Ratoddy_RetroPSXTrees";
+        const string PlaygroundDir = "Assets/ThirdParty/CursedLake_Playground";
         const string NatureMatDir = "Assets/Materials/Nature";
         const string NaturePrefabDir = "Assets/Prefabs/Nature";
 
@@ -61,6 +63,11 @@ namespace DreamWorld.EditorTools
                 }
                 for (int i = 1; i <= 9; i++) m[$"RN_Grass{i}"] = ($"{RNDir}/Models/grass0{i}.fbx", 0.5f, NatCol.None);
                 m["RN_GrassBush"] = ($"{RNDir}/Models/grass_bush.fbx", 0.55f, NatCol.None);
+                // RATODDY retro PSX trees: textured leafy trees (one has an autumn texture), bushes, a mushroom, a rock
+                for (int i = 1; i <= 7; i++) m[$"RT_Tree{i}"] = ($"{RTDir}/Tree{i}.fbx", 9f, NatCol.Trunk);
+                for (int i = 1; i <= 4; i++) m[$"RT_Bush{i}"] = ($"{RTDir}/Bush{i}.fbx", 1.3f, NatCol.None);
+                m["RT_Mushroom"] = ($"{RTDir}/Mushroom.fbx", 0.6f, NatCol.None);
+                m["RT_Rock"] = ($"{RTDir}/Rock.fbx", 1.0f, NatCol.Box);
                 m["RN_GrassPatch"] = ($"{RNDir}/Models/grass_patch.fbx", 0.5f, NatCol.None);
                 return natureModels = m;
             }
@@ -76,7 +83,7 @@ namespace DreamWorld.EditorTools
         [MenuItem("dreamWorld/Setup Nature Packs")]
         public static void SetupNature()
         {
-            foreach (var folder in new[] { $"{ACDir}/Textures", $"{RNDir}/Textures" })
+            foreach (var folder in new[] { $"{ACDir}/Textures", $"{RNDir}/Textures", RTDir, $"{PlaygroundDir}/Textures" })
                 foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { folder }))
                 {
                     var imp = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guid));
@@ -106,6 +113,11 @@ namespace DreamWorld.EditorTools
         static string NatureTexture(string modelFile, string slotName, string season)
         {
             string b = slotName.Split('.')[0];
+            if (modelFile.StartsWith(RTDir))   // each model's texture sits next to it; Tree2 also has an autumn one
+            {
+                string baseName = modelFile.Substring(0, modelFile.Length - 4);
+                return season == "fall" && File.Exists(baseName + "_fall.png") ? baseName + "_fall.png" : baseName + ".png";
+            }
             if (modelFile.StartsWith(ACDir))
                 return $"{ACDir}/Textures/{(ACTextures.TryGetValue(b, out var t) ? t : "Misc")}.png";
             string file = Path.GetFileNameWithoutExtension(modelFile);
@@ -237,6 +249,37 @@ namespace DreamWorld.EditorTools
             return go;
         }
 
+        // CursedLake's PSX playground (swings, slide, seesaw, sandbox, bench, fence) as one prefab: PSX Lit
+        // materials, a box collider per piece. Placed whole in a free spot near town.
+        static GameObject PlaygroundPrefab()
+        {
+            const string path = NaturePrefabDir + "/Playground.prefab";
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing;
+            var src = AssetDatabase.LoadAssetAtPath<GameObject>($"{PlaygroundDir}/Playground.fbx");
+            if (src == null) return null;
+            EnsureFolder(NaturePrefabDir);
+            var root = new GameObject("Playground");
+            var model = (GameObject)Object.Instantiate(src, root.transform);
+            model.name = "Model";
+            foreach (var r in model.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    string tex = mats[i] != null && mats[i].name.StartsWith("Fence") ? "Fence" : "Playground";
+                    mats[i] = NatureMaterial($"{PlaygroundDir}/Textures/{tex}.png", NatureDusk);
+                }
+                r.sharedMaterials = mats;
+                if (r.name != "Sandbox") r.gameObject.AddComponent<BoxCollider>();
+            }
+            var b = RendererBounds(root);
+            model.transform.localPosition -= new Vector3(b.center.x, b.min.y, b.center.z);   // centered, standing on the ground
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return prefab;
+        }
+
         // a touch of blue so pack models match Mushroom Hollow's evening light
         static readonly Color NatureDusk = new Color(0.86f, 0.9f, 1f);
 
@@ -278,6 +321,32 @@ namespace DreamWorld.EditorTools
                     if (clearance > 0) Physics.SyncTransforms();
                 }
             }
+            // a little playground in a clear spot near the square
+            var pg = PlaygroundPrefab();
+            if (pg != null)
+            {
+                for (int i = 0; i < 600; i++)
+                {
+                    float a = R(0, Mathf.PI * 2), r = R(16, 42);
+                    var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r + 6);
+                    if (!Free(p, 4f) || NearHome(p, 10f)) continue;
+                    // the 14 x 11 m footprint (+ a little room) may only overlap woods trees, which make way for it
+                    var cols = Physics.OverlapBox(p + Vector3.up * 2.2f, new Vector3(8f, 1.9f, 8f), Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
+                    var woodsRoot = root.Find("Woods");
+                    Transform Placed(Transform t) { while (t.parent != null && t.parent != woodsRoot) t = t.parent; return t.parent == woodsRoot ? t : null; }
+                    if (cols.Any(c => woodsRoot == null || Placed(c.transform) == null)) continue;
+                    foreach (var t in cols.Select(c => Placed(c.transform)).Distinct().ToList()) Object.DestroyImmediate(t.gameObject);
+                    foreach (Transform t in woodsRoot.Cast<Transform>().ToList())   // also anything without a collider under it (flowers, mushrooms)
+                        if (Mathf.Abs(t.position.x - p.x) < 8f && Mathf.Abs(t.position.z - p.z) < 8f) Object.DestroyImmediate(t.gameObject);
+                    Physics.SyncTransforms();
+                    var go = (GameObject)PrefabUtility.InstantiatePrefab(pg, n);
+                    // face the town center
+                    go.transform.SetPositionAndRotation(p, Quaternion.LookRotation(new Vector3(-p.x, 0, 6 - p.z)));
+                    Keep(p.x - 8, p.z - 8, p.x + 8, p.z + 8);
+                    Debug.Log("[Nature] playground at " + p);
+                    break;
+                }
+            }
             string Seasonal() => rng.NextDouble() < 0.7 ? "summer" : "fall";
             var dusk = NatureDusk;
 
@@ -288,9 +357,9 @@ namespace DreamWorld.EditorTools
             Scatter(46, 27, 78, 1.5f, 1.4f, () => Pick("RN_Tree1", "RN_Tree4", "RN_Tree6", "RN_Tree7", "RN_Tree8", "AC_Birch1", "AC_Birch2"), 7f, 11f, Seasonal, dusk);
             Scatter(30, 26, 76, 1f, 0.8f, () => Pick("AC_Rock1", "AC_Rock2"), 0.7f, 1.9f, null, dusk);
             // (only the full 3D shrubs: the Aberrant bushes are crossed flat cards that look like sheets turned the wrong way)
-            Scatter(50, 26, 78, 0.8f, 0.5f, () => Pick("RN_Bush1", "RN_Bush2", "RN_Bush3", "RN_Bush6", "RN_Bush7", "RN_Bush8"), 0.9f, 1.8f, Seasonal, dusk);
+            Scatter(50, 26, 78, 0.8f, 0.5f, () => Pick("RN_Bush1", "RN_Bush2", "RN_Bush3", "RN_Bush6", "RN_Bush7", "RN_Bush8", "RT_Bush1", "RT_Bush2", "RT_Bush3", "RT_Bush4"), 0.9f, 1.8f, Seasonal, dusk);
             // little things: mushrooms (it is Mushroom Hollow), crystals, owls on rocks, frogs
-            Scatter(45, 24, 76, 0.6f, 0f, () => Pick("AC_Mushroom1", "AC_Mushroom2", "AC_Mushroom3"), 0.25f, 0.55f);
+            Scatter(45, 24, 76, 0.6f, 0f, () => Pick("AC_Mushroom1", "AC_Mushroom2", "AC_Mushroom3", "RT_Mushroom", "RT_Mushroom"), 0.25f, 0.55f);
             Scatter(10, 30, 74, 1f, 0.6f, () => Pick("AC_Crystal1", "AC_Crystal2"), 0.8f, 1.5f, null, new Color(0.9f, 0.85f, 1f));
             Scatter(8, 24, 70, 0.6f, 0f, () => "AC_Frog", 0.12f, 0.16f);
             for (int i = 0; i < 4; i++)
