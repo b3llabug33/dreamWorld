@@ -678,8 +678,11 @@ namespace DreamWorld.EditorTools
         }
 
         // Four plots east of town. HomeBase (cottage + home computer + home zone) appears on the one you buy.
+        static readonly List<Transform> PlotSpots = new List<Transform>();   // where your cottage can appear (no grass under it)
+
         static void BuildPlots(Transform root, out Transform contents)
         {
+            PlotSpots.Clear();
             var plots = new GameObject("Plots").transform;
             plots.SetParent(root);
             var area = new GameObject("Zone_the plots").AddComponent<Zone>();
@@ -698,6 +701,7 @@ namespace DreamWorld.EditorTools
                 bool north = centers[i].z > 6;
                 plotGo.transform.SetPositionAndRotation(centers[i], Quaternion.Euler(0, north ? 180 : 0, 0));
                 var plot = plotGo.AddComponent<Plot>();
+                PlotSpots.Add(plotGo.transform);
                 plot.index = i;
                 // little fence corners mark it out
                 foreach (var c in new[] { new Vector3(-5, 0, -5), new Vector3(5, 0, -5), new Vector3(-5, 0, 5), new Vector3(5, 0, 5) })
@@ -725,6 +729,7 @@ namespace DreamWorld.EditorTools
             var homeRoot = new GameObject("HomeBase");
             homeRoot.transform.SetParent(root);
             var home = homeRoot.AddComponent<HomeBase>();
+            homeRoot.AddComponent<HomeDecor>();   // the furniture you place (Town/HomeDecor.cs)
             var c0 = new GameObject("YourHome").transform;
             c0.SetParent(homeRoot.transform);
             home.contents = c0.gameObject;

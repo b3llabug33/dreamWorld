@@ -157,7 +157,7 @@ namespace DreamWorld.Gameplay
                         id = DreamWorld.Gathering.Crafting.OutputId(r, w?.id), name = (w != null ? w.name + " " : "") + r.name, kind = r.kind,
                         maxStack = r.kind == ItemKind.Decor ? 10 : 1, icon = r.id, wood = w?.id,
                         tint = w != null ? w.color : Color.white, sellPrice = r.sell + (w != null ? w.value * r.woodCount / 2 : 0),
-                        description = r.description + (w != null ? $" (made of {w.name})" : "") + (r.kind == ItemKind.Decor ? ". place it at your home (coming soon)" : ""),
+                        description = r.description + (w != null ? $" (made of {w.name})" : "") + (r.kind == ItemKind.Decor ? ". press B at your home to place it" : ""),
                     };
                     if (r.kind == ItemKind.Weapon)
                     {

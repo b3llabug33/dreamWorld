@@ -18,6 +18,7 @@ namespace DreamWorld.EditorTools
 
         static void BuildGathering(Transform root, Random rng)
         {
+            BuildDecorPrefabs();   // the furniture crafted decor turns into at home (WorldBuilder.Decor.cs)
             Physics.SyncTransforms();
             var g = new GameObject("Gathering").transform;
             g.SetParent(root);

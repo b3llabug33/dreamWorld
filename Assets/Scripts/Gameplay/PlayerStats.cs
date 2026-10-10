@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DreamWorld.Gameplay
@@ -27,6 +28,15 @@ namespace DreamWorld.Gameplay
         public string equipped = "";       // weapon in the right hand (an item id from the bag)
         public string offhand = "";        // shield on the left arm
         public bool starterGiven;          // everyone gets one beetle horn sword
+        public List<PlacedDecor> decor = new List<PlacedDecor>();   // furniture placed at your home (Town/HomeDecor.cs)
+    }
+
+    // One piece of decor at your home: the item, and where it sits relative to the home (so it moves with the plot).
+    [Serializable]
+    public class PlacedDecor
+    {
+        public string item;
+        public float x, y, z, yaw;
     }
 
     // A player's bars, level and money. Health/stamina/magic grow with the points spent on them;
@@ -84,6 +94,7 @@ namespace DreamWorld.Gameplay
         void Prepare()
         {
             if (progress.points == null || progress.points.Length != 5) progress.points = new int[5];
+            if (progress.decor == null) progress.decor = new List<PlacedDecor>();
             progress.bag = Inventory.Fit(progress.bag, Inventory.BagSize);
             progress.storage = Inventory.Fit(progress.storage, Inventory.StorageSize);
             if (progress.hotbar == null || progress.hotbar.Length != 4)

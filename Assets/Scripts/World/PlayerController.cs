@@ -153,12 +153,12 @@ namespace DreamWorld.World
             sprinting = (holding || shift) && !sprintLocked && moveDir.sqrMagnitude > 0.01f && action == Action.None;
 
             if (Input.GetKeyDown(KeyCode.F)) Jump();
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && !DreamWorld.Town.HomeDecor.Active)   // decorating: a click places furniture
             {
                 bool heavy = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
                 if (heavy) HeavyAttack(); else LightAttack();
             }
-            if (Input.GetKeyDown(KeyCode.Q)) ToggleLockOn();
+            if (Input.GetKeyDown(KeyCode.Q) && !DreamWorld.Town.HomeDecor.Active) ToggleLockOn();
             if (stats != null) stats.GuardReduction = Input.GetMouseButton(1) && action == Action.None ? GuardAmount : 0f;
         }
 

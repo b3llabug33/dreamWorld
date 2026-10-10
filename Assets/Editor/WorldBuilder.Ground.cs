@@ -121,7 +121,19 @@ namespace DreamWorld.EditorTools
             var old = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (old != null)
             {
-                EditorUtility.CopySerialized(mesh, old);
+                // set the data on the existing asset (CopySerialized changes the file but can leave the copy
+                // already on the GPU stale, so a rebuilt mesh kept drawing the old one until Unity restarted)
+                old.Clear();
+                old.indexFormat = mesh.indexFormat;
+                old.vertices = mesh.vertices;
+                old.normals = mesh.normals;
+                old.uv = mesh.uv;
+                old.colors = mesh.colors;
+                old.subMeshCount = mesh.subMeshCount;
+                for (int i = 0; i < mesh.subMeshCount; i++) old.SetTriangles(mesh.GetTriangles(i), i);
+                old.RecalculateBounds();
+                old.name = mesh.name;
+                EditorUtility.SetDirty(old);
                 return old;
             }
             AssetDatabase.CreateAsset(mesh, path);
@@ -473,6 +485,12 @@ namespace DreamWorld.EditorTools
             y = 0;
             if (new Vector2(x - Plaza.x, z - Plaza.z).magnitude < PlazaRadius + 1.5f) return false;
             if (InWater(x, z, 0.4f)) return false;
+            foreach (var plot in PlotSpots)   // the cottage that appears on a plot you buy (6 x 6 at local z 2)
+            {
+                if (plot == null) continue;
+                var l = plot.InverseTransformPoint(new Vector3(x, 0, z));
+                if (Mathf.Abs(l.x) < 3.7f && l.z > -1.7f && l.z < 5.7f) return false;
+            }
             foreach (var (a, b, w) in PathSegs)
             {
                 var p = new Vector2(x, z);
