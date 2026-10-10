@@ -233,10 +233,7 @@ def lily_pond_tile():
         r = rnd.uniform(0.2, 0.8)
         pad = [(math.cos(t) * 0.16, math.sin(t) * 0.16) for t in [i * 2 * math.pi / 10 for i in range(9)]] + [(0, 0)]
         f = m.plate(pad, 0.125, 0.01, hsv(rnd.choice([0.25, 0.3, 0.82]), 0.45, 0.45))
-        for face in f:
-            for v in face.verts:
-                v.co.x += math.cos(a) * r
-                v.co.y += math.sin(a) * r
+        m.move(f, (math.cos(a) * r, math.sin(a) * r, 0))
         if k % 3 == 0:
             m.blob((math.cos(a) * r, math.sin(a) * r, 0.16), (0.05, 0.05, 0.035), PINK)
     return m
@@ -607,8 +604,6 @@ def petal_shield():
         m.rotate_last(f, (0, 0, 0), (0, 0, math.degrees(a)))
     m.cyl((0, 0, 0.02), 0.12, 0.04, GOLD, M_SHINY, sides=10)
     f = m.plate(star_outline(0.07, 0.03), 0.06, 0.01, hsv(0.12, 0.6, 1.0), M_GLOW)
-    for face in m.bm.faces:
-        pass
     return m
 
 
@@ -669,6 +664,737 @@ def lost_sock_pile():
         m.tube([(x, y, 0.04 + k * 0.03), (x + math.cos(a) * 0.15, y + math.sin(a) * 0.15, 0.05 + k * 0.03),
                 (x + math.cos(a) * 0.2, y + math.sin(a) * 0.2 - 0.06, 0.06 + k * 0.03)], 0.04, col, sides=6)
     m.plate([(-0.12, 0.0), (0.12, 0.0), (0.12, 0.08), (-0.12, 0.08)], 0.35, 0.01, CREAM)   # "LOST SOCKS" sign card
+    return m
+
+
+# ================================================================ town (outdoor pieces)
+
+@prop("town")
+def crooked_signpost():
+    m = Model("Prop_CrookedSignpost")
+    m.tube([(0, 0, 0), (0.03, 0, 1.0), (-0.02, 0, 1.9)], [0.06, 0.05, 0.045], shade(WOOD_DK))
+    for z, yaw, col, length in ((1.7, 15, CREAM, 0.7), (1.42, -30, PINK, 0.6), (1.14, 170, LILAC, 0.75)):
+        arrow = [(0.0, -0.1), (length, -0.1), (length + 0.14, 0.0), (length, 0.1), (0.0, 0.1)]
+        f = m.plate(arrow, -0.02, 0.04, shade(col))
+        m.rotate_last(f, (0, 0, 0), (90, 0, 0))          # stand it up in the XZ plane
+        m.move(f, (0, 0, z))
+        m.rotate_last(f, (0, 0, z), (0, 0, yaw))          # then swing it around the pole
+        m.box((0, 0, z), (0.1, 0.08, 0.08), shade(WOOD_DK))
+    m.blob((0, 0, 1.95), (0.12, 0.12, 0.05), shade(MOSS))
+    return m
+
+
+@prop("town")
+def stone_fountain():
+    m = Model("Prop_StoneFountain")
+    m.cyl((0, 0, 0), 1.3, 0.45, shade("#9a9488"), sides=12)
+    m.cyl((0, 0, 0.4), 1.15, 0.04, (0.35, 0.55, 0.62), M_SHINY, sides=12)
+    m.cyl((0, 0, 0.4), 0.18, 0.9, shade("#9a9488"), sides=8)
+    m.cyl((0, 0, 1.3), 0.6, 0.15, shade("#9a9488"), sides=12, top=0.4)
+    m.cyl((0, 0, 1.4), 0.36, 0.03, (0.35, 0.55, 0.62), M_SHINY, sides=12)
+    # a frog on top spitting water
+    m.blob((0, 0, 1.6), (0.18, 0.16, 0.14), shade("#7ab85a"))
+    for sx in (1, -1):
+        m.blob((sx * 0.07, -0.09, 1.72), (0.05, 0.05, 0.05), shade("#7ab85a"))
+        m.blob((sx * 0.07, -0.13, 1.73), (0.025, 0.012, 0.025), "#111", M_SHINY)
+    m.tube([(0, -0.16, 1.6), (0, -0.4, 1.55), (0, -0.6, 1.2), (0, -0.7, 0.45)], [0.025, 0.03, 0.035, 0.03], (0.6, 0.85, 0.95), M_GLASS)
+    for sx in (1, -1):
+        m.blob((sx * 0.9, sx * 0.4, 0.45), (0.12, 0.12, 0.02), hsv(0.3, 0.5, 0.45))   # lily pads
+    return m
+
+
+@prop("town")
+def market_stall():
+    m = Model("Prop_MarketStall")
+    m.box((0, 0, 0.45), (2.0, 0.9, 0.9), shade(WOOD), bevel=0.02)
+    m.box((0, -0.05, 0.92), (2.1, 1.0, 0.06), shade(WOOD_DK))
+    for sx in (1, -1):
+        for sy in (1, -1):
+            m.cyl((sx * 0.95, sy * 0.42, 0.9), 0.04, 1.3, shade(WOOD_DK), sides=6)
+
+    def stripes(p, n):
+        return rgb(PINK) if int((p.x + 2) * 3.3) % 2 else rgb(CREAM)
+    m.box((0, -0.25, 2.3), (2.3, 1.5, 0.05), stripes, rot=(-15, 0, 0))
+    for k in range(7):
+        x = -1.05 + k * 0.35
+        m.blob((x, -1.0, 2.1), (0.17, 0.05, 0.12), stripes)   # scalloped edge
+    rnd = random.Random(21)
+    for k in range(12):
+        m.blob((rnd.uniform(-0.85, 0.85), rnd.uniform(-0.3, 0.3), 1.0), (0.08, 0.08, 0.07),
+               hsv(rnd.choice([0.0, 0.08, 0.3, 0.85]), 0.6, 0.85))
+    return m
+
+
+@prop("town")
+def picket_fence():
+    m = Model("Prop_PicketFence")
+    for k in range(9):
+        x = -1.6 + k * 0.4
+        f = m.plate([(-0.07, 0), (0.07, 0), (0.07, 0.85), (0, 0.98), (-0.07, 0.85)], -0.02, 0.04,
+                    shade(hsv([0.85, 0.12, 0.55][k % 3], 0.25, 0.92)))
+        m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+        m.move(f, (x, 0, 0))
+    for z in (0.25, 0.65):
+        m.box((0, 0.03, z), (3.4, 0.04, 0.08), shade(WOOD))
+    m.tube([(-1.6, -0.05, 0.9), (-1.3, -0.08, 0.6), (-0.9, -0.06, 0.8), (-0.5, -0.08, 0.5)], 0.02, shade(MOSS))
+    for x in (-1.3, -0.7):
+        m.blob((x, -0.1, 0.62), (0.05, 0.05, 0.05), PINK)
+    return m
+
+
+@prop("town")
+def well_bucket():
+    m = Model("Prop_WellBucket")
+    m.cyl((0, 0, 0), 0.7, 0.8, shade("#8a8278"), sides=12)
+    m.cyl((0, 0, 0.78), 0.55, 0.03, (0.12, 0.2, 0.25), M_SHINY, sides=12)
+    for sx in (1, -1):
+        m.box((sx * 0.62, 0, 1.3), (0.1, 0.1, 1.1), shade(WOOD_DK))
+    m.tube([(-0.62, 0, 1.7), (0.62, 0, 1.7)], 0.04, shade(WOOD))
+    f = m.box((0, 0, 2.05), (1.6, 1.2, 0.06), shade(PLUM), rot=(0, 25, 0))
+    m.box((0, 0, 2.05), (1.6, 1.2, 0.06), shade(PLUM), rot=(0, -25, 0))
+    m.tube([(0.1, 0, 1.7), (0.1, 0, 1.1)], 0.008, "#d8c8a0")
+    m.cyl((0.1, 0, 0.95), 0.12, 0.16, shade(WOOD), sides=8, top=0.14)
+    return m
+
+
+@prop("town")
+def notice_board():
+    m = Model("Prop_NoticeBoard")
+    for sx in (1, -1):
+        m.cyl((sx * 0.7, 0, 0), 0.05, 2.0, shade(WOOD_DK), sides=6)
+    m.box((0, 0, 1.35), (1.5, 0.08, 1.0), shade(WOOD), bevel=0.02)
+    m.box((0, -0.02, 1.95), (1.7, 0.4, 0.06), shade(PLUM_DK), rot=(-15, 0, 0))
+    rnd = random.Random(22)
+    for k in range(7):
+        x, z = rnd.uniform(-0.55, 0.55), rnd.uniform(1.0, 1.7)
+        m.box((x, -0.05, z), (rnd.uniform(0.18, 0.3), 0.01, rnd.uniform(0.2, 0.3)),
+              rnd.choice([CREAM, "#f8e8a0", "#d8f0d0", "#f8d8e8"]), rot=(0, rnd.uniform(-10, 10), 0))
+        m.blob((x, -0.07, z + 0.1), (0.015, 0.01, 0.015), "#e0354a")
+    return m
+
+
+@prop("town")
+def bug_hotel():
+    m = Model("Prop_BugHotel")
+    m.cyl((0, 0, 0), 0.06, 1.0, shade(WOOD_DK), sides=6)
+    m.box((0, 0, 1.35), (0.7, 0.3, 0.7), shade(WOOD), bevel=0.01)
+    f = m.box((0, 0, 1.78), (0.85, 0.4, 0.05), shade(MOSS_DK), rot=(0, 28, 0))
+    m.box((0, 0, 1.78), (0.85, 0.4, 0.05), shade(MOSS_DK), rot=(0, -28, 0))
+    rnd = random.Random(23)
+    for i in range(5):
+        for j in range(5):
+            x, z = -0.26 + i * 0.13, 1.09 + j * 0.13
+            m.cyl((x, -0.12, z), 0.05, 0.05, shade(rnd.choice(["#c8a070", "#a07850", "#d8c8a0"])), rot=(90, 0, 0), sides=8)
+            m.cyl((x, -0.165, z), 0.02, 0.01, "#2a1a14", rot=(90, 0, 0), sides=6)
+    m.blob((0.15, -0.18, 1.3), (0.03, 0.04, 0.025), "#e0354a", M_SHINY)   # resident ladybug
+    return m
+
+
+# ================================================================ fashion (the tailor shop)
+
+@prop("fashion")
+def dress_mannequin():
+    m = Model("Prop_DressMannequin")
+    m.cyl((0, 0, 0), 0.22, 0.04, shade(WOOD_DK), sides=8)
+    m.cyl((0, 0, 0), 0.02, 0.9, shade(WOOD_DK), sides=6)
+    m.blob((0, 0, 1.2), (0.17, 0.12, 0.3), shade(CREAM), seg=10, rings=8)
+    m.cyl((0, 0, 1.48), 0.04, 0.08, shade(WOOD_DK), sides=6)
+
+    def plaid(p, n):
+        s = (int((p.x + 1) * 25) % 3 == 0) or (int(p.z * 25) % 3 == 0)
+        return hsv(0.78, 0.4, 0.55 if s else 0.75)
+    m.cyl((0, 0, 0.55), 0.32, 0.5, plaid, sides=12, top=0.16)
+    m.box((0, -0.12, 1.15), (0.18, 0.02, 0.25), shade(PINK))
+    m.plate(heart_outline(0.05), 0, 0.01, PINK)
+    return m
+
+
+@prop("fashion")
+def clothes_rack():
+    m = Model("Prop_ClothesRack")
+    for sx in (1, -1):
+        m.tube([(sx * 0.7, 0, 0), (sx * 0.7, 0, 1.6)], 0.025, "#c8c8d0")
+        m.tube([(sx * 0.7, -0.25, 0.02), (sx * 0.7, 0.25, 0.02)], 0.025, "#c8c8d0")
+    m.tube([(-0.7, 0, 1.6), (0.7, 0, 1.6)], 0.02, "#c8c8d0")
+    rnd = random.Random(31)
+    for k in range(9):
+        x = -0.55 + k * 0.14
+        hue = rnd.choice([0.78, 0.3, 0.92, 0.12, 0.55])
+        m.torus((x, 0, 1.58), 0.03, 0.006, "#888", rot=(90, 0, 0), seg=6)
+        m.box((x, 0, 1.2), (0.06, 0.38, 0.62), shade(hsv(hue, 0.45, 0.75)))
+    return m
+
+
+@prop("fashion")
+def sewing_machine():
+    m = Model("Prop_SewingMachine")
+    m.box((0, 0, 0.04), (0.5, 0.25, 0.08), shade(WOOD))
+    m.box((0.15, 0, 0.22), (0.12, 0.18, 0.3), shade("#2a2a32"), bevel=0.02)
+    m.box((-0.03, 0, 0.36), (0.42, 0.16, 0.1), shade("#2a2a32"), bevel=0.02)
+    m.box((-0.2, 0, 0.27), (0.05, 0.05, 0.1), shade("#2a2a32"))
+    m.cyl((0.22, 0.12, 0.3), 0.07, 0.03, GOLD, M_SHINY, rot=(90, 0, 0), sides=10)
+    m.cyl((0.02, 0, 0.42), 0.04, 0.05, hsv(0.9, 0.6, 0.8), sides=8)   # thread spool
+    for k in range(4):
+        m.tube([(-0.25 + k * 0.03, -0.05, 0.36), (-0.23 + k * 0.03, -0.12, 0.36)], 0.003, GOLD, M_SHINY)
+    return m
+
+
+@prop("fashion")
+def fabric_bolts():
+    m = Model("Prop_FabricBolts")
+    for k, hue in enumerate((0.78, 0.3, 0.92, 0.55, 0.12)):
+        m.cyl((-0.4 + k * 0.2, 0, 0), 0.09, 0.9, lambda p, n, hue=hue: hsv(hue, 0.45, 0.6 + 0.3 * ((int(p.z * 20)) % 2)), sides=8)
+    return m
+
+
+@prop("fashion")
+def full_length_mirror():
+    m = Model("Prop_FullMirror")
+    m.blob((0, 0, 0.95), (0.35, 0.04, 0.8), shade(GOLD), M_SHINY, seg=12, rings=10)
+    m.blob((0, -0.02, 0.95), (0.3, 0.03, 0.72), (0.75, 0.85, 0.95), M_SHINY, seg=12, rings=10)
+    for sx in (1, -1):
+        m.tube([(sx * 0.2, 0.1, 0), (sx * 0.15, 0.02, 0.5)], 0.02, shade(WOOD_DK))
+    for k in range(5):
+        a = k * math.pi / 4
+        m.blob((math.cos(a) * 0.36, -0.04, 1.65 + math.sin(a) * 0.1), (0.05, 0.02, 0.05), PINK)
+    return m
+
+
+# ================================================================ gothic (vampires live here too)
+
+@prop("gothic")
+def velvet_coffin_bed():
+    m = Model("Prop_CoffinBed")
+    hexo = [(-0.35, -1.0), (0.35, -1.0), (0.45, 0.5), (0.3, 1.0), (-0.3, 1.0), (-0.45, 0.5)]
+    m.plate(hexo, 0, 0.45, shade("#2a1a24"))
+    inner = [(x * 0.82, y * 0.92) for x, y in hexo]
+    m.plate(inner, 0.3, 0.16, shade("#8a1a3a"))
+    m.blob((0, 0.7, 0.5), (0.2, 0.12, 0.06), shade("#c03050"))
+    m.plate(heart_outline(0.1), 0.46, 0.01, "#c03050")
+    return m
+
+
+@prop("gothic")
+def bat_candelabra():
+    m = Model("Prop_BatCandelabra")
+    m.cyl((0, 0, 0), 0.15, 0.04, shade("#2a2430"), sides=8)
+    m.tube([(0, 0, 0), (0, 0, 0.6)], 0.025, shade("#2a2430"))
+    for sx in (-1, 0, 1):
+        x = sx * 0.2
+        m.tube([(0, 0, 0.45), (x, 0, 0.55), (x, 0, 0.62)], 0.015, shade("#2a2430"))
+        m.cyl((x, 0, 0.62), 0.03, 0.18, CREAM, sides=8)
+        m.blob((x, 0, 0.83), (0.012, 0.012, 0.03), "#ffb84a", M_GLOW)
+    wing = [(0, 0), (0.15, 0.06), (0.22, 0.0), (0.18, -0.04), (0.12, -0.02), (0.06, -0.05)]
+    for sx in (1, -1):
+        f = m.plate([(sx * x, y) for x, y in wing], 0, 0.01, "#1a1420")
+        m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+        m.move(f, (0, 0, 0.4))
+    m.blob((0, -0.01, 0.4), (0.04, 0.03, 0.04), "#1a1420")
+    for sx in (1, -1):
+        m.blob((sx * 0.012, -0.04, 0.41), (0.006, 0.004, 0.006), "#e0304a", M_GLOW)
+    return m
+
+
+@prop("gothic")
+def witch_cauldron():
+    m = Model("Prop_WitchCauldron")
+    m.blob((0, 0, 0.4), (0.5, 0.5, 0.4), shade("#2a2a30"), M_SHINY, seg=14, rings=8)
+    m.torus((0, 0, 0.72), 0.42, 0.04, shade("#3a3a42"), seg=16)
+    m.cyl((0, 0, 0.7), 0.4, 0.03, hsv(0.38, 0.7, 0.8), M_GLOW, sides=14)
+    rnd = random.Random(41)
+    for k in range(6):
+        m.blob((rnd.uniform(-0.25, 0.25), rnd.uniform(-0.25, 0.25), 0.78 + rnd.uniform(0, 0.3)), (0.05,) * 3, hsv(0.38, 0.5, 0.9), M_GLOW)
+    for k in range(3):
+        a = k * 2 * math.pi / 3
+        m.cyl((math.cos(a) * 0.35, math.sin(a) * 0.35, 0), 0.05, 0.12, shade("#2a2a30"), sides=6)
+    for k in range(5):
+        a = k * 1.2
+        m.blob((math.cos(a) * 0.55, math.sin(a) * 0.55, 0.05), (0.12, 0.05, 0.05), shade(WOOD_DK))
+        m.blob((math.cos(a) * 0.45, math.sin(a) * 0.45, 0.1), (0.05, 0.05, 0.08), "#ff7a2a", M_GLOW)
+    return m
+
+
+@prop("gothic")
+def spooky_tree_lamp():
+    m = Model("Prop_SpookyTreeLamp")
+    m.tube([(0, 0, 0), (0.05, 0, 1.0), (-0.05, 0, 1.8), (0.0, 0, 2.3)], [0.12, 0.09, 0.07, 0.04], shade("#3a2e2a"))
+    for k, (a, h) in enumerate(((0.5, 1.4), (2.8, 1.7), (4.5, 2.0))):
+        tip = (math.cos(a) * 0.6, math.sin(a) * 0.6, h + 0.3)
+        m.tube([(0, 0, h), (tip[0] * 0.6, tip[1] * 0.6, h + 0.25), tip], [0.04, 0.025, 0.01], shade("#3a2e2a"))
+        m.tube([tip, (tip[0], tip[1], tip[2] - 0.2)], 0.004, "#222")
+        m.blob((tip[0], tip[1], tip[2] - 0.3), (0.07, 0.07, 0.1), hsv([0.78, 0.5, 0.12][k], 0.5, 1.0), M_GLOW)
+    return m
+
+
+@prop("gothic")
+def grave_with_flowers():
+    m = Model("Prop_GraveFlowers")
+    stone = [(-0.3, 0), (0.3, 0), (0.3, 0.6), (0.2, 0.75), (0, 0.8), (-0.2, 0.75), (-0.3, 0.6)]
+    f = m.plate(stone, -0.08, 0.16, shade("#8a8680"))
+    m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+    m.box((0, 0.3, 0.02), (0.6, 0.8, 0.04), shade(MOSS_DK))
+    m.box((0, -0.09, 0.5), (0.3, 0.01, 0.04), "#5a5650")
+    m.box((0, -0.09, 0.42), (0.2, 0.01, 0.04), "#5a5650")
+    rnd = random.Random(42)
+    for k in range(8):
+        x, y = rnd.uniform(-0.25, 0.25), rnd.uniform(0.0, 0.6)
+        m.tube([(x, y, 0.04), (x, y, 0.2)], 0.006, MOSS)
+        m.blob((x, y, 0.22), (0.035, 0.035, 0.025), hsv(rnd.choice([0.85, 0.78, 0.12]), 0.5, 0.95))
+    m.blob((-0.22, -0.05, 0.75), (0.1, 0.06, 0.04), shade(MOSS))
+    return m
+
+
+# ================================================================ tools + items
+
+@prop("items")
+def bug_net():
+    m = Model("Prop_BugNet")
+    m.tube([(0, 0, 0), (0, 0, 1.2)], 0.018, shade(WOOD))
+    m.torus((0, 0, 1.4), 0.2, 0.012, "#c8c8d0", rot=(90, 0, 0), seg=14)
+    m.blob((0, 0.08, 1.4), (0.19, 0.25, 0.19), (0.95, 0.95, 0.9), M_GLASS, seg=10, rings=6)
+    return m
+
+
+@prop("items")
+def watering_can():
+    m = Model("Prop_WateringCan")
+    m.cyl((0, 0, 0), 0.15, 0.28, shade(TEAL), M_SHINY, sides=12)
+    m.tube([(0.12, 0, 0.08), (0.3, 0, 0.3), (0.38, 0, 0.36)], [0.025, 0.02, 0.018], shade(TEAL), M_SHINY)
+    m.cyl((0.38, 0, 0.34), 0.04, 0.04, shade(TEAL), M_SHINY, sides=8, rot=(0, 50, 0))
+    m.tube([(-0.12, 0, 0.26), (-0.05, 0, 0.42), (0.08, 0, 0.42), (0.12, 0, 0.27)], 0.015, shade(TEAL), M_SHINY)
+    m.plate(heart_outline(0.05), 0, 0.005, PINK)
+    return m
+
+
+@prop("items")
+def coin_and_gems():
+    m = Model("Prop_CoinsGems")
+    rnd = random.Random(51)
+    for k in range(10):
+        x, y = rnd.uniform(-0.2, 0.2), rnd.uniform(-0.2, 0.2)
+        m.cyl((x, y, k * 0.012), 0.06, 0.015, shade(GOLD), M_SHINY, sides=10)
+    for k, hue in enumerate((0.8, 0.5, 0.95)):
+        a = k * 2.1
+        f = m.cyl((math.cos(a) * 0.15, math.sin(a) * 0.15, 0.03), 0.05, 0.07, hsv(hue, 0.6, 0.9), M_GLOW, sides=6, top=0.0)
+        m.cyl((math.cos(a) * 0.15, math.sin(a) * 0.15, 0.03), 0.05, 0.03, hsv(hue, 0.6, 0.9), M_GLOW, sides=6, top=0.0, rot=(180, 0, 0))
+    return m
+
+
+@prop("items")
+def old_key():
+    m = Model("Prop_OldKey")
+    m.torus((0, 0, 0), 0.06, 0.015, shade(GOLD), M_SHINY, rot=(90, 0, 0), seg=12)
+    m.tube([(0.06, 0, 0), (0.3, 0, 0)], 0.014, shade(GOLD), M_SHINY)
+    m.box((0.26, 0, -0.03), (0.02, 0.02, 0.05), shade(GOLD), M_SHINY)
+    m.box((0.22, 0, -0.025), (0.02, 0.02, 0.04), shade(GOLD), M_SHINY)
+    m.plate(heart_outline(0.03), -0.005, 0.01, PINK)
+    return m
+
+
+@prop("items")
+def scroll_and_quill():
+    m = Model("Prop_ScrollQuill")
+    m.cyl((-0.2, 0, 0.03), 0.03, 0.4, shade(CREAM), rot=(0, 90, 0), sides=10)
+    m.box((0.02, 0, 0.005), (0.4, 0.3, 0.01), shade("#f0e4c8"))
+    m.cyl((0.22, 0, 0.03), 0.03, 0.4, shade(CREAM), rot=(0, 90, 0), sides=10)
+    for k in range(4):
+        m.box((0.0, -0.08 + k * 0.05, 0.012), (0.28, 0.008, 0.002), "#5a4a6a")
+    f = m.plate([(0, 0), (0.04, 0.12), (0.02, 0.3), (-0.01, 0.12)], 0, 0.004, shade(LILAC))
+    m.rotate_last(f, (0, 0, 0), (60, 0, -30))
+    m.move(f, Vector((0.15, 0.1, 0.02)))
+    return m
+
+
+@prop("items")
+def honey_jar():
+    m = Model("Prop_HoneyJar")
+    m.cyl((0, 0, 0), 0.1, 0.18, hsv(0.1, 0.8, 0.85), M_GLASS, sides=10)
+    m.cyl((0, 0, 0.01), 0.09, 0.14, hsv(0.1, 0.85, 0.9), M_GLOW, sides=10)
+    m.cyl((0, 0, 0.18), 0.11, 0.04, shade("#c8a8e0"), sides=10)
+    m.blob((0, 0, 0.23), (0.11, 0.11, 0.02), shade("#c8a8e0"))
+    m.box((0, -0.1, 0.09), (0.1, 0.01, 0.06), CREAM)
+    m.blob((0.0, -0.11, 0.09), (0.025, 0.008, 0.02), hsv(0.12, 0.8, 0.9))   # little bee on the label
+    return m
+
+
+# ================================================================ more weapons
+
+@prop("weapons")
+def mantis_scythe():
+    m = Model("Prop_MantisScythe")
+    m.tube([(0, 0, 0), (0.02, 0, 0.8), (0, 0, 1.45)], [0.026, 0.022, 0.026], shade("#4a5a2a"))
+    blade = [(0, 0, 1.42), (-0.15, 0, 1.5), (-0.35, 0, 1.5), (-0.52, 0, 1.4), (-0.62, 0, 1.22)]
+    m.tube(blade, [0.05, 0.055, 0.045, 0.03, 0.006], lambda p, n: hsv(0.24, 0.45, 0.45 + 0.4 * max(0.0, n.z)), M_SHINY, sides=4)
+    for k in range(6):   # spines along the inner edge, like a mantis foreleg
+        x = -0.1 - k * 0.08
+        z = 1.47 - 0.02 * k * k * 0.3
+        m.cyl((x, 0, z - 0.03), 0.012, 0.06, "#2a2416", sides=4, top=0.0, rot=(180, 0, 0))
+    m.blob((0, 0, 1.42), (0.05, 0.05, 0.05), "#2a2416")
+    return m
+
+
+@prop("weapons")
+def umbrella_sword():
+    m = Model("Prop_UmbrellaSword")
+    m.tube([(0, 0, 0), (0, 0, 1.1)], 0.015, "#c8c8d0")
+    m.cyl((0, 0, 0.25), 0.12, 0.85, lambda p, n: hsv(0.8 if int((math.atan2(p.y, p.x) + 4) * 2) % 2 else 0.9, 0.45, 0.8), sides=8, top=0.02)
+    m.tube([(0, 0, 0.25), (0, 0, 0.0), (0.05, 0, -0.08), (0.1, 0, -0.03)], 0.025, shade(WOOD))
+    return m
+
+
+@prop("weapons")
+def frying_pan():
+    m = Model("Prop_FryingPan")
+    m.cyl((0, 0, 0), 0.22, 0.05, shade("#2a2a30"), M_SHINY, sides=14)
+    m.cyl((0, 0, 0.01), 0.19, 0.045, shade("#3a3a44"), M_SHINY, sides=14)
+    m.tube([(0.22, 0, 0.03), (0.6, 0, 0.06)], 0.025, shade(WOOD_DK))
+    m.blob((0.03, 0.02, 0.06), (0.06, 0.06, 0.012), CREAM)      # egg white
+    m.blob((0.03, 0.02, 0.07), (0.025, 0.025, 0.015), "#ffb820", M_SHINY)
+    return m
+
+
+@prop("weapons")
+def slingshot():
+    m = Model("Prop_Slingshot")
+    m.tube([(0, 0, 0), (0, 0, 0.18), (-0.08, 0, 0.32)], 0.025, shade(WOOD))
+    m.tube([(0, 0, 0.18), (0.08, 0, 0.32)], 0.025, shade(WOOD))
+    m.tube([(-0.08, 0, 0.32), (0, -0.06, 0.26), (0.08, 0, 0.32)], 0.006, PINK)
+    m.box((0, -0.06, 0.26), (0.05, 0.01, 0.03), shade(WOOD_DK))
+    return m
+
+
+# ================================================================ home + garden (bases)
+
+@prop("home")
+def welcome_doormat():
+    m = Model("Prop_WelcomeMat")
+    m.box((0, 0, 0.01), (0.9, 0.55, 0.02), shade("#b08a5a"), bevel=0.005)
+    for k in range(5):
+        m.box((-0.3 + k * 0.15, 0, 0.022), (0.06, 0.3, 0.005), hsv(0.85, 0.4, 0.7))
+    m.plate(heart_outline(0.06), 0.025, 0.004, PINK)
+    return m
+
+
+@prop("home")
+def flower_window_box():
+    m = Model("Prop_FlowerWindowBox")
+    m.box((0, 0, 0.12), (1.0, 0.25, 0.24), shade(PLUM), bevel=0.01)
+    m.box((0, 0, 0.23), (0.94, 0.2, 0.03), shade("#4a3324"))
+    rnd = random.Random(61)
+    for k in range(12):
+        x = -0.42 + k * 0.077
+        h = rnd.uniform(0.15, 0.32)
+        m.tube([(x, 0, 0.24), (x + rnd.uniform(-0.03, 0.03), 0, 0.24 + h)], 0.008, MOSS)
+        m.blob((x, 0, 0.24 + h), (0.04, 0.04, 0.03), hsv(rnd.choice([0.85, 0.12, 0.6, 0.78]), 0.55, 0.95))
+    return m
+
+
+@prop("home")
+def garden_gnome_vampire():
+    m = Model("Prop_VampireGnome")
+    m.blob((0, 0, 0.18), (0.13, 0.11, 0.18), shade("#2a1a2e"))
+    m.blob((0, 0, 0.38), (0.09, 0.09, 0.09), shade("#e8e0ea"))
+    m.cyl((0, 0, 0.43), 0.1, 0.25, shade("#8a1a3a"), sides=8, top=0.0)
+    m.blob((0, -0.05, 0.35), (0.08, 0.05, 0.06), shade("#f4f0f6"))   # beard
+    for sx in (1, -1):
+        m.blob((sx * 0.035, -0.08, 0.4), (0.012, 0.008, 0.012), "#e0304a", M_GLOW)
+    m.cyl((0.015, -0.085, 0.33), 0.006, 0.03, "#fff", sides=4, top=0.0, rot=(180, 0, 0))
+    wing = [(0, 0), (0.18, 0.08), (0.26, 0.0), (0.2, -0.05), (0.12, -0.02)]
+    for sx in (1, -1):
+        f = m.plate([(sx * x, y) for x, y in wing], 0, 0.01, "#2a1a2e")
+        m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+        m.move(f, Vector((0, 0.06, 0.25)))
+    return m
+
+
+@prop("home")
+def vegetable_patch():
+    m = Model("Prop_VegetablePatch")
+    m.box((0, 0, 0.1), (1.6, 1.0, 0.2), shade(WOOD_DK))
+    m.box((0, 0, 0.19), (1.5, 0.9, 0.04), shade("#4a3324"))
+    for i in range(4):
+        for j in range(2):
+            x, y = -0.55 + i * 0.37, -0.22 + j * 0.44
+            if (i + j) % 2:
+                m.blob((x, y, 0.24), (0.09, 0.09, 0.07), "#f07a2a")       # pumpkin
+                m.tube([(x, y, 0.3), (x, y, 0.34)], 0.015, MOSS_DK)
+            else:
+                m.cyl((x, y, 0.15), 0.035, 0.12, "#f07a2a", sides=6)       # carrot
+                for k in range(3):
+                    m.tube([(x, y, 0.27), (x + (k - 1) * 0.04, y, 0.42)], 0.01, MOSS)
+    return m
+
+
+@prop("home")
+def hammock():
+    m = Model("Prop_Hammock")
+    for sx in (1, -1):
+        m.tube([(sx * 1.4, 0, 0), (sx * 1.4, 0, 1.6)], 0.07, shade(WOOD_DK))
+    pts = [(x, 0, 1.2 - 0.5 * (1 - (x / 1.1) ** 2)) for x in [i * 0.22 - 1.1 for i in range(11)]]
+    for dy in (-0.25, 0.0, 0.25):
+        m.tube([(px, dy, pz) for px, _, pz in pts], 0.04, lambda p, n: hsv(0.8 if int((p.x + 2) * 5) % 2 else 0.3, 0.35, 0.8), sides=5)
+    for sx in (1, -1):
+        m.tube([(sx * 1.1, 0, 1.2), (sx * 1.4, 0, 1.4)], 0.01, "#d8c8a0")
+    return m
+
+
+@prop("home")
+def campfire():
+    m = Model("Prop_Campfire")
+    for k in range(8):
+        a = k * math.pi / 4
+        m.blob((math.cos(a) * 0.4, math.sin(a) * 0.4, 0.06), (0.1, 0.09, 0.08), shade("#7a746a"))
+    for k in range(4):
+        a = k * math.pi / 4
+        m.tube([(math.cos(a) * 0.3, math.sin(a) * 0.3, 0.05), (-math.cos(a) * 0.3, -math.sin(a) * 0.3, 0.12)], 0.04, shade(WOOD_DK))
+    m.cyl((0, 0, 0.08), 0.18, 0.4, "#ff7a2a", M_GLOW, sides=6, top=0.0)
+    m.cyl((0.03, 0.02, 0.1), 0.1, 0.5, "#ffd84a", M_GLOW, sides=6, top=0.0)
+    m.tube([(0.35, -0.3, 0.3), (0.0, 0.0, 0.35)], 0.008, shade(WOOD))
+    m.blob((0.05, -0.04, 0.36), (0.04, 0.04, 0.04), CREAM)   # toasting marshmallow
+    return m
+
+
+# ================================================================ elf village
+
+@prop("elf")
+def leaf_archway():
+    m = Model("Prop_LeafArchway")
+    for sx in (1, -1):
+        m.tube([(sx * 1.0, 0, 0), (sx * 1.05, 0, 1.2), (sx * 0.85, 0, 2.2)], [0.12, 0.1, 0.07], shade(WOOD))
+    m.tube([(-0.85, 0, 2.2), (-0.4, 0, 2.6), (0.4, 0, 2.6), (0.85, 0, 2.2)], 0.07, shade(WOOD))
+    rnd = random.Random(71)
+    leaf = [(0, 0), (0.08, 0.1), (0, 0.25), (-0.08, 0.1)]
+    for k in range(26):
+        t = k / 25
+        a = math.pi * t
+        x, z = -math.cos(a) * 0.95, 1.6 + math.sin(a) * 1.0
+        f = m.plate(leaf, 0, 0.01, hsv(rnd.choice([0.25, 0.3, 0.12, 0.08]), 0.55, 0.6))
+        m.rotate_last(f, (0, 0, 0), (rnd.uniform(-60, 60), rnd.uniform(-60, 60), rnd.uniform(0, 360)))
+        m.move(f, Vector((x, rnd.uniform(-0.1, 0.1), z)))
+    for x in (-0.5, 0.5):
+        m.tube([(x, 0, 2.55), (x, 0, 2.25)], 0.004, "#888")
+        m.blob((x, 0, 2.18), (0.06, 0.06, 0.08), hsv(0.3, 0.4, 1.0), M_GLOW)
+    return m
+
+
+@prop("elf")
+def acorn_house_door():
+    m = Model("Prop_AcornDoor")
+    door = [(-0.45, 0), (0.45, 0), (0.45, 1.3), (0.3, 1.7), (0, 1.85), (-0.3, 1.7), (-0.45, 1.3)]
+    f = m.plate(door, -0.05, 0.1, lambda p, n: hsv(0.07, 0.5, 0.45 + 0.1 * (int((p.x + 1) * 10) % 2)))
+    m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+    m.cyl((0, -0.06, 1.1), 0.12, 0.05, (0.8, 0.9, 0.95), M_GLASS, rot=(90, 0, 0), sides=10)
+    m.blob((0.3, -0.08, 0.85), (0.04, 0.04, 0.04), GOLD, M_SHINY)
+    m.blob((0, 0.05, 2.0), (0.6, 0.35, 0.3), shade("#6a4a2a"), seg=12, rings=6)   # acorn cap
+    m.tube([(0, 0.05, 2.25), (0.05, 0.05, 2.45)], 0.04, shade("#4a3324"))
+    return m
+
+
+@prop("elf")
+def mushroom_ladder_tree():
+    m = Model("Prop_ShelfFungusTree")
+    m.tube([(0, 0, 0), (0.05, 0, 1.5), (-0.03, 0, 3.0), (0, 0, 3.8)], [0.35, 0.3, 0.25, 0.15], shade("#6a5040"), sides=8)
+    for k in range(6):
+        a = k * 1.2
+        z = 0.5 + k * 0.5
+        r = 0.3 - k * 0.02
+        m.blob((math.cos(a) * r, math.sin(a) * r, z), (0.25, 0.25, 0.04), shade(hsv(0.08 + 0.02 * k, 0.5, 0.75)))
+    for k in range(4):
+        a = k * 1.6
+        m.blob((math.cos(a) * 0.6, math.sin(a) * 0.6, 3.9), (0.6, 0.6, 0.4), shade(MOSS), seg=8, rings=5)
+    return m
+
+
+@prop("elf")
+def moonflower_lamp():
+    m = Model("Prop_MoonflowerLamp")
+    m.tube([(0, 0, 0), (0.05, 0, 0.8), (0.2, 0, 1.4), (0.35, 0, 1.55)], [0.03, 0.025, 0.02, 0.015], shade(MOSS_DK))
+    for k in range(5):
+        a = k * 2 * math.pi / 5
+        f = m.plate([(0, 0), (0.06, 0.1), (0, 0.22), (-0.06, 0.1)], 0, 0.005, hsv(0.7, 0.2, 1.0), M_GLOW)
+        m.rotate_last(f, (0, 0, 0), (-40, 0, math.degrees(a)))
+        m.move(f, Vector((0.35, 0, 1.5)))
+    m.blob((0.35, 0, 1.52), (0.03, 0.03, 0.03), GOLD, M_GLOW)
+    leaf = [(0, 0), (0.1, 0.08), (0.2, 0), (0.1, -0.06)]
+    m.plate(leaf, 0.5, 0.01, shade(MOSS))
+    return m
+
+
+# ================================================================ music + games
+
+@prop("fun")
+def jukebox():
+    m = Model("Prop_Jukebox")
+    m.box((0, 0, 0.5), (0.7, 0.45, 1.0), shade(PLUM), bevel=0.03)
+    m.blob((0, 0, 1.0), (0.35, 0.225, 0.3), shade(PLUM), seg=12, rings=6)
+    m.blob((0, -0.18, 1.05), (0.26, 0.06, 0.2), lambda p, n: hsv(0.1 + p.x, 0.6, 1.0), M_GLOW)
+    for k in range(6):
+        m.box((-0.2 + k * 0.08, -0.23, 0.55), (0.03, 0.01, 0.3), hsv(0.08 * k, 0.6, 1.0), M_GLOW)
+    m.box((0, -0.23, 0.2), (0.5, 0.01, 0.12), shade(GOLD), M_SHINY)
+    return m
+
+
+@prop("fun")
+def bug_arcade_cabinet():
+    m = Model("Prop_BugArcade")
+    m.box((0, 0, 0.8), (0.65, 0.6, 1.6), shade("#2a2440"), bevel=0.02)
+    m.box((0, -0.25, 1.15), (0.5, 0.15, 0.4), lambda p, n: hsv(0.33, 0.6, 0.35 + 0.35 * (int(p.x * 40 + p.z * 40) % 2)), M_GLOW, rot=(-15, 0, 0))
+    m.box((0, -0.32, 0.85), (0.6, 0.25, 0.06), shade("#3a3460"))
+    m.cyl((-0.12, -0.38, 0.88), 0.012, 0.08, "#ccc", sides=6)
+    m.blob((-0.12, -0.38, 0.97), (0.03, 0.03, 0.03), "#e0354a", M_SHINY)
+    for k in range(3):
+        m.cyl((0.05 + k * 0.08, -0.36, 0.88), 0.025, 0.02, hsv(0.15 + 0.3 * k, 0.7, 0.9), M_SHINY, sides=8)
+    m.box((0, -0.29, 1.5), (0.6, 0.04, 0.18), lambda p, n: hsv(0.85, 0.6, 1.0), M_GLOW)   # marquee
+    m.blob((0, -0.32, 1.5), (0.06, 0.02, 0.04), hsv(0.36, 0.8, 0.5), M_SHINY)          # beetle logo
+    return m
+
+
+@prop("fun")
+def toadstool_drum_set():
+    m = Model("Prop_ToadstoolDrums")
+    for k, (x, y, r, h) in enumerate(((0, 0, 0.3, 0.5), (0.45, 0.2, 0.2, 0.6), (-0.45, 0.2, 0.2, 0.6), (0.3, -0.35, 0.15, 0.4))):
+        m.cyl((x, y, 0), r * 0.5, h, shade(CREAM), sides=8)
+        m.cyl((x, y, h), r, 0.15, shade(["#d6455a", "#7a4f8f", "#4fb3b0", "#e8c25a"][k]), sides=12)
+        m.cyl((x, y, h + 0.15), r * 0.95, 0.01, (0.95, 0.92, 0.85), sides=12)
+    m.tube([(-0.6, -0.2, 0.0), (-0.6, -0.2, 1.0)], 0.015, "#ccc")
+    m.cyl((-0.6, -0.2, 1.0), 0.22, 0.01, GOLD, M_SHINY, sides=12)
+    return m
+
+
+@prop("fun")
+def claw_machine():
+    m = Model("Prop_ClawMachine")
+    m.box((0, 0, 0.4), (0.8, 0.8, 0.8), shade(PINK), bevel=0.02)
+    m.box((0, 0, 1.2), (0.8, 0.8, 0.8), (0.85, 0.92, 0.98), M_GLASS)
+    m.box((0, 0, 1.7), (0.86, 0.86, 0.2), shade(PINK), bevel=0.02)
+    rnd = random.Random(81)
+    for k in range(9):
+        m.blob((rnd.uniform(-0.3, 0.3), rnd.uniform(-0.3, 0.3), 0.85 + rnd.uniform(0, 0.08)), (0.08, 0.08, 0.07),
+               hsv(rnd.choice([0.36, 0.0, 0.8, 0.12]), 0.6, 0.75), M_SHINY)   # plush beetles
+    m.tube([(0, 0, 1.6), (0, 0, 1.35)], 0.008, "#ccc")
+    for k in range(3):
+        a = k * 2 * math.pi / 3
+        m.tube([(0, 0, 1.35), (math.cos(a) * 0.08, math.sin(a) * 0.08, 1.25)], 0.01, "#ccc")
+    return m
+
+
+# ================================================================ vehicles / getting around
+
+@prop("travel")
+def beetle_cart():
+    m = Model("Prop_BeetleCart")
+    m.box((0, -0.3, 0.55), (1.0, 1.2, 0.3), shade(WOOD), bevel=0.02)
+    for sx in (1, -1):
+        m.cyl((sx * 0.55, -0.3, 0.35), 0.35, 0.08, shade(WOOD_DK), rot=(0, 90, 0), sides=10)
+        m.tube([(sx * 0.4, 0.3, 0.55), (sx * 0.3, 1.2, 0.5)], 0.03, shade(WOOD_DK))
+    # the beetle pulling it
+    m.blob((0, 1.5, 0.45), (0.45, 0.6, 0.35), lambda p, n: hsv(0.36 - 0.3 * max(0, p.y - 1.3), 0.85, 0.35 + 0.5 * max(0, n.z)), M_SHINY, seg=14, rings=8)
+    m.blob((0, 2.05, 0.4), (0.25, 0.18, 0.15), shade("#3a2a1a"), M_SHINY)
+    for sx in (1, -1):
+        m.tube([(sx * 0.1, 2.2, 0.38), (sx * 0.18, 2.4, 0.42), (sx * 0.08, 2.55, 0.5)], [0.04, 0.03, 0.01], "#1a1414", M_SHINY)
+        for y in (1.2, 1.5, 1.8):
+            m.tube([(sx * 0.4, y, 0.3), (sx * 0.6, y + 0.05, 0.15), (sx * 0.65, y + 0.05, 0.0)], 0.03, "#1a1414")
+    m.box((0, -0.3, 0.85), (0.9, 1.1, 0.04), shade(PLUM))
+    return m
+
+
+@prop("travel")
+def leaf_boat():
+    m = Model("Prop_LeafBoat")
+    hull = [(0, -1.2), (0.45, -0.6), (0.5, 0.2), (0.3, 0.9), (0, 1.3), (-0.3, 0.9), (-0.5, 0.2), (-0.45, -0.6)]
+    m.plate(hull, 0, 0.06, lambda p, n: hsv(0.28, 0.6, 0.45 + 0.15 * (abs(p.x) < 0.03)))
+    for sx in (1, -1):
+        m.tube([(sx * 0.42, -0.6, 0.06), (sx * 0.5, 0.2, 0.2), (sx * 0.3, 0.9, 0.18)], 0.04, shade(MOSS_DK))
+    m.tube([(0, 0, 0.06), (0, 0, 1.4)], 0.025, shade(WOOD_DK))
+    f = m.plate([(0, 0), (0.6, 0.2), (0, 1.0)], 0, 0.01, shade(CREAM))
+    m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+    m.move(f, (0, 0, 0.35))
+    return m
+
+
+@prop("travel")
+def dragonfly_signpost_lamp():
+    m = Model("Prop_DragonflyBikeRack")
+    for k in range(4):
+        x = -0.6 + k * 0.4
+        m.tube([(x, 0, 0), (x, 0, 0.5), (x + 0.2, 0, 0.6), (x + 0.4, 0, 0.5), (x + 0.4, 0, 0)], 0.025, "#8a8aa0")
+    m.blob((0, 0, 1.1), (0.04, 0.3, 0.04), hsv(0.5, 0.6, 0.6), M_SHINY)
+    for sx in (1, -1):
+        for y in (0.08, -0.05):
+            m.blob((sx * 0.22, y, 1.12), (0.2, 0.05, 0.01), (0.8, 0.95, 0.95), M_GLASS)
+    m.tube([(0, 0, 0.6), (0, 0, 1.08)], 0.015, "#8a8aa0")
+    return m
+
+
+# ================================================================ bug life (outdoor critter decor)
+
+@prop("bugs")
+def ant_hill():
+    m = Model("Prop_AntHill")
+    m.cyl((0, 0, 0), 0.6, 0.35, shade("#a07850"), sides=12, top=0.12)
+    m.cyl((0, 0, 0.33), 0.08, 0.03, "#2a1a14", sides=8)
+    rnd = random.Random(91)
+    for k in range(10):
+        a = rnd.uniform(0, 2 * math.pi)
+        r = rnd.uniform(0.2, 0.9)
+        x, y = math.cos(a) * r, math.sin(a) * r
+        z = max(0.0, 0.35 * (1 - r / 0.6)) + 0.02
+        for j in range(3):
+            m.blob((x + math.cos(a) * j * 0.025, y + math.sin(a) * j * 0.025, z), (0.015, 0.015, 0.012), "#1a1010", M_SHINY)
+    return m
+
+
+@prop("bugs")
+def spiderweb_corner():
+    m = Model("Prop_Spiderweb")
+    for k in range(7):
+        a = k * math.pi / 12
+        m.tube([(0, 0, 0), (math.cos(a) * 1.0, 0, math.sin(a) * 1.0)], 0.004, (0.92, 0.92, 0.95))
+    for r in (0.25, 0.45, 0.65, 0.85):
+        pts = [(math.cos(k * math.pi / 12) * r, 0, math.sin(k * math.pi / 12) * r) for k in range(7)]
+        m.tube(pts, 0.003, (0.92, 0.92, 0.95))
+    m.blob((0.4, -0.01, 0.35), (0.04, 0.03, 0.05), "#2a2430")
+    m.blob((0.4, -0.01, 0.41), (0.025, 0.02, 0.025), "#2a2430")
+    for s in (1, -1):
+        for k in range(4):
+            m.tube([(0.4, -0.01, 0.37), (0.4 + s * 0.07, -0.02, 0.4 - k * 0.03), (0.4 + s * 0.1, -0.02, 0.33 - k * 0.03)], 0.004, "#2a2430")
+    m.plate(heart_outline(0.02), 0.44, 0.003, PINK)   # a cute little bow on the spider
+    return m
+
+
+@prop("bugs")
+def caterpillar_bench_buddy():
+    m = Model("Prop_Caterpillar")
+    for k in range(7):
+        z = 0.1 + (0.12 if k == 6 else 0.02 * math.sin(k))
+        m.blob((-0.36 + k * 0.12, 0, z), (0.08, 0.08, 0.08), hsv(0.3 if k % 2 else 0.25, 0.55, 0.7))
+    m.blob((0.4, 0, 0.27), (0.1, 0.1, 0.1), hsv(0.3, 0.45, 0.8))
+    for s in (1, -1):
+        m.blob((0.47, s * 0.04, 0.3), (0.02, 0.02, 0.025), "#111", M_SHINY)
+        m.tube([(0.4, s * 0.03, 0.35), (0.42, s * 0.06, 0.45)], 0.006, "#222")
+    m.blob((0.48, 0, 0.24), (0.02, 0.02, 0.01), PINK)
+    for k in range(6):
+        for s in (1, -1):
+            m.blob((-0.36 + k * 0.12, s * 0.07, 0.03), (0.015, 0.015, 0.02), hsv(0.08, 0.6, 0.6))
+    return m
+
+
+@prop("bugs")
+def snail_shell_planter():
+    m = Model("Prop_SnailShellPlanter")
+    pts = []
+    for k in range(40):
+        t = k / 39 * 3.2 * math.pi
+        r = 0.05 + 0.06 * t
+        pts.append((math.cos(t) * r * 0.6, 0, 0.35 + math.sin(t) * r * 0.6))
+    m.tube(list(reversed(pts)), [0.04 + 0.12 * (1 - k / 39) for k in range(40)][::-1],
+           lambda p, n: hsv(0.06 + 0.05 * math.sin(p.x * 30), 0.55, 0.75), sides=8)
+    m.blob((0, 0, 0.42), (0.18, 0.18, 0.12), shade("#4a3324"))
+    rnd = random.Random(92)
+    for k in range(6):
+        x, y = rnd.uniform(-0.1, 0.1), rnd.uniform(-0.1, 0.1)
+        m.tube([(x, y, 0.5), (x, y, 0.75)], 0.008, MOSS)
+        m.blob((x, y, 0.76), (0.035, 0.035, 0.02), hsv(rnd.choice([0.85, 0.12]), 0.5, 0.95))
     return m
 
 

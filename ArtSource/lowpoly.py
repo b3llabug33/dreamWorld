@@ -172,6 +172,11 @@ class Model:
             faces.append(self.bm.faces.new((bottom[k], bottom[(k + 1) % n], top[(k + 1) % n], top[k])))
         return self.paint(faces, color, mat)
 
+    def move(self, faces, offset):
+        """Shift a group of faces (each shared corner only once)."""
+        for v in {v for f in faces for v in f.verts}:
+            v.co += Vector(offset)
+
     def rotate_last(self, faces, center, rot):
         verts = list({v for f in faces for v in f.verts})
         m = Matrix.Translation(Vector(center)) @ Euler([math.radians(a) for a in rot]).to_matrix().to_4x4() \
