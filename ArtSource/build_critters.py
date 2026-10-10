@@ -227,7 +227,16 @@ def rainbow_stag_beetle():
 
     # wing covers: one domed oval with a raised seam, slightly squarer shoulders than the back
     c.blob((0, -0.12, 0.16), (0.245, 0.38, 0.13), elytra, M_SHINY, seg=20, rings=12)
-    c.tube([(0, 0.2, 0.255), (0, -0.2, 0.29), (0, -0.48, 0.17)], 0.007, lambda p, n: hsv(0.33, 0.9, 0.5), M_SHINY)
+    # the seam follows the top of the shell exactly: points sampled along the ellipse, pushed out along the
+    # surface normal a hair more than the facets sag (so it never sinks in between polygons)
+    seam = []
+    cy, cz, ry, rz = -0.12, 0.16, 0.38, 0.13
+    for k in range(25):
+        t = math.radians(80 - k * (160 / 24))            # from the front shoulder over the top to the back
+        y, z = cy + ry * math.sin(t), cz + rz * math.cos(t)
+        normal = Vector((0, math.sin(t) / ry, math.cos(t) / rz)).normalized()
+        seam.append(Vector((0, y, z)) + normal * 0.009)
+    c.tube(seam, 0.006, lambda p, n: hsv(0.33, 0.9, 0.42), M_SHINY, sides=5)
     c.blob((0, -0.12, 0.08), (0.23, 0.36, 0.07), black, seg=12, rings=6)                # dark belly
     c.blob((0, 0.17, 0.235), (0.035, 0.03, 0.01), pronotum, M_SHINY, seg=6, rings=4)     # scutellum
     # pronotum: wide, rounded, a touch narrower than the shell
