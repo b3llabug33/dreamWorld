@@ -59,7 +59,7 @@ namespace DreamWorld.Town
             if (spawnedFor != p.progress) Respawn(p.progress);
 
             if (active) Decorating(p);
-            else if (Input.GetKeyDown(KeyCode.B) && CanStart(p)) Begin(p);
+            else if (DreamWorld.Gameplay.Keys.Down(KeyCode.B) && CanStart(p)) Begin(p);
         }
 
         void Respawn(PlayerProgress progress)
@@ -162,16 +162,16 @@ namespace DreamWorld.Town
                 Stop();
                 return;
             }
-            if (Input.GetKeyDown(KeyCode.B) || Input.GetKeyDown(KeyCode.Escape)) { Stop(); return; }
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.B) || DreamWorld.Gameplay.Keys.Down(KeyCode.Escape)) { Stop(); return; }
 
             var items = DecorInBag(p);
             if (items.Count > 0)
             {
-                if (Input.GetKeyDown(KeyCode.E)) pick++;
-                if (Input.GetKeyDown(KeyCode.Q)) pick--;
+                if (DreamWorld.Gameplay.Keys.Down(KeyCode.E)) pick++;
+                if (DreamWorld.Gameplay.Keys.Down(KeyCode.Q)) pick--;
                 pick = ((pick % items.Count) + items.Count) % items.Count;
             }
-            if (Input.GetKeyDown(KeyCode.R)) yaw = (yaw + 45f) % 360f;
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.R)) yaw = (yaw + 45f) % 360f;
             string item = items.Count > 0 ? items[pick] : null;
 
             // the ghost follows what you're looking at
@@ -205,7 +205,7 @@ namespace DreamWorld.Town
                 if (!ghostOk) GameHUD.Instance?.Toast("it doesn't fit there");
                 else Place(p, item);
             }
-            if (Input.GetKeyDown(KeyCode.X))
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.X))
             {
                 if (target != null) PickUp(p, target);
                 else GameHUD.Instance?.Toast("look at a piece of your furniture to pick it up");

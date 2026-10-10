@@ -381,14 +381,14 @@ namespace DreamWorld.Gameplay
             hotbarRoot.gameObject.SetActive(!stats.Dead);
 
             bool otherMenu = (GameHUD.Instance != null && GameHUD.Instance.MenuOpen) || Quests.DialogueUI.IsOpen || Gathering.CraftingUI.Busy;   // 1-6 pick dialogue choices
-            if (!otherMenu && !stats.Dead && (Input.GetKeyDown(KeyCode.I) || Input.GetKeyDown(KeyCode.Tab))) Toggle();
-            if (IsOpen && Input.GetKeyDown(KeyCode.Escape)) Open(false, Side.None);
+            if (!otherMenu && !stats.Dead && (DreamWorld.Gameplay.Keys.Down(KeyCode.I) || DreamWorld.Gameplay.Keys.Down(KeyCode.Tab))) Toggle();
+            if (IsOpen && DreamWorld.Gameplay.Keys.Down(KeyCode.Escape)) Open(false, Side.None);
             // walked away from the shop or computer: close it
             if (IsOpen && side != Side.None && Interactable.Nearest(stats.transform.position) == null) Open(false, Side.None);
 
             for (int k = 0; k < 4; k++)
             {
-                if (!Input.GetKeyDown(KeyCode.Alpha1 + k)) continue;
+                if (!DreamWorld.Gameplay.Keys.Down(KeyCode.Alpha1 + k)) continue;
                 if (IsOpen && PickedItem != null) AssignHotbar(k);
                 else if (!IsOpen && !otherMenu && !stats.Dead) UseHotbar(k);
             }

@@ -84,7 +84,33 @@ namespace DreamWorld.Gameplay
             RefreshBar();
             if (stats.Dead || MenusOpen || (controller != null && !controller.InputEnabled)) return;
             foreach (var s in Spells)
-                if (Input.GetKeyDown(s.key)) Cast(s);
+                if (DreamWorld.Gameplay.Keys.Down(s.key)) Cast(s);
+        }
+
+        // A spell was just cast (id, where it starts, its direction): NetPlayer shows it to everyone else.
+        public event System.Action<string, Vector3, Vector3> SpellCast;
+
+        // Someone else cast a spell: the same effects, but nothing gets hurt or healed (their own game does that).
+        public void PlayRemote(string id, Vector3 from, Vector3 dir)
+        {
+            var s = System.Array.Find(Spells, x => x.id == id);
+            if (s == null) return;
+            switch (id)
+            {
+                case "spark":
+                    Projectile.Fire(gameObject, from, dir, 20f, 0f, s.color, 0.28f).visualOnly = true;
+                    SpellFx.Flash(from, s.color, 0.25f, 3f);
+                    DreamWorld.Audio.AudioManager.Play3D("blip", from);
+                    break;
+                case "mend":
+                    SpellFx.Sparkles(transform, s.color, 14, 2f);
+                    break;
+                case "burst":
+                    SpellFx.Ring(transform.position + Vector3.up * 0.15f, s.color, 3.6f, 0.45f);
+                    SpellFx.Flash(transform.position + Vector3.up * 0.8f, s.color, 0.35f, 7f);
+                    DreamWorld.Audio.AudioManager.Play3D("swing_heavy", transform.position);
+                    break;
+            }
         }
 
         // Casts a spell if you know it, it's ready and you have the magic. Public for tests and buttons.
@@ -120,6 +146,7 @@ namespace DreamWorld.Gameplay
             from += flat.normalized * 0.5f;
             Projectile.Fire(gameObject, from, dir, 20f, 9f * Power, s.color, 0.28f);
             SpellFx.Flash(from, s.color, 0.25f, 3f);
+            SpellCast?.Invoke(s.id, from, dir);
             DreamWorld.Audio.AudioManager.Play3D("blip", from);
         }
 
@@ -129,6 +156,7 @@ namespace DreamWorld.Gameplay
             mendLeft = stats.MaxHealth * 0.34f * Power;
             SpellFx.Sparkles(transform, s.color, 14, 2f);
             DreamWorld.Audio.AudioManager.Play("levelup", 0.5f);
+            SpellCast?.Invoke(s.id, transform.position, Vector3.zero);
         }
 
         void Burst(Spell s)
@@ -138,6 +166,7 @@ namespace DreamWorld.Gameplay
             SpellFx.Ring(transform.position + Vector3.up * 0.15f, s.color, 3.6f, 0.45f);
             SpellFx.Flash(center, s.color, 0.35f, 7f);
             DreamWorld.Audio.AudioManager.Play3D("swing_heavy", center);
+            SpellCast?.Invoke(s.id, center, Vector3.zero);
         }
 
         // ---------------------------------------------------------------- the spell bar

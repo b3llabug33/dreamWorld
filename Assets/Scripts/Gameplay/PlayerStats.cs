@@ -180,8 +180,13 @@ namespace DreamWorld.Gameplay
         }
 
         // IDamageable: monsters (and later other players outside safe zones) hit you through this.
+        // Online, on someone else's character: hits are sent to that player's own game, which decides
+        // (dodging, guarding, safe zones) and takes the damage there (NetPlayer sets this).
+        public System.Func<float, GameObject, bool> DamageRedirect;
+
         public bool TakeDamage(float amount, GameObject source)
         {
+            if (DamageRedirect != null) return amount > 0f && DamageRedirect(amount, source);
             if (Dead || Invulnerable || Protected || amount <= 0f) return false;
             if (ZoneMap.IsSafe(transform.position)) return false;   // nothing can hurt you in a safe zone
             if (GuardReduction > 0f)

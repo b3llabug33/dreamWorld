@@ -220,7 +220,7 @@ namespace DreamWorld.Gathering
         void Update()
         {
             if (!IsOpen) return;
-            if (Time.time - openedAt > 0.2f && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))) Show(false);
+            if (Time.time - openedAt > 0.2f && (DreamWorld.Gameplay.Keys.Down(KeyCode.Escape) || DreamWorld.Gameplay.Keys.Down(KeyCode.E))) Show(false);
         }
     }
 }

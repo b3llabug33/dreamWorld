@@ -321,7 +321,7 @@ namespace DreamWorld.Audio
             bagWasOpen = bagOpen;
 
             // E at a door, sign, shop or computer
-            if (player != null && !player.Dead && !bagOpen && Input.GetKeyDown(KeyCode.E) &&
+            if (player != null && !player.Dead && !bagOpen && DreamWorld.Gameplay.Keys.Down(KeyCode.E) &&
                 Interactable.Nearest(player.transform.position) != null)
                 Play("blip");
 

@@ -8,6 +8,7 @@ namespace DreamWorld.Gameplay
     {
         public float speed = 10f, damage = 10f, radius = 0.25f, life = 2.5f, gravity;
         public GameObject owner;
+        public bool visualOnly;   // someone else's shot, shown on this screen: it hurts nothing here
         Vector3 velocity;
         float age;
         bool fromPlayer;
@@ -65,7 +66,11 @@ namespace DreamWorld.Gameplay
                 if (target != null)
                 {
                     bool isPlayer = target is PlayerStats;
-                    if (isPlayer == fromPlayer) continue;   // no friendly fire
+                    // no friendly fire, except online PvP: another real player, both out in the wilds
+                    bool pvp = isPlayer && fromPlayer && ((PlayerStats)target).DamageRedirect != null && owner != null
+                               && !ZoneMap.IsSafe(owner.transform.position);
+                    if (isPlayer == fromPlayer && !pvp) continue;
+                    if (visualOnly) { Destroy(gameObject); return; }
                     if (target.Alive && !(isPlayer && ZoneMap.IsSafe(target.Body.position)) && target.TakeDamage(damage, owner))
                         DreamWorld.Audio.AudioManager.Play3D("hit", transform.position, 0.8f);
                     Destroy(gameObject);

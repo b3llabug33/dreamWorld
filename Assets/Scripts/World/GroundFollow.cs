@@ -25,6 +25,7 @@ namespace DreamWorld.World
                 var c = hits[i].collider;
                 if (c.transform == transform || c.transform.IsChildOf(transform) || c.attachedRigidbody != null) continue;
                 if (c is CharacterController) continue;   // players and other characters aren't ground
+                if (c.GetComponentInParent<DreamWorld.Gameplay.PlayerStats>() != null) continue;   // online players' hitboxes
                 float y = hits[i].point.y;
                 if (IsTerrain(c)) terrain = Mathf.Max(terrain, y);
                 if (y <= p.y + maxStep) best = Mathf.Max(best, y);

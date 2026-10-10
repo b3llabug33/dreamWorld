@@ -70,6 +70,40 @@ namespace DreamWorld.Gameplay
 
         public static event Action<Monster, PlayerStats> Killed;
 
+        // ---------- online (see Net/NetMonster.cs) ----------
+        // Who it goes after: online the server picks the nearest player; solo (null) it's you.
+        public static Func<Vector3, PlayerStats> TargetPicker;
+        // A copy on a client: the server runs the real one, this one only shows it (its body is synced).
+        public bool Puppet { get; set; }
+        // Client copies: hits are sent to the server instead of landing here.
+        public Func<float, GameObject, bool> HitRedirect;
+        // Server: effects to replay for everyone (kind, position, direction/extra, size, color).
+        public Action<string, Vector3, Vector3, float, Color> FxSent;
+        // Server: someone else's kill. Their own game adds the XP, coins and drops ("id:n;id:n").
+        public Action<PlayerStats, int, int, string> RewardRedirect;
+        public bool Enraged => enraged;
+        public void SetNetState(float health, bool enrage) { Health = health; enraged = enrage; }
+        public void FlashHit() { LastHitTime = Time.time; Tint(new Color(2f, 2f, 2f)); }
+        public static void RaiseKilled(Monster m, PlayerStats killer) => Killed?.Invoke(m, killer);
+
+        void Shot(Vector3 from, Vector3 dir, float speed, float damage, float size)
+        {
+            Projectile.Fire(gameObject, from, dir, speed, damage, tellColor, size);
+            FxSent?.Invoke("shot", from, dir.normalized * speed, size, tellColor);
+        }
+
+        void Wave(Vector3 at, float radius, Color color)
+        {
+            Shockwave.Spawn(at, radius, color);
+            FxSent?.Invoke("wave", at, Vector3.zero, radius, color);
+        }
+
+        void RingFx(Vector3 at, Color color, float radius, float seconds)
+        {
+            SpellFx.Ring(at, color, radius, seconds);
+            FxSent?.Invoke("ring", at, new Vector3(seconds, 0, 0), radius, color);
+        }
+
         public float Health { get; private set; }
         public float HealthFraction => Health / maxHealth;
         public float LastHitTime { get; private set; } = -99f;
@@ -150,8 +184,13 @@ namespace DreamWorld.Gameplay
 
         void Update()
         {
+            if (Puppet)
+            {
+                if (Alive && Time.time - LastHitTime > 0.12f) Tint(BaseTint);
+                return;
+            }
             stateTime += Time.deltaTime;
-            var player = PlayerStats.Local;
+            var player = TargetPicker != null ? TargetPicker(transform.position) : PlayerStats.Local;
             bool canChase = player != null && player.Alive && !ZoneMap.IsSafe(player.transform.position)
                             && Vector3.Distance(home, transform.position) < leashRange;
             float dist = player != null ? Flat(player.transform.position - transform.position).magnitude : 999f;
@@ -299,7 +338,7 @@ namespace DreamWorld.Gameplay
                     attackLength = 0.3f;
                     Vector3 mouth = body.position + transform.forward * (kind == Kind.Spitter ? 0.9f : 0.3f) + Vector3.up * (kind == Kind.Spitter ? 0.25f : 0f);
                     Vector3 aim = (target + Vector3.up * 0.9f - mouth).normalized;
-                    Projectile.Fire(gameObject, mouth, aim, projectileSpeed, damage, tellColor, kind == Kind.Spitter ? 0.32f : 0.2f);
+                    Shot(mouth, aim, projectileSpeed, damage, kind == Kind.Spitter ? 0.32f : 0.2f);
                     break;
                 }
                 case Kind.Lunger: attackLength = 0.4f; break;
@@ -446,7 +485,7 @@ namespace DreamWorld.Gameplay
         void Slam(PlayerStats player, Vector3 center, float radius, Color dust, float damageScale = 1f)
         {
             attackHit = true;
-            Shockwave.Spawn(new Vector3(center.x, transform.position.y, center.z), radius, dust);
+            Wave(new Vector3(center.x, transform.position.y, center.z), radius, dust);
             if (player != null && player.Alive && Flat(player.transform.position - center).magnitude < radius
                 && player.transform.position.y < transform.position.y + 1.2f)   // jumping clears it
                 player.TakeDamage(damage * damageScale, gameObject);
@@ -593,7 +632,7 @@ namespace DreamWorld.Gameplay
         bool TrySpecial(float dist)
         {
             if (specials == Special.None || minion || Time.time < nextSpecial || stateTime < 0.5f) return false;
-            if (Has(Special.Summon) && !summoned && Health < maxHealth * 0.6f) { BeginSpecial(Special.Summon); return true; }
+            if (Has(Special.Summon) && !summoned && FxSent == null && Health < maxHealth * 0.6f) { BeginSpecial(Special.Summon); return true; }   // (no summons online yet)
             int n = 0;
             if (Has(Special.Quake) && dist < 6f) pickable[n++] = Special.Quake;
             if (Has(Special.Volley) && dist > 3f && dist < 13f) pickable[n++] = Special.Volley;
@@ -612,7 +651,7 @@ namespace DreamWorld.Gameplay
             if (m == Special.Summon) summoned = true;
             Enter(State.SpecialWindup);
             if (m == Special.Quake)   // the warning: a ring growing out to where the second wave will reach
-                SpellFx.Ring(transform.position + Vector3.up * 0.12f, new Color(1f, 0.45f, 0.35f), 5.5f, SpecialWindupTime);
+                RingFx(transform.position + Vector3.up * 0.12f, new Color(1f, 0.45f, 0.35f), 5.5f, SpecialWindupTime);
         }
 
         float SpecialWindupTime =>
@@ -660,7 +699,7 @@ namespace DreamWorld.Gameplay
                     Vector3 mouth = body.position + transform.forward * 0.6f + Vector3.up * 0.3f;
                     Vector3 aim = (target + Vector3.up * 0.9f - mouth).normalized;
                     foreach (var a in new[] { -24f, -12f, 0f, 12f, 24f })
-                        Projectile.Fire(gameObject, mouth, Quaternion.AngleAxis(a, Vector3.up) * aim, Mathf.Max(projectileSpeed, 9f), damage * 0.6f, tellColor, 0.24f);
+                        Shot(mouth, Quaternion.AngleAxis(a, Vector3.up) * aim, Mathf.Max(projectileSpeed, 9f), damage * 0.6f, 0.24f);
                     break;
                 }
                 case Special.Blink:
@@ -668,11 +707,11 @@ namespace DreamWorld.Gameplay
                     if (player == null) break;
                     Vector3 behind = player.transform.position - Flat(player.transform.forward).normalized * 1.8f;
                     if (ZoneMap.IsSafe(behind)) break;   // never pops into a safe zone
-                    Shockwave.Spawn(transform.position, 1.2f, new Color(0.6f, 0.4f, 1f, 0.8f));
+                    Wave(transform.position, 1.2f, new Color(0.6f, 0.4f, 1f, 0.8f));
                     transform.position = new Vector3(behind.x, transform.position.y, behind.z);
                     lungeDir = Flat(player.transform.position - transform.position).normalized;
                     if (lungeDir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(lungeDir);
-                    Shockwave.Spawn(transform.position, 1.2f, new Color(0.6f, 0.4f, 1f, 0.8f));
+                    Wave(transform.position, 1.2f, new Color(0.6f, 0.4f, 1f, 0.8f));
                     break;
                 }
                 case Special.Summon:
@@ -682,7 +721,7 @@ namespace DreamWorld.Gameplay
                         if (ZoneMap.IsSafe(pos)) continue;
                         var m = Instantiate(this, pos, transform.rotation, transform.parent);
                         m.MakeMinion(this);
-                        Shockwave.Spawn(pos, 1f, new Color(1f, 0.6f, 1f, 0.8f));
+                        Wave(pos, 1f, new Color(1f, 0.6f, 1f, 0.8f));
                     }
                     break;
             }
@@ -745,12 +784,13 @@ namespace DreamWorld.Gameplay
         public bool TakeDamage(float amount, GameObject source)
         {
             if (!Alive) return false;
+            if (HitRedirect != null) { FlashHit(); return HitRedirect(amount, source); }   // a client copy
             Health -= enraged ? amount * 0.9f : amount;
             LastHitTime = Time.time;
             if (Has(Special.Enrage) && !enraged && Health > 0f && Health < maxHealth * 0.4f)
             {
                 enraged = true;
-                Shockwave.Spawn(transform.position, 1.6f, new Color(1f, 0.4f, 0.4f, 0.8f));
+                Wave(transform.position, 1.6f, new Color(1f, 0.4f, 0.4f, 0.8f));
             }
             Tint(new Color(2f, 2f, 2f));   // white hit flash
             if (source != null && kind != Kind.Knight && kind != Kind.Slammer)   // a little knockback (not the big ones)
@@ -763,6 +803,18 @@ namespace DreamWorld.Gameplay
                 Health = 0f;
                 Enter(State.Dead);
                 var killer = source != null ? source.GetComponent<PlayerStats>() : null;
+                if (killer != null && RewardRedirect != null && killer != PlayerStats.Local)
+                {
+                    // online, someone else's kill: roll the rewards here, their game adds them (and counts the kill)
+                    int coins = minion ? 0 : UnityEngine.Random.Range(coinReward.x, coinReward.y + 1);
+                    var got = new System.Text.StringBuilder();
+                    if (!minion)
+                        foreach (var drop in drops)
+                            if (UnityEngine.Random.value <= drop.chance)
+                                got.Append(drop.item).Append(':').Append(UnityEngine.Random.Range(drop.min, drop.max + 1)).Append(';');
+                    RewardRedirect(killer, xpReward, coins, got.ToString());
+                    return true;
+                }
                 if (killer != null && minion) killer.AddXp(xpReward);   // little copies: a bit of XP, nothing else
                 else if (killer != null)
                 {

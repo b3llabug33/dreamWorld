@@ -361,7 +361,7 @@ namespace DreamWorld.Gameplay
             var near = !stats.Dead && !AnyPanel && !InventoryUI.IsOpen && !talking ? Interactable.Nearest(stats.transform.position) : null;
             promptLabel.text = near != null ? $"[E] {near.Prompt(stats)}" : "";
             // E: use whatever's nearby, otherwise open/close the bag
-            if (Input.GetKeyDown(KeyCode.E) && !stats.Dead && !AnyPanel && !talking)
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.E) && !stats.Dead && !AnyPanel && !talking)
             {
                 if (InventoryUI.IsOpen) InventoryUI.Instance.Toggle();
                 else if (near != null) near.Interact(stats);
@@ -371,12 +371,12 @@ namespace DreamWorld.Gameplay
 
         void UpdatePanels()
         {
-            if (Input.GetKeyDown(KeyCode.Escape) && !InventoryUI.IsOpen && !Quests.DialogueUI.IsOpen && !Gathering.CraftingUI.Busy && !Town.HomeDecor.Busy)
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.Escape) && !InventoryUI.IsOpen && !Quests.DialogueUI.IsOpen && !Gathering.CraftingUI.Busy && !Town.HomeDecor.Busy)
             {
                 if (AnyPanel) { CloseAll(); SetPanel(pausePanel, false); }
                 else SetPanel(pausePanel, true);
             }
-            if (Input.GetKeyDown(KeyCode.L) && !stats.Dead && !InventoryUI.IsOpen && !Quests.DialogueUI.IsOpen && !Gathering.CraftingUI.Busy) SetPanel(levelPanel, !levelPanel.gameObject.activeSelf);
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.L) && !stats.Dead && !InventoryUI.IsOpen && !Quests.DialogueUI.IsOpen && !Gathering.CraftingUI.Busy) SetPanel(levelPanel, !levelPanel.gameObject.activeSelf);
 
             if (levelPanel.gameObject.activeSelf)
             {

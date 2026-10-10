@@ -127,7 +127,7 @@ namespace DreamWorld.World
         void ReadActions()
         {
             // Space: tap to roll, hold to sprint
-            if (Input.GetKeyDown(KeyCode.Space)) spaceDown = Time.time;
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.Space)) spaceDown = Time.time;
             bool holding = Input.GetKey(KeyCode.Space) && spaceDown >= 0 && Time.time - spaceDown > 0.22f;
             if (Input.GetKeyUp(KeyCode.Space))
             {
@@ -141,7 +141,7 @@ namespace DreamWorld.World
             if (Settings.ToggleSprint)
             {
                 // toggle sprint (settings): tap Shift to start, tap again (or stop moving / run out of stamina) to end
-                if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
+                if (DreamWorld.Gameplay.Keys.Down(KeyCode.LeftShift) || DreamWorld.Gameplay.Keys.Down(KeyCode.RightShift))
                 {
                     sprintToggled = !sprintToggled;
                     if (sprintToggled) sprintLocked = false;
@@ -152,13 +152,13 @@ namespace DreamWorld.World
             else sprintToggled = false;
             sprinting = (holding || shift) && !sprintLocked && moveDir.sqrMagnitude > 0.01f && action == Action.None;
 
-            if (Input.GetKeyDown(KeyCode.F)) Jump();
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.F)) Jump();
             if (Input.GetMouseButtonDown(0) && !DreamWorld.Town.HomeDecor.Active)   // decorating: a click places furniture
             {
                 bool heavy = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
                 if (heavy) HeavyAttack(); else LightAttack();
             }
-            if (Input.GetKeyDown(KeyCode.Q) && !DreamWorld.Town.HomeDecor.Active) ToggleLockOn();
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.Q) && !DreamWorld.Town.HomeDecor.Active) ToggleLockOn();
             if (stats != null) stats.GuardReduction = Input.GetMouseButton(1) && action == Action.None ? GuardAmount : 0f;
         }
 
@@ -219,6 +219,54 @@ namespace DreamWorld.World
             actionLength = length;
             actionDir = dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
             comboQueued = heavyQueued = false;
+            ActionStarted?.Invoke((int)kind, combo, length, actionDir);
+        }
+
+        // ---------- online: showing other players' moves ----------
+
+        // A roll, swing or stagger just started (kind, combo hit, length in seconds, direction). NetPlayer sends
+        // it to everyone else, whose copy of this character replays it with PlayRemoteAction.
+        public event System.Action<int, int, float, Vector3> ActionStarted;
+
+        bool remoteReady;
+
+        // Someone else's character: this controller stays switched off (no input, no physics, no hits), but the
+        // same roll flip and swing poses play from what their owner sent.
+        void RemoteInit()
+        {
+            if (remoteReady) return;
+            remoteReady = true;
+            motion = GetComponentInChildren<IdleMotion>();
+            stats = GetComponent<PlayerStats>();
+            if (motion != null)
+            {
+                model = motion.transform;
+                modelBasePos = model.localPosition;
+                modelBaseRot = model.localRotation;
+            }
+        }
+
+        public void PlayRemoteAction(int kind, int remoteCombo, float length, Vector3 dir)
+        {
+            RemoteInit();
+            action = (Action)kind;
+            combo = remoteCombo;
+            actionTime = 0f;
+            actionLength = Mathf.Max(0.05f, length);
+            actionDir = dir;
+        }
+
+        // Called every frame for a remote character with how fast it's moving (m/s, from the synced position).
+        public void TickRemote(float planarSpeed)
+        {
+            RemoteInit();
+            if (action != Action.None)
+            {
+                actionTime += Time.deltaTime;
+                if (actionTime >= actionLength) action = Action.None;
+            }
+            speed = planarSpeed;
+            if (model != null) Animate();
         }
 
         // ---------- lock-on ----------

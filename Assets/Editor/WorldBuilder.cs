@@ -177,6 +177,7 @@ namespace DreamWorld.EditorTools
             launcher.hud = hud;
             PlayerSettings.runInBackground = true;   // a server/host must keep running when unfocused
 
+            NetworkMonsters();   // online: every monster prefab can be shared (WorldBuilder.Net.cs)
             EditorSceneManager.SaveScene(scene, WorldScene);
             AddToBuildSettings(WorldScene);
             Debug.Log("[World] built " + WorldScene);
@@ -194,8 +195,11 @@ namespace DreamWorld.EditorTools
             var cc = go.AddComponent<CharacterController>();
             cc.height = 1.6f; cc.radius = 0.25f; cc.center = new Vector3(0, 0.82f, 0);
             go.AddComponent<PlayerController>();
-            go.AddComponent<PlayerStats>();
-            go.AddComponent<PlayerLife>();
+            // owner-only parts start switched off: a remote copy must never claim PlayerStats.Local (that's
+            // the HUD, bag and saving). NetPlayer switches them on for the person playing this character.
+            go.AddComponent<PlayerStats>().enabled = false;
+            go.AddComponent<Abilities>().enabled = false;
+            go.AddComponent<PlayerLife>().enabled = false;
             go.AddComponent<WeaponPose>();
             go.AddComponent<NetworkObject>();
             go.AddComponent<NetworkTransform>();   // owner-driven position/rotation, synced to everyone

@@ -90,7 +90,7 @@ namespace DreamWorld.Quests
             tracker.text = busy || shown.Count == 0 ? "" : string.Join("\n", shown.Take(4));
             tracker.supportRichText = true;
 
-            if (Input.GetKeyDown(KeyCode.J) && !DialogueUI.IsOpen && !InventoryUI.IsOpen)
+            if (DreamWorld.Gameplay.Keys.Down(KeyCode.J) && !DialogueUI.IsOpen && !InventoryUI.IsOpen)
             {
                 bool open = !logPanel.gameObject.activeSelf;
                 logPanel.gameObject.SetActive(open);
