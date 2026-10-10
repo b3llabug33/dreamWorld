@@ -1,8 +1,8 @@
 """
 Cuts the recorded gameplay frames into a ~35 second vertical (1080x1920) ad for TikTok/Reels:
-pixel-font captions that type themselves out, CRT scanlines, glitch cuts, and an end card.
+pixel-font captions that type themselves out, soft flash cuts, and an end card.
   python make_ad.py <frames root> <output.mp4>
-<frames root> holds one folder of 1920x1080 JPEG frames per clip (creator, hair, eyes, walk, fight, death, town),
+<frames root> holds one folder of 1920x1080 PNG (or older JPEG) frames per clip (creator, hair, eyes, walk, fight, death, town),
 as written by dreamWorld's ClipRecorder. Needs Pillow + imageio-ffmpeg (for H.264).
 """
 import glob
@@ -56,7 +56,8 @@ def fit(d, text, size, width):
 
 
 def frames(clip):
-    return sorted(glob.glob(os.path.join(ROOT, clip, "*.jpg")), key=lambda f: int(f.split("_")[-1].split(".")[0]))
+    found = glob.glob(os.path.join(ROOT, clip, "*.png")) or glob.glob(os.path.join(ROOT, clip, "*.jpg"))
+    return sorted(found, key=lambda f: int(f.split("_")[-1].split(".")[0]))
 
 
 CLIPS = {c: frames(c) for c in {s[0] for s in SEGMENTS}}
@@ -77,11 +78,6 @@ def background():
 
 
 BG = background()
-SCAN = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-_d = ImageDraw.Draw(SCAN)
-for y in range(0, H, 4):
-    _d.line([(0, y), (W, y)], fill=(0, 0, 0, 46))
-
 
 def shadow_text(d, xy, text, f, fill, shadow=PINK, off=6, anchor="mm"):
     d.text((xy[0] + off, xy[1] + off), text, font=f, fill=shadow, anchor=anchor)
@@ -90,7 +86,7 @@ def shadow_text(d, xy, text, f, fill, shadow=PINK, off=6, anchor="mm"):
 
 def game_frame(path, focus, zoom):
     src = Image.open(path).convert("RGB")
-    ch = 1040 / zoom                      # drop the bottom hint line, then a slow push-in
+    ch = 1040                             # drop the bottom hint line; no push-in (re-scaling pixel art every frame makes it shimmer)
     cw = ch * (WIN[2] - WIN[0]) / (WIN[3] - WIN[1])
     cx = min(max(focus * 1920, cw / 2), 1920 - cw / 2)
     cy = 520
@@ -113,18 +109,10 @@ def footer(d, i):
 
 
 def glitch(img, k, rng):
-    """First few frames of a cut: torn horizontal bands + a flash."""
-    if k >= 4:
+    """First frames of a cut: a quick soft flash (the old torn-band glitch read as video errors)."""
+    if k >= 3:
         return img
-    out = img.copy()
-    for _ in range(10 - k * 2):
-        y = rng.randrange(WIN[1], WIN[3] - 40)
-        h = rng.randrange(8, 40)
-        band = img.crop((0, y, W, y + h))
-        out.paste(band, (rng.randrange(-40, 40), y))
-    if k == 0:
-        out = Image.blend(out, Image.new("RGB", out.size, (255, 230, 250)), 0.35)
-    return out
+    return Image.blend(img, Image.new("RGB", img.size, (255, 230, 250)), (0.3, 0.15, 0.06)[k])
 
 
 def segment_frames():
@@ -144,7 +132,6 @@ def segment_frames():
                 d.text((W // 2, 232), small, font=F_SMALL, fill=LAVENDER, anchor="mm")
             footer(d, n)
             img = glitch(img, k, rng)
-            img.paste(SCAN, (0, 0), SCAN)
             n += 1
             yield img
     # end card: the town, blurred and dimmed, with the logo
@@ -166,7 +153,6 @@ def segment_frames():
             d.text((300, 760 + j * 92), "[ ] " + typed, font=F_URL, fill=CREAM if j % 2 == 0 else LAVENDER, anchor="lm")
         footer(d, n + k)
         img = glitch(img, k, rng)
-        img.paste(SCAN, (0, 0), SCAN)
         yield img
     for k in range(END_FRAMES):
         img = back.copy()
@@ -181,14 +167,13 @@ def segment_frames():
             cursor = "_" if (k // 12) % 2 == 0 else " "
             shadow_text(d, (W // 2, 1130), "bellabug.dev" + cursor, F_URL, PINK, shadow=(40, 20, 70), off=5)
         img = glitch(img, k, rng)
-        img.paste(SCAN, (0, 0), SCAN)
         yield img
 
 
 def main():
     os.makedirs(os.path.dirname(os.path.abspath(OUT)), exist_ok=True)
     cmd = [imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", "15", "-tune", "animation",
            "-pix_fmt", "yuv420p", "-movflags", "+faststart", OUT]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     count = 0

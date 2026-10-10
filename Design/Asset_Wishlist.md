@@ -28,3 +28,8 @@ Download these when you have a minute and leave them in Downloads. All are free;
 
 ## Already downloaded
 - Medieval Village MegaKit, Fantasy Props MegaKit, Stylized Nature MegaKit, Ultimate Animated Animal Pack (all Quaternius, CC0).
+
+## For Mistpine Hollow (2026-10-09)
+- **PSX Retro Foliage** by PlentyT (itch.io, $1 minimum): https://plentyt.itch.io/psx-retro-foliage. Has real PSX textures, 4 tree types at 3 growth stages, bushes, grass clumps and moss-covered boulders. It's the best match for the look. Use the textured trees mixed with our generated firs.
+- **Retro PSX Nature Pack** by elegantcrow (itch.io, pay what you want): https://elegantcrow.itch.io/retro-psx-nature-pack. Retro low-poly seasonal nature for the other biomes.
+- Still missing: ferns and ground-cover textures (moss and needle-litter tiles). Our generated ferns cover this for now.
