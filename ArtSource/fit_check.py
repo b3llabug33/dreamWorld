@@ -25,7 +25,6 @@ BODIES = [
 scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
 meshes = [o for o in rig.children if o.type == "MESH"]
-scene.render.resolution_x, scene.render.resolution_y = 200, 300
 for engine in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
     try:
         scene.render.engine = engine
@@ -56,13 +55,44 @@ def flat(name, rgb):
     return m
 
 
-SKIN, CLOTH = flat("FitSkin", (1.0, 0.05, 0.05)), flat("FitCloth", (0.35, 0.55, 1.0))
-LOWER = flat("FitLower", (0.2, 0.85, 0.3))   # bottoms green: pants poking through a top show up too
+def shaded(name, rgb):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    m.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (*rgb, 1)
+    m.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.8
+    return m
+
+
+HAIR_MODE = "hair" in os.path.basename(OUT)   # head close-ups with shading (hair shape needs light), 4 angles
+if HAIR_MODE:
+    BODIES = [{"Masc": 1}, {"Fem": 1}]
+    SKIN, CLOTH, LOWER = shaded("FitSkinS", (0.9, 0.7, 0.6)), shaded("FitClothS", (0.3, 0.3, 0.4)), None
+    HAIRMAT = shaded("FitHairS", (0.55, 0.42, 0.95))
+else:
+    SKIN, CLOTH = flat("FitSkin", (1.0, 0.05, 0.05)), flat("FitCloth", (0.35, 0.55, 1.0))
+    LOWER = flat("FitLower", (0.2, 0.85, 0.3))   # bottoms green: pants poking through a top show up too
+    HAIRMAT = CLOTH
 for obj in meshes:
-    mat = SKIN if obj.name == "Skin_Body" else LOWER if obj.name.startswith("Bottom_") else CLOTH
+    if obj.name == "Skin_Body":
+        mat = SKIN
+    elif obj.name.startswith("Hair_"):
+        mat = HAIRMAT
+    elif obj.name.startswith("Bottom_") and LOWER is not None:
+        mat = LOWER
+    else:
+        mat = CLOTH
     for i in range(len(obj.material_slots)):
         obj.material_slots[i].link = "OBJECT"
         obj.material_slots[i].material = mat
+ANGLES = (0, 40, 90, 180) if HAIR_MODE else (0, 35)
+if HAIR_MODE:
+    cam_data.ortho_scale = 0.5
+    W, H = 200, 220
+    scene.render.resolution_x, scene.render.resolution_y = W, H
+else:
+    W, H = 200, 300
+    scene.render.resolution_x, scene.render.resolution_y = W, H
+COLS = len(BODIES) * len(ANGLES)
 
 shots = []
 for r, outfit in enumerate(OUTFITS):
@@ -76,26 +106,25 @@ for r, outfit in enumerate(OUTFITS):
                 continue
             for kb in keys.key_blocks[1:]:
                 kb.value = body.get(kb.name, 0.0)
-        for v, angle in enumerate((0, 35)):
+        for v, angle in enumerate(ANGLES):
             a = math.radians(angle)
-            cam.location = (math.sin(a) * -4, -math.cos(a) * 4, 0.85)
+            cam.location = (math.sin(a) * -4, -math.cos(a) * 4, 1.5 if HAIR_MODE else 0.85)
             cam.rotation_euler = (math.radians(90), 0, math.radians(-angle))
             path = os.path.join(TMP, f"r{r}_c{c}_v{v}.png")
             scene.render.filepath = path
             bpy.ops.render.render(write_still=True)
-            shots.append((r, c * 2 + v, path))
+            shots.append((r, c * len(ANGLES) + v, path))
 
-# contact sheet: rows = outfits, 16 columns
-W, H = 200, 300
-sheet = bpy.data.images.new("FitSheet", 16 * W, len(OUTFITS) * H)
-px = [0.0] * (16 * W * len(OUTFITS) * H * 4)
+# contact sheet: rows = outfits, a column per body and angle
+sheet = bpy.data.images.new("FitSheet", COLS * W, len(OUTFITS) * H)
+px = [0.0] * (COLS * W * len(OUTFITS) * H * 4)
 for r, col, path in shots:
     img = bpy.data.images.load(path)
     src = list(img.pixels)
     row = len(OUTFITS) - 1 - r                     # Blender images start at the bottom
     for y in range(H):
         s0 = y * W * 4
-        d0 = ((row * H + y) * 16 * W + col * W) * 4
+        d0 = ((row * H + y) * COLS * W + col * W) * 4
         px[d0:d0 + W * 4] = src[s0:s0 + W * 4]
     bpy.data.images.remove(img)
 sheet.pixels = px

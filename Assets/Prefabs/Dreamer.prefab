@@ -307,6 +307,15 @@ MonoBehaviour:
     - {fileID: 8794324571294994184}
     - {fileID: 7550842054260343193}
     - {fileID: 880486461320161836}
+    - {fileID: 2622924477304286524}
+    - {fileID: 6838991750258388298}
+    - {fileID: 7276099226654761915}
+    - {fileID: 4993078076512987206}
+    - {fileID: 9110403893162053222}
+    - {fileID: 975827516007333633}
+    - {fileID: 1994513468469699234}
+    - {fileID: 1580323745688040317}
+    - {fileID: 8258221111475204629}
     colors:
     - {r: 0.15, g: 0.12, b: 0.14, a: 1}
     - {r: 0.4, g: 0.26, b: 0.18, a: 1}
@@ -1075,6 +1084,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: e2433ccd6018ebd4780dde8a1b3b31c2, type: 2}
+    - target: {fileID: -8411400390695645014, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -8363092646999569076, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1207,6 +1220,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7633304760641288913, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: -7614874385270364433, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1267,6 +1284,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 23fff7a9f7f4a5d4f8aeedfb7a14743d, type: 2}
+    - target: {fileID: -7191524776476803609, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: -7186584460328918288, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1279,6 +1300,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 489b34b4fac25f143b17fbefbf38e77d, type: 2}
+    - target: {fileID: -7122919981949583100, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7111857336803965244, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: -7058942573826430009, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1323,6 +1352,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 6f9d2a7c61c594f4082fc10a597640e0, type: 2}
+    - target: {fileID: -6639799708266146660, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: -6566773206285791089, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1339,6 +1372,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
+    - target: {fileID: -6468307588318760462, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
+    - target: {fileID: -6397555191479595019, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -6347971610496768436, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1551,6 +1592,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 94d9608cea76d7842a9acd62c95dd397, type: 2}
+    - target: {fileID: -4857886739898463495, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -4841020952246968311, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1711,6 +1756,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: ef184646981405e4486f037b9e88c08f, type: 2}
+    - target: {fileID: -3485833289687791796, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: -3484795694423344175, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1899,6 +1948,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -2129563947332599779, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -2114951407132627058, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -2031,6 +2084,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
       objectReference: {fileID: 2100000, guid: d08c35d73b67f9b47874d8d5d95ae970, type: 2}
+    - target: {fileID: -1427118112955379262, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -1412473894769476675, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -2128,6 +2185,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -877274376060731336, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -840626918625223234, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
@@ -2315,6 +2376,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 554228230834351321, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 578687614956300177, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -2371,6 +2436,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 860359414075986460, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: 919132149155446097, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_Name
       value: Dreamer
@@ -2455,6 +2524,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1744249382799748254, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: 1754927420457121737, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -3163,6 +3236,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6753662606167986051, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6776119601305712413, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -3487,6 +3564,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9013074098377797668, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dae55acf2e23832448171d9384bcf32a, type: 2}
     - target: {fileID: 9031408076025006704, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -3881,6 +3962,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -7273554266854948400, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6525063153795889498}
+    - targetCorrespondingSourceObject: {fileID: -840626918625223234, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1102036548334838691}
+    - targetCorrespondingSourceObject: {fileID: 554228230834351321, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 299213563953235879}
+    - targetCorrespondingSourceObject: {fileID: -4857886739898463495, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8770709855385408842}
     - targetCorrespondingSourceObject: {fileID: 941632960362276524, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2753856857591056315}
@@ -3998,6 +4088,24 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8853679718644341262, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3009610242242260015}
+    - targetCorrespondingSourceObject: {fileID: -7122919981949583100, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5976825987667644951}
+    - targetCorrespondingSourceObject: {fileID: -6397555191479595019, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8079756974762779362}
+    - targetCorrespondingSourceObject: {fileID: 6753662606167986051, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6739764451960542659}
+    - targetCorrespondingSourceObject: {fileID: -8411400390695645014, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1491008339337637673}
+    - targetCorrespondingSourceObject: {fileID: -1427118112955379262, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5326423285432242930}
+    - targetCorrespondingSourceObject: {fileID: -2129563947332599779, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8512691650839657022}
     - targetCorrespondingSourceObject: {fileID: -2902837830766021412, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6709847699899947232}
@@ -5019,6 +5127,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 0100
+--- !u!1 &975827516007333633 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -840626918625223234, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1102036548334838691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975827516007333633}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
 --- !u!1 &995233676010417823 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8363303738668354592, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
@@ -5307,6 +5433,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 01
+--- !u!1 &1580323745688040317 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -1427118112955379262, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5326423285432242930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1580323745688040317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
 --- !u!1 &1618506316961688020 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -1177201631823443093, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
@@ -5517,6 +5661,24 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1979760121117986097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
+--- !u!1 &1994513468469699234 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -2129563947332599779, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8512691650839657022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1994513468469699234}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
@@ -5967,6 +6129,24 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2587387291115525259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
+--- !u!1 &2622924477304286524 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6753662606167986051, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6739764451960542659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2622924477304286524}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
@@ -7017,6 +7197,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 01
+--- !u!1 &4993078076512987206 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -4857886739898463495, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8770709855385408842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4993078076512987206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
 --- !u!1 &5041712122624446971 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4334830946706715460, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
@@ -8025,6 +8223,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 0100
+--- !u!1 &6838991750258388298 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -6397555191479595019, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8079756974762779362
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6838991750258388298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
 --- !u!1 &6900514985076256057 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2746112068018474886, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
@@ -8199,6 +8415,24 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7244678668654902741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
+--- !u!1 &7276099226654761915 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -7122919981949583100, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5976825987667644951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7276099226654761915}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
@@ -8781,6 +9015,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 01
+--- !u!1 &8258221111475204629 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -8411400390695645014, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1491008339337637673
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8258221111475204629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
 --- !u!1 &8282516304396533742 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 805795804940000593, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
@@ -9148,6 +9400,24 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
   m_PrefabInstance: {fileID: 8781926578635236031}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &9110403893162053222 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 554228230834351321, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}
+  m_PrefabInstance: {fileID: 8781926578635236031}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &299213563953235879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9110403893162053222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 426e3a84b4df1f346825403e95d62c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
+  tintSubmesh: 01
 --- !u!1 &9136684042809847100 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 509942546696523651, guid: ef00fa123881cc346b1f9602d0be9460, type: 3}

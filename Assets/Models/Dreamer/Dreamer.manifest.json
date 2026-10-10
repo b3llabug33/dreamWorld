@@ -2038,6 +2038,87 @@
    ]
   },
   {
+   "name": "Hair_SidePart_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_SidePart_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_SidePart_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Fluffy_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Fluffy_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Fluffy_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_TexturedCrop_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_TexturedCrop_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_TexturedCrop_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
    "name": "Top_Tee",
    "submeshes": [
     {

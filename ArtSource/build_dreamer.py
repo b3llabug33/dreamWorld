@@ -1241,6 +1241,58 @@ def curly_extra(bm, li):
         bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r * rnd.uniform(0.85, 1.15), matrix=Matrix.Translation(p))
 
 
+def sidepart_extra(bm, li):
+    """Side part: a neat fringe swept from a part on the -x side across the forehead and lifting off it a little,
+    a smooth rounded crown, short tidy sides and nape (longer = the fringe reaches the +x brow)."""
+    rnd = random.Random(111)
+    nape = (1.44, 1.38, 1.31)[li]
+    under_layer(bm, nape + 0.05)
+    crown(bm, 1.50, count=15, width=0.08, tip=0.4, start=-30, end=215, rnd=rnd, jitter=0.012, flare=0.012,
+          arc=0.014, flick=0.006, sway=0.05)
+    hang(bm, nape, count=10, width=0.08, tip=0.4, start=5, end=175, root_z=1.54, rnd=rnd, jitter=0.015,
+         flare=0.012, arc=0.01, flick=0.008, sway=0.06)
+    side_locks(bm, (1.47, 1.44, 1.41)[li], width=0.048, tip=0.4, angle=62, bend=-0.04, flick=0.004)
+    low = (1.50, 1.48, 1.46)[li]
+    for k, x in enumerate(np.linspace(-0.02, 0.095, 8)):   # the sweep, from a high part on -x across to the +x side
+        t = k / 7
+        fringe_lock(bm, -0.06 + 0.035 * t, x, 1.56 - (1.56 - low) * t ** 0.8, 0.04 + 0.008 * t, tip=0.4,
+                    bend=0.22, arc=0.016, flick=0.004)
+
+
+def fluffy_extra(bm, li):
+    """Fluffy (the soft K-pop / two-block look): a full, rounded mushroom of hair, a soft fringe falling straight
+    to the brows with a little separation, sides kept over the ears, a short neat nape."""
+    rnd = random.Random(121)
+    nape = (1.42, 1.37, 1.31)[li]
+    under_layer(bm, nape + 0.05)
+    crown(bm, 1.48, count=16, width=0.085, tip=0.45, start=-40, end=220, rnd=rnd, jitter=0.015, flare=0.02,
+          arc=0.02, flick=0.006, sway=0.06, scale=1.1)
+    hang(bm, nape, count=10, width=0.082, tip=0.45, start=5, end=175, root_z=1.54, rnd=rnd, jitter=0.015,
+         flare=0.015, arc=0.012, flick=0.006, sway=0.06)
+    side_locks(bm, (1.45, 1.42, 1.39)[li], width=0.052, tip=0.45, angle=62, bend=-0.02, arc=0.01)
+    brow = (1.50, 1.485, 1.47)[li]
+    for k, x in enumerate(np.linspace(-0.08, 0.08, 9)):    # soft fringe straight down, pieces barely apart
+        fringe_lock(bm, x * 0.55, x, brow + (0.006 if k % 2 else 0) + rnd.uniform(-0.004, 0.004), 0.036,
+                    tip=0.45, bend=rnd.uniform(-0.04, 0.04), arc=0.01, flick=0.002)
+
+
+def crop_extra(bm, li):
+    """Textured crop: short and choppy on top, a short blunt-ish fringe high on the forehead, tight sides and back
+    (longer = a fuller top and a lower fringe)."""
+    rnd = random.Random(131)
+    under_layer(bm, 1.40)                                   # a tapered nape, not a hard line across the neck
+    hang(bm, 1.38, count=9, width=0.07, tip=0.3, start=30, end=150, root_z=1.50, rnd=rnd, jitter=0.012,
+         flare=0.006, arc=0.008, flick=0.003, sway=0.04)
+    crown(bm, 1.54, count=15, width=0.07, tip=0.3, start=-35, end=215, rnd=rnd, jitter=0.02, flare=0.018,
+          arc=0.012, flick=0.008, sway=0.1, thick=0.02)
+    hang(bm, 1.47, count=9, width=0.075, tip=0.35, start=10, end=170, root_z=1.56, rnd=rnd, jitter=0.012,
+         flare=0.008, arc=0.008, flick=0.004, sway=0.05)
+    fringe = (1.505, 1.495, 1.485)[li]                     # down over the cap's edge (no bare band above the brows)
+    for k, x in enumerate(np.linspace(-0.08, 0.08, 9)):
+        fringe_lock(bm, x * 0.5, x, fringe + rnd.uniform(-0.005, 0.005), 0.034, tip=0.35,
+                    bend=rnd.uniform(-0.08, 0.08), arc=0.006, flick=0.003)
+
+
 def build_hair():
     return (hair_set("Long", long_extra) +
             hair_set("Bob", bob_extra, BANGS[:5]) +
@@ -1262,7 +1314,10 @@ def build_hair():
             hair_set("LongLayered", longlayered_extra, None, edge=bang_edge("Middle")) +
             hair_set("Butterfly", butterfly_extra, None, edge=bang_edge("Middle")) +
             hair_set("Hime", hime_extra, ("Straight",)) +
-            hair_set("Curly", curly_extra, None, hairline=0.035, cap_scale=1.06))
+            hair_set("Curly", curly_extra, None, hairline=0.035, cap_scale=1.06) +
+            hair_set("SidePart", sidepart_extra, None, hairline=0.03, cap_scale=1.06) +
+            hair_set("Fluffy", fluffy_extra, None, hairline=0.03, cap_scale=1.08) +
+            hair_set("TexturedCrop", crop_extra, None, hairline=0.03, nape=-0.08, side_cut=-0.008, cap_scale=1.04))
 
 
 # ---------------------------------------------------------------- clothes
