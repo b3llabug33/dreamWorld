@@ -856,7 +856,8 @@ def under_layer(bm, bottom_z):
 LENGTHS = ("Short", "Medium", "Long")
 
 
-def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut=None, cap_scale=CAP, suffix=""):
+def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut=None, cap_scale=CAP, suffix="",
+             edge=None):
     """Every bangs x length combination of one hairstyle, named Hair_<Base>[_<Bangs>]_<Length>.
     extra(bm, length_index) builds the rest of the hair; bang_kinds=None means no bangs option
     (the style draws its own fringe in `extra`)."""
@@ -866,7 +867,9 @@ def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut
             name = (f"Hair_{base}_{kind}_{length}" if kind else f"Hair_{base}_{length}") + (f"_{suffix}" if suffix else "")
 
             def build(bm, kind=kind, li=li):
-                if kind == "Micro":
+                if kind is None and edge is not None:   # own fringe with a custom forehead line (parted / swept back)
+                    line = lambda x: min(edge(x) + 0.016, 1.556) - HEAD_C.z
+                elif kind == "Micro":
                     line = 0.035
                 elif kind in ("Middle", "Left", "Right"):   # open the cap up along the part; the layer below fills its steps
                     line = lambda x, edge=bang_edge(kind): min(edge(x) + 0.016, 1.556) - HEAD_C.z
@@ -874,7 +877,7 @@ def hair_set(base, extra, bang_kinds=BANGS, hairline=0.018, nape=-0.11, side_cut
                     line = hairline
                 hair_cap(bm, hairline=line, nape=nape, side_cut=side_cut, scale=cap_scale)
                 # forehead under the bangs stays hair-colored, shaped to each bang style
-                fringe_base(bm, bang_edge(kind))
+                fringe_base(bm, edge if (kind is None and edge is not None) else bang_edge(kind))
                 if kind:
                     bangs(bm, kind)
                 extra(bm, li)
@@ -949,28 +952,189 @@ def pixie_extra(bm, li):
         lock(bm, th, 1.54, th, 1.47 - 0.01 * li, 0.028, tip=0.3, off0=-0.006, off1=0.004)
 
 
+def fringe_row(bm, xs, zs, width, tip=0.35, root_scale=0.5, sweep=0.0):
+    """A row of bang locks: tips at (xs[i], zs[i]), roots pulled toward the middle (root_scale)."""
+    for x, z in zip(xs, zs):
+        fringe_lock(bm, x * root_scale + sweep, x, z, width, tip=tip)
+
+
+def curtain_fringe(bm, tips, width=0.04, tip=0.5):
+    """Middle-part curtain bangs: from the part sweeping out and down on both sides."""
+    for s in (1, -1):
+        for x, z in tips:
+            fringe_lock(bm, s * 0.008, s * x, z, width, tip=tip)
+
+
+def crown(bm, tip_z, count=14, width=0.075, tip=0.4, start=-65, end=245, rnd=None, jitter=0.0, flare=0.03,
+          thick=0.02, scale=1.12, root_z=1.622):
+    """The top layer: chunky pieces from the crown out and down all around except the face."""
+    hang(bm, tip_z, count=count, width=width, tip=tip, start=start, end=end, root_z=root_z, rnd=rnd, jitter=jitter,
+         flare=flare, thick=thick, scale=scale)
+
+
 def crew_extra(bm, li):
-    """Crew cut: short all over, a little longer on top. Short = buzz, Medium = crew, Long = textured top
-    with a small lifted front."""
-    top = (0.004, 0.009, 0.016)[li]
-    for k in range(14):                                     # short crown pieces lying flat, longer with length
-        th = math.radians(-40 + k * 260 / 13)
-        lock(bm, th, 1.635, th + 0.06, 1.585 - 0.01 * li, 0.055, tip=0.6, steps=3,
-             off0=-0.008 + top, off1=-0.004 + top * 0.5, s0=1.04, s1=1.04)
-    for k, x in enumerate(np.linspace(0.06, -0.06, 5)):     # a short front edge, lifted a bit on the longer cuts
-        fringe_lock(bm, x * 0.6, x, 1.565 + 0.012 * li, 0.034, tip=0.7)
+    """Crew cut (redone): short boy hair. Spiky textured pieces from the crown hugging the head (no flared
+    rim), cropped sides, a pointed fringe. Short = cropped, Medium = classic, Long = longer 'anime boy' hair."""
+    rnd = random.Random(21)
+    tipz = (1.565, 1.545, 1.515)[li]
+    for k in range(18):                                     # textured crown pieces, uneven lengths, pointed
+        th = math.radians(-62 + k * 304 / 17)
+        lock(bm, th, 1.626, th + rnd.uniform(-0.05, 0.05), tipz + rnd.uniform(-0.015, 0.015), 0.07, tip=0.22,
+             steps=5, off0=-0.004, off1=0.006 + 0.002 * li, flare=0.004, thick=0.018, s0=1.07, s1=1.07)
+    for k in range(9):                                      # tight tapered nape
+        th = math.radians(20 + k * 140 / 8)
+        lock(bm, th, 1.56, th, (1.45, 1.43, 1.40)[li] + rnd.uniform(-0.01, 0.01), 0.07, tip=0.3, steps=4,
+             off0=-0.004, off1=-0.002, thick=0.012, s0=1.05, s1=1.05)
+    xs = np.linspace(-0.075, 0.075, 7)                      # pointed fringe, alternating lengths, a slight sweep
+    zs = [(1.56, 1.535, 1.505)[li] + (0.012 if k % 2 else -0.004) for k in range(7)]
+    fringe_row(bm, xs, zs, 0.034, tip=0.25, sweep=0.012)
 
 
 def undercut_extra(bm, li):
-    """Undercut: buzzed sides and back, a longer top swept back and to one side."""
-    reach = (1.55, 1.52, 1.49)[li]
-    for k in range(9):                                      # long top locks from the hairline back over the crown
-        x = -0.06 + k * 0.015
-        th0 = FRONT + math.atan2(x, 0.11)
-        lock(bm, th0, 1.59, th0 + math.radians(150) * (0.6 + 0.04 * k), reach + 0.04, 0.05 + 0.006 * li,
-             tip=0.45, steps=5, off0=0.012 + 0.004 * li, off1=0.006, s0=1.06, s1=1.06)
-    for k, x in enumerate(np.linspace(0.05, -0.07, 4)):     # a swoop falling to one side at the front
-        fringe_lock(bm, 0.05, x, 1.57 - 0.012 * li, 0.04, tip=0.5)
+    """Undercut (redone as the two-block cut): short buzzed sides and back (the hair cap), a longer, fuller top
+    falling over the buzz line all around, and a side-swept fringe. Longer = a longer top and fringe."""
+    rnd = random.Random(5)
+    drop = (1.555, 1.535, 1.51)[li]
+    for k in range(17):                                     # the full top, draping over the buzz line
+        th = math.radians(-58 + k * 296 / 16)
+        lock(bm, th, 1.627, th + rnd.uniform(-0.05, 0.05), drop + rnd.uniform(-0.012, 0.012), 0.074, tip=0.3,
+             steps=6, off0=-0.002, off1=0.01, flare=0.008, thick=0.022, s0=1.1, s1=1.1)
+    xs = np.linspace(-0.08, 0.07, 8)                        # fringe swept from a part on the -x side toward +x
+    zs = [(1.54, 1.52, 1.50)[li] - 0.012 * (k / 7) + (0.008 if k % 2 else 0) for k in range(8)]
+    fringe_row(bm, xs, zs, 0.036, tip=0.3, root_scale=0.35, sweep=-0.03)
+
+
+def shaggy_extra(bm, li):
+    """Shaggy: fluffy, messy layers flicking out everywhere and a choppy fringe to the brows (Roblox 'messy boy hair')."""
+    rnd = random.Random(31)
+    nape = (1.42, 1.34, 1.24)[li]
+    under_layer(bm, nape + 0.05)
+    crown(bm, 1.50, count=16, width=0.078, tip=0.3, rnd=rnd, jitter=0.03, flare=0.045, thick=0.022)
+    hang(bm, (1.45, 1.40, 1.33)[li], count=12, width=0.08, tip=0.3, start=-40, end=220, root_z=1.58, rnd=rnd,
+         jitter=0.03, flare=0.05)
+    hang(bm, nape, count=9, width=0.08, tip=0.3, start=5, end=175, root_z=1.52, rnd=rnd, jitter=0.03, flare=0.035)
+    side_locks(bm, (1.46, 1.42, 1.38)[li], width=0.045, tip=0.3, angle=62)
+    fringe_row(bm, np.linspace(-0.08, 0.08, 8), [1.488 + rnd.uniform(0, 0.022) for _ in range(8)], 0.032, tip=0.3)
+
+
+def mullet_extra(bm, li):
+    """Shaggy mullet: a spiky short top, cropped sides, a long layered back flicking out at the ends."""
+    rnd = random.Random(41)
+    back = (1.34, 1.24, 1.12)[li]
+    under_layer(bm, back + 0.05)
+    for k in range(16):                                     # spiky top
+        th = math.radians(-62 + k * 304 / 15)
+        lock(bm, th, 1.626, th + rnd.uniform(-0.05, 0.05), 1.53 + rnd.uniform(-0.015, 0.015), 0.07, tip=0.22,
+             steps=5, off0=-0.004, off1=0.008, flare=0.008, thick=0.019, s0=1.08, s1=1.08)
+    hang(bm, (back + 1.5) / 2, count=11, width=0.065, tip=0.3, start=28, end=152, root_z=1.58, rnd=rnd,
+         jitter=0.025, flare=0.03)                          # mid layer at the back
+    hang(bm, back, count=13, width=0.06, tip=0.28, start=35, end=145, root_z=1.55, rnd=rnd, jitter=0.035,
+         flare=0.05)                                        # the long back
+    fringe_row(bm, np.linspace(-0.075, 0.075, 7), [1.51 + (0.014 if k % 2 else 0) for k in range(7)], 0.034,
+               tip=0.25, sweep=-0.01)
+
+
+def curtains_extra(bm, li):
+    """Curtain bangs / fluffy middle part (the e-boy / e-girl look): curtains to the cheekbones, fluffy
+    sides over the ears."""
+    rnd = random.Random(51)
+    nape = (1.40, 1.32, 1.22)[li]
+    under_layer(bm, nape + 0.04)
+    curtain_fringe(bm, ((0.03, 1.50), (0.058, 1.475 - 0.008 * li), (0.084, 1.44 - 0.012 * li)), width=0.04)
+    side_locks(bm, (1.40, 1.35, 1.29)[li], width=0.055, tip=0.5, angle=60)
+    crown(bm, nape + 0.05, count=14, width=0.085, tip=0.45, start=-25, end=205, rnd=rnd, jitter=0.02, flare=0.03)
+    hang(bm, nape, count=10, width=0.08, tip=0.4, start=10, end=170, root_z=1.55, rnd=rnd, jitter=0.03, flare=0.025)
+
+
+def emo_extra(bm, li):
+    """Emo / scene swoop: a long side-swept fringe across one eye, spiky layers flicking out at the back."""
+    rnd = random.Random(61)
+    nape = (1.40, 1.32, 1.22)[li]
+    under_layer(bm, nape + 0.04)
+    crown(bm, 1.50, count=13, width=0.07, tip=0.22, start=-20, end=230, rnd=rnd, jitter=0.03, flare=0.06)
+    hang(bm, nape, count=10, width=0.075, tip=0.22, start=10, end=200, root_z=1.55, rnd=rnd, jitter=0.04, flare=0.055)
+    for k, x in enumerate(np.linspace(-0.07, 0.092, 8)):   # the swoop: from a part on the -x side across to +x
+        t = k / 7
+        fringe_lock(bm, -0.05, x, 1.53 - (0.06 + 0.012 * li) * t, 0.036 + 0.012 * t, tip=0.4)
+    th = FRONT + math.radians(62)                            # a long piece down the swoop side
+    lock(bm, th, 1.58, th + math.radians(4), (1.40, 1.36, 1.30)[li], 0.05, tip=0.3, off0=-0.006, off1=0.014)
+
+
+def manbun_extra(bm, li):
+    """Man bun: hair combed straight back off the face into a bun on the crown (bigger bun with length);
+    Long = half-up, the lower back hanging loose to the shoulders."""
+    rnd = random.Random(71)
+    for k in range(11):                                     # combed-back strands: visible ridges over the cap
+        th = FRONT + math.radians((k - 5) * 15)
+        lock(bm, th, 1.54 + 0.012 * abs(k - 5) / 5, th, 1.626, 0.04, tip=0.85, steps=5, off0=0.004, off1=0.009,
+             thick=0.014, s0=1.07, s1=1.07)
+    for k in range(8):                                      # sides combed back toward the bun
+        sx = 1 if k < 4 else -1
+        th = FRONT + sx * math.radians(85 + (k % 4) * 18)
+        lock(bm, th, 1.47, th + sx * math.radians(25), 1.6, 0.045, tip=0.7, steps=5, off0=0.004, off1=0.008,
+             thick=0.012, s0=1.07, s1=1.07)
+    r = 0.045 + 0.008 * li
+    bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r, matrix=Matrix.Translation((0, 0.08, 1.63 + r * 0.25)))
+    torus(bm, (0, 0.062, 1.617), r * 0.6, 0.008, axis="y", seg=10, tube=3)
+    if li == 2:
+        under_layer(bm, 1.30)
+        hang(bm, 1.27, count=9, width=0.07, tip=0.45, start=50, end=130, root_z=1.52, rnd=rnd, jitter=0.02, flare=0.02)
+    for sx in (1, -1):                                      # a loose strand by each temple
+        th = FRONT + sx * math.radians(50)
+        lock(bm, th, 1.565, th + sx * math.radians(3), (1.49, 1.47, 1.45)[li], 0.026, tip=0.3, off0=-0.004, off1=0.01)
+
+
+def longlayered_extra(bm, li):
+    """Long layered hair (middle part), long enough for the guys too: shoulder length up to chest length."""
+    rnd = random.Random(81)
+    bottom = (1.30, 1.18, 1.04)[li]
+    under_layer(bm, bottom + 0.03)
+    curtain_fringe(bm, ((0.03, 1.50), (0.06, 1.46), (0.086, 1.40)), width=0.042)
+    side_locks(bm, bottom + 0.08, width=0.06, tip=0.55, angle=64)
+    crown(bm, bottom + 0.12, count=14, width=0.085, tip=0.5, start=-15, end=195, rnd=rnd, jitter=0.03, flare=0.02)
+    hang(bm, bottom, count=12, width=0.085, tip=0.45, start=5, end=175, root_z=1.56, rnd=rnd, jitter=0.03, flare=0.03)
+
+
+def butterfly_extra(bm, li):
+    """Butterfly cut: a big bouncy blowout. Curtain bangs, a short top layer that flicks way out around the face and
+    shoulders like wings, long curled-under ends."""
+    rnd = random.Random(91)
+    bottom = (1.18, 1.04, 0.90)[li]
+    under_layer(bm, bottom + 0.02)
+    curtain_fringe(bm, ((0.03, 1.50), (0.06, 1.465), (0.087, 1.42)), width=0.044)
+    hang(bm, 1.40, count=14, width=0.085, tip=0.45, start=-38, end=218, root_z=1.622, rnd=rnd, jitter=0.02,
+         flare=0.08, thick=0.02, scale=1.14)                # the wings: a short layer flipping out
+    hang(bm, 1.30, count=12, width=0.085, tip=0.5, start=-20, end=200, root_z=1.58, rnd=rnd, jitter=0.02,
+         flare=0.06)
+    hang(bm, bottom, count=15, width=0.085, tip=0.7, start=-12, end=192, root_z=1.56, rnd=rnd, jitter=0.02,
+         flare=0.035, curl=0.016)                           # long ends curling under
+
+
+def hime_extra(bm, li):
+    """Hime cut: blunt straight bangs, blunt cheek-length sidelocks, long straight back."""
+    bottom = (1.10, 0.96, 0.82)[li]
+    under_layer(bm, bottom + 0.02)
+    for s in (1, -1):
+        for a in (54, 64):
+            th = FRONT + s * math.radians(a)
+            lock(bm, th, 1.58, th, 1.405, 0.05, tip=1.0, off0=-0.006, off1=0.012, thick=0.016)
+    hang(bm, bottom, count=16, width=0.085, tip=1.0, start=-8, end=188, flare=0.01)
+
+
+def curly_extra(bm, li):
+    """Fluffy curls: a soft cloud of round curls on top and over the forehead, close-cut sides (longer =
+    more and bigger curls, reaching lower at the back)."""
+    rnd = random.Random(101)
+    n = (60, 80, 105)[li]
+    r = (0.022, 0.025, 0.028)[li]
+    lowest = (1.55, 1.51, 1.46)[li]
+    for k in range(n):
+        th = rnd.uniform(-math.pi, math.pi)
+        z = rnd.uniform(lowest, 1.622)
+        if math.cos(th - FRONT) > 0.5:                       # over the forehead: a fringe of curls above the brows
+            z = rnd.uniform(1.52, 1.60)
+        p = surf(th, z, CAP, 0.006)
+        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r * rnd.uniform(0.85, 1.15), matrix=Matrix.Translation(p))
 
 
 def build_hair():
@@ -982,8 +1146,18 @@ def build_hair():
             hair_set("Ponytail", ponytail_extra, ("Choppy",)) +
             hair_set("Buns", buns_extra, ("Choppy",)) +
             hair_set("Pixie", pixie_extra, None, hairline=0.03, nape=-0.08, side_cut=-0.005, cap_scale=1.05) +
-            hair_set("Crew", crew_extra, None, hairline=0.04, nape=-0.07, side_cut=-0.006, cap_scale=1.03) +
-            hair_set("Undercut", undercut_extra, None, hairline=0.04, nape=-0.06, side_cut=-0.008, cap_scale=1.02))
+            hair_set("Crew", crew_extra, None, hairline=0.03, nape=-0.075, side_cut=-0.01, cap_scale=1.035) +
+            hair_set("Undercut", undercut_extra, None, hairline=0.03, nape=-0.075, side_cut=-0.006, cap_scale=1.045) +
+            # new styles go after these (saves store hair styles by their place in the list)
+            hair_set("Shaggy", shaggy_extra, None, hairline=0.03, cap_scale=1.08) +
+            hair_set("Mullet", mullet_extra, None, hairline=0.03, side_cut=-0.01, cap_scale=1.05) +
+            hair_set("Curtains", curtains_extra, None, cap_scale=1.08, edge=bang_edge("Middle")) +
+            hair_set("EmoSwoop", emo_extra, None, hairline=0.03, cap_scale=1.08) +
+            hair_set("ManBun", manbun_extra, None, cap_scale=1.045, edge=lambda x: 1.548 + 0.25 * x * x) +
+            hair_set("LongLayered", longlayered_extra, None, edge=bang_edge("Middle")) +
+            hair_set("Butterfly", butterfly_extra, None, edge=bang_edge("Middle")) +
+            hair_set("Hime", hime_extra, ("Straight",)) +
+            hair_set("Curly", curly_extra, None, hairline=0.035, cap_scale=1.06))
 
 
 # ---------------------------------------------------------------- clothes
@@ -1647,6 +1821,13 @@ for obj in rig.children:
         key.data[i].co = inv @ masc(mw @ v.co)
     masc_count += 1
 print("masc shape keys:", masc_count)
+
+# more body types (Slim, Curvy, Plus, Muscle) live in body_shapes.py (main session's file)
+try:
+    import body_shapes
+    body_shapes.add_body_shape_keys([o for o in rig.children if o.type == "MESH"])
+except ImportError:
+    print("body_shapes.py not found yet: only the Masc shape key")
 
 # ---------------------------------------------------------------- export
 
