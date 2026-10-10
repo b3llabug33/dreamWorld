@@ -24,6 +24,9 @@ namespace DreamWorld.Gameplay
         public string[] hotbar = new string[4];   // item ids on the 1-4 quick slots
         public int plot = -1;              // the plot of land you own (-1 = none yet; buy one at the land office)
         public bool plotChecked;           // older saves had a free home: they keep plot #1
+        public string equipped = "";       // weapon in the right hand (an item id from the bag)
+        public string offhand = "";        // shield on the left arm
+        public bool starterGiven;          // everyone gets one beetle horn sword
     }
 
     // A player's bars, level and money. Health/stamina/magic grow with the points spent on them;
@@ -96,6 +99,14 @@ namespace DreamWorld.Gameplay
                 if (played && progress.plot < 0) progress.plot = 0;
                 progress.plotChecked = true;
             }
+            if (!progress.starterGiven)
+            {
+                Inventory.Add(progress.bag, "beetle_horn_sword", 1);
+                if (string.IsNullOrEmpty(progress.equipped)) progress.equipped = "beetle_horn_sword";
+                progress.starterGiven = true;
+            }
+            if (progress.equipped == null) progress.equipped = "";
+            if (progress.offhand == null) progress.offhand = "";
             if (progress.snacks > 0)
             {
                 Inventory.Add(progress.bag, "snack", progress.snacks);
@@ -127,6 +138,9 @@ namespace DreamWorld.Gameplay
             if (Time.time - lastStaminaUse > staminaRegenDelay)
                 stamina = Mathf.Min(MaxStamina, stamina + staminaRegen * (Starving ? 0.5f : 1f) * dt);
             magic = Mathf.Min(MaxMagic, magic + 0.4f * dt);
+            // sold, dropped or stored the thing in your hand: put it away
+            if (progress.equipped != "" && Inventory.Count(progress.bag, progress.equipped) == 0) progress.equipped = "";
+            if (progress.offhand != "" && Inventory.Count(progress.bag, progress.offhand) == 0) progress.offhand = "";
 
             progress.food = Mathf.Max(0f, progress.food - foodDrainPerMinute / 60f * dt);
             if (Starving)
@@ -204,6 +218,7 @@ namespace DreamWorld.Gameplay
         {
             var def = Items.Get(id);
             if (def == null || !def.Usable || Dead || Inventory.Count(progress.bag, id) == 0) return false;
+            if (def.Equippable) { ToggleEquip(id); return true; }
             bool helps = (def.food > 0 && progress.food < MaxFood - 1f) || (def.heal > 0 && health < MaxHealth - 0.5f);
             if (!helps) return false;
             Inventory.Remove(progress.bag, id, 1);
@@ -211,6 +226,24 @@ namespace DreamWorld.Gameplay
             if (def.heal > 0) health = Mathf.Min(MaxHealth, health + def.heal);
             Changed?.Invoke();
             return true;
+        }
+
+        // The weapon in your hand and the shield on your arm (null = bare hands / no shield).
+        public ItemDef Weapon => Items.Get(progress.equipped);
+        public ItemDef Shield => Items.Get(progress.offhand);
+        public bool IsEquipped(string id) => !string.IsNullOrEmpty(id) && (progress.equipped == id || progress.offhand == id);
+
+        // Using a weapon or shield equips it; using the one you're holding puts it away. True = now equipped.
+        public bool ToggleEquip(string id)
+        {
+            var def = Items.Get(id);
+            if (def == null || !def.Equippable) return false;
+            bool shield = def.kind == ItemKind.Shield;
+            string current = shield ? progress.offhand : progress.equipped;
+            string next = current == id ? "" : id;
+            if (shield) progress.offhand = next; else progress.equipped = next;
+            Changed?.Invoke();
+            return next != "";
         }
 
         public void AddXp(int amount)

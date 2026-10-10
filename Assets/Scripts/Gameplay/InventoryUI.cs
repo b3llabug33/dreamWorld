@@ -28,7 +28,7 @@ namespace DreamWorld.Gameplay
         TerminalUI ui;
         RectTransform canvas, bagPanel, storagePanel, shopPanel, hotbarRoot;
         readonly List<Slot> bagSlots = new List<Slot>(), storageSlots = new List<Slot>(), hotbarSlots = new List<Slot>();
-        Text detailName, detailText, shopInfo, bagTitle;
+        Text detailName, detailText, shopInfo, bagTitle, shopTitle;
         Button useButton, dropButton, sellButton;
         readonly Button[] assignButtons = new Button[4];
         Side side;
@@ -43,6 +43,7 @@ namespace DreamWorld.Gameplay
 
         static readonly Color SlotColor = new Color(0.10f, 0.08f, 0.18f, 0.92f);
         static readonly Color PickedColor = new Color(0.98f, 0.66f, 0.78f, 1f);
+        static readonly Color EquippedColor = new Color(0.36f, 0.24f, 0.52f, 0.95f);   // what's in your hand
 
         void Awake() => Instance = this;
         void OnDestroy()
@@ -149,7 +150,7 @@ namespace DreamWorld.Gameplay
         {
             shopPanel = ui.PanelBox(canvas, "Shop");
             TerminalUI.Place(shopPanel, new Vector2(0, 0.5f), new Vector2(60, 20), new Vector2(620, 560), new Vector2(0, 0.5f));
-            var title = ui.Label(shopPanel, "== SNACK STAND ==", 36, TerminalUI.Dim);
+            var title = shopTitle = ui.Label(shopPanel, "== SNACK STAND ==", 36, TerminalUI.Dim);
             TerminalUI.Place(title.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -34), new Vector2(560, 44));
             shopList = new GameObject("List", typeof(RectTransform)).GetComponent<RectTransform>();
             shopList.SetParent(shopPanel, false);
@@ -179,9 +180,10 @@ namespace DreamWorld.Gameplay
 
         public void Toggle() => Open(!IsOpen, Side.None);
         public void OpenStorage() => Open(true, Side.Storage);
-        public void OpenShop(string[] stock)
+        public void OpenShop(string[] stock, string title = "snack stand")
         {
             shopStock = stock;
+            shopTitle.text = $"== {title.ToUpper()} ==";
             Open(true, Side.Shop);
         }
 
@@ -207,11 +209,13 @@ namespace DreamWorld.Gameplay
         void RebuildShop()
         {
             foreach (Transform child in shopList) Destroy(child.gameObject);
+            bool grid = shopStock.Length > 4;   // big shops (the weapon shop) use two columns of smaller cards
             for (int i = 0; i < shopStock.Length; i++)
             {
                 var def = Items.Get(shopStock[i]);
                 if (def == null) continue;
                 string id = def.id;
+                if (grid) { ShopCard(def, i); continue; }
                 var row = new GameObject("Row", typeof(RectTransform)).GetComponent<RectTransform>();
                 row.SetParent(shopList, false);
                 TerminalUI.Place(row, new Vector2(0.5f, 1), new Vector2(0, -120 - i * 96), new Vector2(560, 84));
@@ -225,6 +229,25 @@ namespace DreamWorld.Gameplay
                 var buy = ui.Button(row, "buy", 30, () => Buy(id));
                 TerminalUI.Place((RectTransform)buy.transform, new Vector2(1, 0.5f), new Vector2(-10, 0), new Vector2(130, 56), new Vector2(1, 0.5f));
             }
+        }
+
+        void ShopCard(ItemDef def, int i)
+        {
+            string id = def.id;
+            var cell = new GameObject("Card", typeof(RectTransform)).GetComponent<RectTransform>();
+            cell.SetParent(shopList, false);
+            TerminalUI.Place(cell, new Vector2(0, 1), new Vector2(22 + (i % 2) * 290, -82 - (i / 2) * 80), new Vector2(282, 74), new Vector2(0, 1));
+            var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(cell, false);
+            iconGo.GetComponent<Image>().sprite = Items.Icon(id);
+            iconGo.GetComponent<Image>().raycastTarget = false;
+            TerminalUI.Place((RectTransform)iconGo.transform, new Vector2(0, 0.5f), new Vector2(2, 0), new Vector2(64, 64), new Vector2(0, 0.5f));
+            var label = ui.Label(cell, def.name, 24, TerminalUI.Text, TextAnchor.UpperLeft);
+            TerminalUI.Place(label.rectTransform, new Vector2(0, 1), new Vector2(72, -2), new Vector2(210, 30), new Vector2(0, 1));
+            var price = ui.Label(cell, $"{def.buyPrice}c", 24, TerminalUI.Accent, TextAnchor.LowerLeft);
+            TerminalUI.Place(price.rectTransform, new Vector2(0, 0), new Vector2(72, 4), new Vector2(90, 30), new Vector2(0, 0));
+            var buy = ui.Button(cell, "buy", 24, () => Buy(id));
+            TerminalUI.Place((RectTransform)buy.transform, new Vector2(1, 0), new Vector2(-4, 2), new Vector2(90, 38), new Vector2(1, 0));
         }
 
         // ---------- clicks ----------
@@ -265,6 +288,14 @@ namespace DreamWorld.Gameplay
             var def = Items.Get(id);
             if (def == null) return;
             if (!def.Usable) { GameHUD.Instance?.Toast($"{def.name} can't be used. sell it or save it for crafting"); return; }
+            if (def.Equippable)
+            {
+                bool on = stats.ToggleEquip(id);
+                GameHUD.Instance?.Toast(on ? $"equipped the {def.name}" : $"put away the {def.name}");
+                Save();
+                Refresh();
+                return;
+            }
             if (!stats.UseItem(id)) GameHUD.Instance?.Toast(def.food > 0 ? "you're already full" : "you're already at full health");
             Save();
             Refresh();
@@ -304,7 +335,7 @@ namespace DreamWorld.Gameplay
             if (stats.progress.carried < def.buyPrice) { GameHUD.Instance?.Toast("not enough coins"); return; }
             if (Inventory.Add(stats.Bag, id, 1) == 0) { GameHUD.Instance?.Toast("your bag is full"); return; }
             stats.SpendCoins(def.buyPrice);
-            GameHUD.Instance?.Toast($"bought a {def.name}");
+            GameHUD.Instance?.Toast(def.Equippable ? $"bought a {def.name}! use it from your bag (or a quick slot) to equip it" : $"bought a {def.name}");
             Save();
             Refresh();
         }
@@ -314,7 +345,7 @@ namespace DreamWorld.Gameplay
             var item = PickedItem;
             if (item == null) return;
             var def = Items.Get(item.id);
-            if (!def.Usable) { GameHUD.Instance?.Toast("only food and potions go on quick slots"); return; }
+            if (!def.Usable) { GameHUD.Instance?.Toast("only food, potions and weapons go on quick slots"); return; }
             for (int k = 0; k < 4; k++) if (stats.progress.hotbar[k] == item.id) stats.progress.hotbar[k] = "";
             stats.progress.hotbar[slot] = item.id;
             Save();
@@ -374,7 +405,10 @@ namespace DreamWorld.Gameplay
             }
             if (!IsOpen) return;
             for (int i = 0; i < bagSlots.Count; i++)
+            {
                 Show(bagSlots[i], stats.Bag[i].id, stats.Bag[i].count, pickedFrom == stats.Bag && picked == i);
+                if (!(pickedFrom == stats.Bag && picked == i) && stats.IsEquipped(stats.Bag[i].id)) bagSlots[i].frame.color = EquippedColor;
+            }
             if (side == Side.Storage)
                 for (int i = 0; i < storageSlots.Count; i++)
                     Show(storageSlots[i], stats.Storage[i].id, stats.Storage[i].count, pickedFrom == stats.Storage && picked == i);
@@ -382,15 +416,24 @@ namespace DreamWorld.Gameplay
             var item = PickedItem;
             var def = item != null ? Items.Get(item.id) : null;
             detailName.text = def != null ? $"> {def.name}  x{item.count}" : "> nothing picked";
-            detailText.text = def != null ? def.description + (def.sellPrice > 0 ? $"\nsells for {def.sellPrice} coins each" : "")
+            detailText.text = def != null ? def.description + WeaponLine(def) + (def.sellPrice > 0 ? $"\nsells for {def.sellPrice} coins each" : "")
                                           : "click an item to pick it up. click another slot to move it there.";
             useButton.interactable = def != null && def.Usable;
+            useButton.GetComponentInChildren<Text>().text = def != null && def.Equippable ? (stats.IsEquipped(def.id) ? "unequip" : "equip") : "use";
             dropButton.interactable = def != null;
             sellButton.gameObject.SetActive(side == Side.Shop);
             sellButton.interactable = def != null && def.sellPrice > 0;
             sellButton.GetComponentInChildren<Text>().text = def != null && def.sellPrice > 0 ? $"sell {def.sellPrice * item.count}c" : "sell";
             foreach (var b in assignButtons) b.interactable = def != null && def.Usable;
             if (side == Side.Shop) shopInfo.text = $"you have {stats.progress.carried} coins";
+        }
+
+        static string WeaponLine(ItemDef def)
+        {
+            if (def.kind == ItemKind.Shield) return $"\nguard blocks {Mathf.RoundToInt(def.guard * 100)}% of a hit";
+            if (def.kind != ItemKind.Weapon) return "";
+            string pace = def.speed >= 1.1f ? "fast" : def.speed <= 0.85f ? "slow" : "normal";
+            return $"\ndamage {def.damage}  heavy x{def.heavy}  {pace} swings" + (def.reach >= 1.25f ? "  long reach" : "");
         }
 
         static void Show(Slot slot, string id, int count, bool isPicked)

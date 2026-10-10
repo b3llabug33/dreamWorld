@@ -17,6 +17,7 @@ namespace DreamWorld.Dev
     //   town:    slow orbit around her in the town square with the menus hidden
     //   hair:    every hairstyle in a row (3/4 view, menus hidden)
     //   eyes:    every eye style and a few colors, up close (menus hidden)
+    //   combo:   sword + shield: the 3-hit combo, a heavy slam, then raising the shield (side view)
     public class ClipDirector : MonoBehaviour
     {
         public static bool Running { get; private set; }
@@ -44,6 +45,7 @@ namespace DreamWorld.Dev
                 case "town": yield return Town(); break;
                 case "hair": yield return Hair(); break;
                 case "eyes": yield return Eyes(); break;
+                case "combo": yield return Combo(); break;
                 default: Debug.LogWarning("[ClipDirector] unknown scene " + scene); break;
             }
             Running = false;
@@ -264,6 +266,45 @@ namespace DreamWorld.Dev
             }
             for (float t = 0; t < 2.2f; t += Time.deltaTime) yield return null;   // xp + level up toast
             pc.UseScriptedInput = false;
+        }
+
+        IEnumerator Combo()
+        {
+            var pc = Player;
+            var stats = PlayerStats.Local;
+            foreach (var id in new[] { "beetle_horn_sword", "petal_shield" })
+                if (Inventory.Count(stats.Bag, id) == 0) stats.AddItem(id);
+            stats.progress.equipped = "beetle_horn_sword";
+            stats.progress.offhand = "petal_shield";
+            stats.FillBars();
+            pc.Warp(new Vector3(3, 0.05f, -4), Quaternion.identity);
+            PhotoMode.Set(true);
+            var cam = Cam;
+            cam.pitch = 9f;
+            cam.distance = 3.8f;
+            float t0 = Time.time;
+            pc.UseScriptedInput = true;   // the guard below is set by hand, not by the mouse
+            pc.ScriptedInput = Vector2.zero;
+            System.Action frame = () => cam.yaw = pc.transform.eulerAngles.y + 215f + (Time.time - t0) * 3f;
+            frame();
+            cam.SnapNext();
+            for (float t = 0; t < 1f; t += Time.deltaTime) { frame(); yield return null; }
+            // three light hits chained into a combo, then a heavy slam
+            for (int i = 0; i < 4; i++)
+            {
+                stats.FillBars();
+                if (i < 3) pc.LightAttack(); else pc.HeavyAttack();
+                while (pc.Busy) { frame(); yield return null; }
+                float pause = i == 2 ? 0.7f : 0f;
+                for (float t = 0; t < pause; t += Time.deltaTime) { frame(); yield return null; }
+            }
+            for (float t = 0; t < 0.8f; t += Time.deltaTime) { frame(); yield return null; }
+            // shield up
+            for (float t = 0; t < 1.4f; t += Time.deltaTime) { stats.GuardReduction = pc.GuardAmount; frame(); yield return null; }
+            stats.GuardReduction = 0f;
+            for (float t = 0; t < 0.8f; t += Time.deltaTime) { frame(); yield return null; }
+            pc.UseScriptedInput = false;
+            PhotoMode.Set(false);
         }
 
         IEnumerator Death()

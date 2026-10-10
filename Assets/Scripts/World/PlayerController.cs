@@ -10,7 +10,9 @@ namespace DreamWorld.World
     //   Left click: attack (3-hit combo)   Shift + left click: heavy attack      Right click: guard
     //   Q: lock on / off (strafe around the target)   E: interact   1-4: quick items (InventoryUI)
     // Rolling, sprinting, jumping, attacking and guarding all cost stamina (PlayerStats).
-    // Getting hit hard staggers you for a moment. The model rolls/punches through IdleMotion.
+    // Getting hit hard staggers you for a moment. The model rolls/punches through IdleMotion; with a
+    // weapon equipped WeaponPose takes over the arms (wind-up, slash, follow-through) and draws the trail.
+    // The equipped weapon sets damage, swing speed and reach (Items.cs).
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
@@ -31,9 +33,12 @@ namespace DreamWorld.World
         [Header("Stamina costs")]
         public float rollCost = 18f, sprintCostPerSecond = 11f, jumpCost = 8f, lightCost = 14f, heavyCost = 28f;
 
-        [Header("Attacks")]
+        [Header("Attacks (bare hands; weapons use their own stats)")]
         public float lightDamage = 12f;
         public float heavyDamage = 28f;
+
+        // Light swings: wind-up, strike, follow-through, recover. The hit lands in the strike window.
+        public const float LightHitStart = 0.36f, LightHitEnd = 0.56f, HeavyHitStart = 0.5f, HeavyHitEnd = 0.66f;
 
         public bool InputEnabled { get; set; } = true;   // menus turn this off
         // Lets a script steer instead of the keyboard (recording clips, cutscenes later).
@@ -41,6 +46,15 @@ namespace DreamWorld.World
         public Vector2 ScriptedInput { get; set; }
         public IDamageable LockTarget { get; private set; }
         public bool Busy => action != Action.None;
+
+        // What WeaponPose reads to pose the arms.
+        public bool Swinging => action == Action.Light || action == Action.Heavy;
+        public bool HeavySwing => action == Action.Heavy;
+        public int Combo => combo;                 // 0, 1, 2 (the finisher)
+        public float SwingT => Swinging ? Mathf.Clamp01(actionTime / actionLength) : 0f;
+        public bool Rolling => action == Action.Roll || action == Action.Backstep;
+        public bool Guarding => stats != null && stats.GuardReduction > 0f;
+        public ItemDef Weapon => stats != null ? stats.Weapon : null;
 
         enum Action { None, Roll, Backstep, Light, Heavy, Stagger }
 
@@ -57,7 +71,8 @@ namespace DreamWorld.World
         float actionTime, actionLength;
         Vector3 actionDir;
         int combo;
-        bool comboQueued, heavyQueued;
+        bool comboQueued, heavyQueued, shotFired;
+        float lastLightEnd = -9f;
         float spaceDown = -1f;
         bool sprinting, sprintLocked;
         readonly HashSet<IDamageable> hitThisSwing = new HashSet<IDamageable>();
@@ -125,7 +140,7 @@ namespace DreamWorld.World
                 if (heavy) HeavyAttack(); else LightAttack();
             }
             if (Input.GetKeyDown(KeyCode.Q)) ToggleLockOn();
-            if (stats != null) stats.GuardReduction = Input.GetMouseButton(1) && action == Action.None ? 0.75f : 0f;
+            if (stats != null) stats.GuardReduction = Input.GetMouseButton(1) && action == Action.None ? GuardAmount : 0f;
         }
 
         // Public so menus/tests can trigger them too.
@@ -143,19 +158,26 @@ namespace DreamWorld.World
             verticalSpeed = jumpSpeed;
         }
 
+        // Guarding with a shield blocks more.
+        public float GuardAmount => stats != null && stats.Shield != null ? stats.Shield.guard : 0.75f;
+        float SwingSpeed => Weapon != null ? Mathf.Max(0.4f, Weapon.speed) : 1f;
+        float LightLength(int hit) => (hit == 2 ? 0.75f : 0.6f) / SwingSpeed;
+        float HeavyLength => 1.05f / SwingSpeed;
+
         public void LightAttack()
         {
             if (action == Action.Light) { comboQueued = true; return; }   // buffer the next hit of the combo
             if (action != Action.None || stats == null || !stats.TrySpendStamina(lightCost)) return;
-            combo = 0;
-            StartSwing(Action.Light, 0.55f);
+            // clicking again right after a swing ends keeps the combo going
+            combo = Time.time - lastLightEnd < 0.35f && combo < 2 ? combo + 1 : 0;
+            StartSwing(Action.Light, LightLength(combo));
         }
 
         public void HeavyAttack()
         {
             if (action == Action.Light) { heavyQueued = true; return; }
             if (action != Action.None || stats == null || !stats.TrySpendStamina(heavyCost)) return;
-            StartSwing(Action.Heavy, 1.0f);
+            StartSwing(Action.Heavy, HeavyLength);
         }
 
         void StartSwing(Action kind, float length)
@@ -165,6 +187,7 @@ namespace DreamWorld.World
             Begin(kind, length, dir);
             transform.rotation = Quaternion.LookRotation(actionDir);
             hitThisSwing.Clear();
+            shotFired = false;
         }
 
         void Begin(Action kind, float length, Vector3 dir)
@@ -242,25 +265,48 @@ namespace DreamWorld.World
                 case Action.Heavy:
                 {
                     bool heavy = action == Action.Heavy;
-                    float lungeEnd = heavy ? 0.55f : 0.4f;
-                    if (t < lungeEnd) Move(actionDir * (heavy ? 1.8f : 1.4f) * (1f - t / lungeEnd));
+                    var weapon = Weapon;
+                    // step into the swing as it lands (the thrust finisher lunges further)
+                    float stepStart = heavy ? 0.3f : 0.2f, stepEnd = heavy ? 0.62f : 0.5f;
+                    float push = heavy ? 2.2f : combo == 2 ? 2.6f : 1.5f;
+                    if (t > stepStart && t < stepEnd) Move(actionDir * push * Mathf.Sin((t - stepStart) / (stepEnd - stepStart) * Mathf.PI));
                     else Move(Vector3.zero);
-                    // the hit lands in a short window mid-swing
-                    bool active = heavy ? (t > 0.42f && t < 0.6f) : (t > 0.25f && t < 0.45f);
-                    if (active)
+                    float baseDamage = weapon != null ? weapon.damage : lightDamage;
+                    float dmg = (heavy ? (weapon != null ? weapon.damage * weapon.heavy : heavyDamage)
+                                       : baseDamage * (combo == 2 ? 1.4f : 1f)) * stats.DamageMultiplier;
+                    float hitStart = heavy ? HeavyHitStart : LightHitStart, hitEnd = heavy ? HeavyHitEnd : LightHitEnd;
+                    if (weapon != null && weapon.ranged)
                     {
-                        float dmg = (heavy ? heavyDamage : lightDamage * (combo == 2 ? 1.4f : 1f)) * stats.DamageMultiplier;
-                        Hits.Sweep(transform.position + Vector3.up * 0.9f + actionDir * 0.9f, heavy ? 0.95f : 0.75f, gameObject, dmg, hitThisSwing);
+                        // the slingshot: one pebble (three in a fan for a heavy shot)
+                        if (!shotFired && t > hitStart)
+                        {
+                            shotFired = true;
+                            Vector3 from = transform.position + Vector3.up * 1.2f + actionDir * 0.5f;
+                            Vector3 aim = LockTarget != null ? (LockTarget.Body.position + Vector3.up * 0.6f - from).normalized : actionDir;
+                            var pebble = new Color(1f, 0.85f, 0.55f);
+                            if (heavy)
+                                foreach (var a in new[] { -9f, 0f, 9f })
+                                    Projectile.Fire(gameObject, from, Quaternion.AngleAxis(a, Vector3.up) * aim, 22f, dmg / 2f, pebble, 0.16f);
+                            else Projectile.Fire(gameObject, from, aim, 22f, dmg, pebble, 0.16f);
+                        }
                     }
-                    // chain: a buffered click continues the combo after the hit window
-                    if (!heavy && t > 0.6f && (comboQueued || heavyQueued))
+                    else if (t > hitStart && t < hitEnd)
+                    {
+                        // the hit lands in the strike window; longer weapons reach further
+                        float reach = weapon != null ? weapon.reach : 0.85f;
+                        float forward = (heavy ? 1.0f : combo == 2 ? 1.1f : 0.9f) * reach;
+                        float radius = (heavy ? 1.0f : combo == 2 ? 0.7f : 0.85f) * Mathf.Lerp(1f, reach, 0.6f);
+                        Hits.Sweep(transform.position + Vector3.up * 0.9f + actionDir * forward, radius, gameObject, dmg, hitThisSwing);
+                    }
+                    // chain: a buffered click continues the combo once the strike has landed
+                    if (!heavy && t > 0.62f && (comboQueued || heavyQueued))
                     {
                         bool toHeavy = heavyQueued;
                         if (toHeavy ? stats.TrySpendStamina(heavyCost) : (combo < 2 && stats.TrySpendStamina(lightCost)))
                         {
-                            if (toHeavy) { StartSwing(Action.Heavy, 1.0f); return; }
+                            if (toHeavy) { StartSwing(Action.Heavy, HeavyLength); return; }
                             combo++;
-                            StartSwing(Action.Light, combo == 2 ? 0.7f : 0.55f);
+                            StartSwing(Action.Light, LightLength(combo));
                             return;
                         }
                         comboQueued = heavyQueued = false;
@@ -274,6 +320,7 @@ namespace DreamWorld.World
             if (actionTime >= actionLength)
             {
                 if (action == Action.Roll || action == Action.Backstep) stats.Invulnerable = false;
+                if (action == Action.Light) lastLightEnd = Time.time;
                 speed = action == Action.Roll ? jogSpeed : 0f;   // come out of a roll already jogging
                 action = Action.None;
             }
@@ -327,7 +374,8 @@ namespace DreamWorld.World
             if (motion == null) return;
             float t = action == Action.None ? 0f : Mathf.Clamp01(actionTime / actionLength);
             motion.moveAmount = action == Action.None ? Mathf.Clamp01(speed / sprintSpeed) : 0.2f;
-            motion.guard = Mathf.MoveTowards(motion.guard, stats != null && stats.GuardReduction > 0f ? 1f : 0f, Time.deltaTime * 8f);
+            bool armed = Weapon != null;   // armed: WeaponPose poses the arms instead
+            motion.guard = Mathf.MoveTowards(motion.guard, !armed && stats != null && stats.GuardReduction > 0f ? 1f : 0f, Time.deltaTime * 8f);
 
             // a real forward roll: spin the model around its middle, tucked up
             float spin = 0f, tuck = 0f;
@@ -339,10 +387,19 @@ namespace DreamWorld.World
             var rot = Quaternion.AngleAxis(spin, Vector3.right);
             model.localRotation = modelBaseRot * rot;
             model.localPosition = modelBasePos + (pivot - rot * pivot);
+            // heavy with a weapon: a little hop up into the slam, then a dip as it lands
+            if (armed && action == Action.Heavy)
+            {
+                float hop = t < 0.3f ? 0f
+                          : t < 0.5f ? Mathf.Sin((t - 0.3f) / 0.2f * Mathf.PI * 0.5f) * 0.2f
+                          : t < 0.6f ? (1f - (t - 0.5f) / 0.1f) * 0.2f
+                          : -Mathf.Sin(Mathf.Clamp01((t - 0.6f) / 0.25f) * Mathf.PI) * 0.07f;
+                model.localPosition += Vector3.up * hop;
+            }
 
             // swing: wind up, strike, follow through (heavy uses both arms)
             float swing = 0f;
-            if (action == Action.Light || action == Action.Heavy)
+            if (!armed && (action == Action.Light || action == Action.Heavy))
             {
                 float strike = action == Action.Heavy ? 0.45f : 0.3f;
                 swing = t < strike ? -0.35f * Mathf.Sin(t / strike * Mathf.PI * 0.5f)
