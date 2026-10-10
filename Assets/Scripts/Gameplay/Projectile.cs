@@ -76,7 +76,7 @@ namespace DreamWorld.Gameplay
                 return;
             }
             transform.position += step;
-            if (transform.position.y < -0.2f) Destroy(gameObject);
+            if (transform.position.y < -60f) Destroy(gameObject);   // fell out of the world (hills and the quarry go below 0)
         }
     }
 }

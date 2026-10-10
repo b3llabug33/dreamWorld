@@ -70,7 +70,7 @@ namespace DreamWorld.Gameplay
         public bool Protected => Time.time < protectedUntil;
 
         // ---------- derived numbers (all formulas in one place) ----------
-        int P(Attribute a) => progress.points[(int)a];
+        public int P(Attribute a) => progress.points[(int)a];   // points spent in an attribute
         public float MaxHealth => 100f + 12f * P(Attribute.Health);
         public float MaxStamina => 80f + 6f * P(Attribute.Stamina);
         public float MaxMagic => 10f + 8f * P(Attribute.Magic);       // starts small
@@ -148,7 +148,7 @@ namespace DreamWorld.Gameplay
             float dt = Time.deltaTime;
             if (Time.time - lastStaminaUse > staminaRegenDelay)
                 stamina = Mathf.Min(MaxStamina, stamina + staminaRegen * (Starving ? 0.5f : 1f) * dt);
-            magic = Mathf.Min(MaxMagic, magic + 0.4f * dt);
+            magic = Mathf.Min(MaxMagic, magic + 0.8f * dt);   // spells (Abilities.cs) use it
             // sold, dropped or stored the thing in your hand: put it away
             if (progress.equipped != "" && Inventory.Count(progress.bag, progress.equipped) == 0) progress.equipped = "";
             if (progress.offhand != "" && Inventory.Count(progress.bag, progress.offhand) == 0) progress.offhand = "";

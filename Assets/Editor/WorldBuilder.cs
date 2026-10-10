@@ -125,6 +125,7 @@ namespace DreamWorld.EditorTools
             var controller = player.AddComponent<PlayerController>();
             controller.areaRadius = 82f;
             player.AddComponent<PlayerStats>();
+            player.AddComponent<Abilities>();   // spells on Z/X/C (Gameplay/Abilities.cs)
             player.AddComponent<PlayerLife>();
             player.AddComponent<WeaponPose>();
 
