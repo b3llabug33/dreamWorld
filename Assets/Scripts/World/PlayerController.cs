@@ -169,12 +169,14 @@ namespace DreamWorld.World
             bool moving = moveDir.sqrMagnitude > 0.01f;
             Begin(moving ? Action.Roll : Action.Backstep, moving ? 0.6f : 0.4f, moving ? moveDir.normalized : -transform.forward);
             if (moving) transform.rotation = Quaternion.LookRotation(actionDir);
+            DreamWorld.Audio.AudioManager.Play("roll");
         }
 
         public void Jump()
         {
             if (action != Action.None || !controller.isGrounded || stats == null || !stats.TrySpendStamina(jumpCost)) return;
             verticalSpeed = jumpSpeed;
+            DreamWorld.Audio.AudioManager.Play("jump");
         }
 
         // Guarding with a shield blocks more.
@@ -207,6 +209,7 @@ namespace DreamWorld.World
             transform.rotation = Quaternion.LookRotation(actionDir);
             hitThisSwing.Clear();
             shotFired = false;
+            DreamWorld.Audio.AudioManager.Play(kind == Action.Heavy ? "swing_heavy" : "swing");
         }
 
         void Begin(Action kind, float length, Vector3 dir)
@@ -379,7 +382,12 @@ namespace DreamWorld.World
                 else   // already outside (old saves, warps): slide back toward town like before
                     controller.Move(-flat.normalized * (flat.magnitude - areaRadius));
             }
-            if (motion != null) motion.stridePhase += horizontal.magnitude * Time.deltaTime / strideLength * Mathf.PI * 2f;
+            if (motion == null) return;
+            float strideBefore = motion.stridePhase;
+            motion.stridePhase += horizontal.magnitude * Time.deltaTime / strideLength * Mathf.PI * 2f;
+            // a footstep each time a foot comes down (twice per stride cycle), only walking on the ground
+            if (action == Action.None && controller.isGrounded && Mathf.Floor(motion.stridePhase / Mathf.PI) != Mathf.Floor(strideBefore / Mathf.PI))
+                DreamWorld.Audio.AudioManager.Footstep(transform.position);
         }
 
         // Teleport (respawning at home). The CharacterController has to be off to move it directly.

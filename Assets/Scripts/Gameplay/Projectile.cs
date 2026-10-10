@@ -66,7 +66,8 @@ namespace DreamWorld.Gameplay
                 {
                     bool isPlayer = target is PlayerStats;
                     if (isPlayer == fromPlayer) continue;   // no friendly fire
-                    if (target.Alive && !(isPlayer && ZoneMap.IsSafe(target.Body.position))) target.TakeDamage(damage, owner);
+                    if (target.Alive && !(isPlayer && ZoneMap.IsSafe(target.Body.position)) && target.TakeDamage(damage, owner))
+                        DreamWorld.Audio.AudioManager.Play3D("hit", transform.position, 0.8f);
                     Destroy(gameObject);
                     return;
                 }

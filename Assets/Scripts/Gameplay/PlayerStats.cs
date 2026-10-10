@@ -186,6 +186,7 @@ namespace DreamWorld.Gameplay
             }
             health -= amount;
             LastHitTime = Time.time;
+            DreamWorld.Audio.AudioManager.Play("hurt");
             if (health <= 0f) Die();
             Changed?.Invoke();
             return true;
@@ -209,6 +210,7 @@ namespace DreamWorld.Gameplay
         public int AddItem(string id, int count = 1)
         {
             int added = Inventory.Add(progress.bag, id, count);
+            if (added > 0) DreamWorld.Audio.AudioManager.Play("item", 0.8f);
             Changed?.Invoke();
             return added;
         }
@@ -222,6 +224,7 @@ namespace DreamWorld.Gameplay
             bool helps = (def.food > 0 && progress.food < MaxFood - 1f) || (def.heal > 0 && health < MaxHealth - 0.5f);
             if (!helps) return false;
             Inventory.Remove(progress.bag, id, 1);
+            DreamWorld.Audio.AudioManager.Play(def.food > 0 ? "eat" : "item");
             if (def.food > 0) Eat(def.food);
             if (def.heal > 0) health = Mathf.Min(MaxHealth, health + def.heal);
             Changed?.Invoke();
@@ -255,6 +258,7 @@ namespace DreamWorld.Gameplay
                 progress.level++;
                 progress.unspent++;
                 LeveledUp?.Invoke(progress.level);
+                DreamWorld.Audio.AudioManager.Play("levelup", 1f, 0f);
             }
             Changed?.Invoke();
         }
@@ -264,6 +268,7 @@ namespace DreamWorld.Gameplay
         {
             int got = Mathf.RoundToInt(baseAmount * LuckMultiplier);
             progress.carried += got;
+            if (got > 0) DreamWorld.Audio.AudioManager.Play("coin", 0.9f, 0.02f);
             Changed?.Invoke();
             return got;
         }

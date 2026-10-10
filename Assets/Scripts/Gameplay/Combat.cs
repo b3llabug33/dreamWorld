@@ -28,7 +28,7 @@ namespace DreamWorld.Gameplay
                 if (target == null || !target.Alive || already.Contains(target)) continue;
                 if (target.Body.gameObject == attacker) continue;
                 already.Add(target);
-                if (target.TakeDamage(damage, attacker)) hits++;
+                if (target.TakeDamage(damage, attacker)) { hits++; DreamWorld.Audio.AudioManager.Play3D("hit", target.Body.position + Vector3.up * 0.6f); }
             }
             return hits;
         }
