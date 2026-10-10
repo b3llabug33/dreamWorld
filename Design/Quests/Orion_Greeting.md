@@ -4,6 +4,9 @@ Orion (her rainbow stag beetle) walks up the first time you reach the town squar
 your notes; the lines are a DRAFT for you to rewrite in your own words.
 
 ## Opening
+Orion skitters up to you. If you back away or don't answer right away, she says:
+**Orion:** "wait wait, don't be scared! i'm a beetle, but i'm a person too. i promise i don't bite. (much.)"
+
 **Orion:** "hello traveler! what brings you here?"
 
 Choices (pick any, come back to the menu after each; "that's all" to leave):

@@ -144,10 +144,13 @@ def bella_truck(m, x, y, yaw=0):
     f = []
     f += m.box((x, y, 0.75), (2.0, 5.0, 0.5), red, bevel=0.06)                       # chassis / body
     f += m.box((x, y + 1.6, 1.15), (1.9, 1.6, 0.5), red, bevel=0.15)                 # long rounded hood
-    f += m.blob((x, y + 0.4, 1.5), (0.95, 0.8, 0.65), red, seg=10, rings=6)          # rounded cab
-    f += m.box((x, y + 0.75, 1.65), (1.5, 0.05, 0.5), (0.55, 0.65, 0.72), M_GLASS)   # windshield
+    # boxy rounded cab with the windows set into its faces (not floating)
+    f += m.box((x, y + 0.35, 1.45), (1.9, 1.3, 0.9), red, bevel=0.12)              # cab
+    f += m.box((x, y + 0.35, 1.93), (1.75, 1.15, 0.08), red, bevel=0.03)           # roof
+    f += m.box((x, y + 1.0, 1.55), (1.5, 0.04, 0.5), (0.55, 0.65, 0.72), M_GLASS, rot=(-12, 0, 0))   # windshield on the cab front
+    f += m.box((x, y - 0.31, 1.55), (1.3, 0.04, 0.4), (0.55, 0.65, 0.72), M_GLASS)   # back window
     for sx in (1, -1):
-        f += m.box((x + sx * 0.93, y + 0.35, 1.6), (0.05, 0.9, 0.45), (0.55, 0.65, 0.72), M_GLASS)
+        f += m.box((x + sx * 0.955, y + 0.4, 1.55), (0.04, 0.95, 0.42), (0.55, 0.65, 0.72), M_GLASS)   # side windows, flush
     f += m.box((x, y - 1.5, 1.1), (1.9, 2.0, 0.08), rust)                            # truck bed floor
     for sx in (1, -1):
         f += m.box((x + sx * 0.95, y - 1.5, 1.3), (0.08, 2.0, 0.45), red)               # bed walls
