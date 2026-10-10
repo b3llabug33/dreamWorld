@@ -198,7 +198,9 @@ namespace DreamWorld.EditorTools
                         + (Mathf.PerlinNoise(x * 0.085f + 2.7f, z * 0.085f + 9.9f) - 0.5f) * 1.2f;
             float r0 = new Vector2(x, z - 6).magnitude;
             float rim = Smooth01((r0 - 74f) / 34f) * 7f;                        // the hollow's bowl rising at the edge
-            float h = m * (Mathf.Max(hills, -0.4f) + rim);
+            // where it's flat (town, paths, under buildings) the ground sits 8 cm low, so building floors, ground
+            // plates and paving (all at ~0) don't share its height and flicker through it
+            float h = m * (Mathf.Max(hills, -0.4f) + rim) - 0.08f * (1f - m);
             h *= Smooth01((x + 80f) / 12f);                                      // meet Mistpine's flat edge at x = -84
             // the pond: a bowl down to -1.3 m
             float dp = new Vector2(x - pondCenter.x, z - pondCenter.z).magnitude;
