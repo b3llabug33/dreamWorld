@@ -3,7 +3,7 @@ Cuts recorded gameplay frames into a vertical (1080x1920) TikTok/Reels video, in
 make_ad.py: pixel-font captions that type themselves out, a framed game window, soft flash cuts, a
 "coming soon" checklist and an end card.
   python make_tiktok.py <video name> <frames root> <output.mp4>
-<video name> is one of the VIDEOS below. <frames root> holds one folder of 1920x1080 PNG frames per clip,
+<video name> is one of the VIDEOS below. <frames root> holds one folder of 1920x1080 PNG (or older JPEG) frames per clip,
 as written by dreamWorld's ClipRecorder (ClipRecorder.Record(scene, folder, framesFolder)).
 The game window is square; clips with wide menus (dialogue, the workbench) use a wider crop and get
 soft blurred bars above and below instead of cutting the menu off.
@@ -35,10 +35,12 @@ VIDEOS = {
             ("bodies", 14, 50, 0.5, 1080, "i'm making a cozy retro game", "> dreamWorld  (in development)"),
             ("bodies", 64, 150, 0.5, 1080, "make your character", "any body type, any height"),
             ("hairs", 18, 240, 0.48, 1080, "so many hairstyles", "in any color you want"),
-            ("outfits", 18, 270, 0.5, 1080, "mix and match outfits", "patterns, plaid, boots and more"),
+            # the outfits from the first TikTok's creator clip (skipping 177-195: that oversized tee clips at the waist)
+            ("og_creator", 96, 81, 0.5, 1080, "mix and match outfits", "stripes, dots, hearts and more"),
+            ("og_creator", 196, 24, 0.5, 1080, "mix and match outfits", "stripes, dots, hearts and more"),
             ("details", 24, 160, 0.48, 1080, "every little detail", "pick your eyes and little extras"),
         ],
-        "end_clip": "outfits",
+        "end_clip": "og_creator",
     },
     "the_town": {
         "segments": [
@@ -73,7 +75,7 @@ def fit(d, text, size, width):
 
 
 def frames(root, clip):
-    found = glob.glob(os.path.join(root, clip, "*.png"))
+    found = glob.glob(os.path.join(root, clip, "*.png")) or glob.glob(os.path.join(root, clip, "*.jpg"))   # older clips are JPEG
     return sorted(found, key=lambda f: int(f.split("_")[-1].split(".")[0]))
 
 
