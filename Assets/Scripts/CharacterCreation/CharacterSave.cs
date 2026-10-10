@@ -19,6 +19,7 @@ namespace DreamWorld.CharacterCreation
         public string[] customColors;   // per slot: "" or a hex color (full-spectrum hair/eyes)
         public string[] placements;     // per slot: "" or "x,y,size" for movable face pieces
         public float eyeScale = 1f, eyeSpacing, eyeHeight;
+        public float bodyShape;          // 0 = soft build, 1 = broad (older saves: 0)
 
         public static string SavedJson => PlayerPrefs.GetString(Key, "");
 
@@ -36,6 +37,7 @@ namespace DreamWorld.CharacterCreation
                 eyeScale = appearance.eyeScale,
                 eyeSpacing = appearance.eyeSpacing,
                 eyeHeight = appearance.eyeHeight,
+                bodyShape = appearance.bodyShape,
             };
             for (int i = 0; i < n; i++)
             {
@@ -80,6 +82,7 @@ namespace DreamWorld.CharacterCreation
             appearance.eyeScale = data.eyeScale > 0 ? data.eyeScale : 1f;   // older saves have no eye values
             appearance.eyeSpacing = data.eyeSpacing;
             appearance.eyeHeight = data.eyeHeight;
+            appearance.bodyShape = Mathf.Clamp01(data.bodyShape);
 
             for (int i = 0; i < data.categories.Length; i++)
             {

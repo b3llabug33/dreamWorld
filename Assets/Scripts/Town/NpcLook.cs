@@ -24,6 +24,11 @@ namespace DreamWorld.Town
             foreach (var entry in look.Split(';'))
             {
                 var kv = entry.Split('=');
+                if (kv.Length == 2 && kv[0].Trim() == "Body" && float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float build))
+                {
+                    app.bodyShape = Mathf.Clamp01(build);   // 1 = broad/masculine build
+                    continue;
+                }
                 if (kv.Length != 2 || !Enum.TryParse(kv[0].Trim(), out OutfitCategory category)) continue;
                 var slot = app.GetSlot(category);
                 if (slot == null) continue;

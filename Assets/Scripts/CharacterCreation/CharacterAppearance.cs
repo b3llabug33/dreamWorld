@@ -171,6 +171,9 @@ namespace DreamWorld.CharacterCreation
         [Range(-0.06f, 0.06f)] public float eyeSpacing = 0f;
         [Range(-0.05f, 0.06f)] public float eyeHeight = 0f;
 
+        [Header("Build (0 = soft, 1 = broad/masculine)")]
+        [Range(0f, 1f)] public float bodyShape = 0f;
+
         // Fired after any style/color change so the UI can refresh its labels.
         public event Action Changed;
 
@@ -194,6 +197,7 @@ namespace DreamWorld.CharacterCreation
             DefaultLook = CharacterSave.ToJson(this);
             CharacterSave.Load(this);
             foreach (var slot in slots) Apply(slot);
+            ApplyBody();
         }
 
         public OutfitSlot GetSlot(OutfitCategory category) => slots.Find(s => s.category == category);
@@ -203,7 +207,31 @@ namespace DreamWorld.CharacterCreation
         {
             if (block == null) block = new MaterialPropertyBlock();
             foreach (var slot in slots) Apply(slot);
+            ApplyBody();
             Changed?.Invoke();
+        }
+
+        // The build slider: every body, clothing and hair mesh has a "Masc" blend shape made from the same
+        // reshaping (ArtSource/build_dreamer.py), so outfits stay fitted at any mix.
+        public void SetBody(float shape)
+        {
+            bodyShape = Mathf.Clamp01(shape);
+            ApplyBody();
+            Changed?.Invoke();
+        }
+
+        void ApplyBody()
+        {
+            // a broad build also stands a little taller (the model root under this object, never this object itself)
+            var any = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            var model = any != null && any.rootBone != null ? any.rootBone.parent : null;
+            if (model != null && model != transform) model.localScale = Vector3.one * (1f + 0.04f * bodyShape);
+            foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var mesh = smr.sharedMesh;
+                int index = mesh != null ? mesh.GetBlendShapeIndex("Masc") : -1;
+                if (index >= 0) smr.SetBlendShapeWeight(index, bodyShape * 100f);
+            }
         }
 
         public void ChangeStyle(OutfitCategory category, int direction)

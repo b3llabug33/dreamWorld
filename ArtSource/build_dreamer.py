@@ -1537,6 +1537,72 @@ with open(os.path.join(MODEL_DIR, "Dreamer.manifest.json"), "w") as f:
     json.dump({"pieces": [{"name": k, "submeshes": v} for k, v in MANIFEST.items()],
                "patterns": list(PATTERNS)}, f, indent=1)
 
+# ---------------------------------------------------------------- masculine build (blend shape "Masc")
+# One smooth reshaping of space, applied to the body AND every piece of clothing and hair as a shape key, so all
+# outfits stay fitted at any mix (Unity's creator "build" slider sets its weight 0-100). The face (above the chin)
+# is untouched so eye/mouth decals still line up. T-pose: arms run along x at z 1.28, the front is -y.
+
+def _smooth(t):
+    t = max(0.0, min(1.0, t))
+    return t * t * (3 - 2 * t)
+
+
+def _interp(table, z):
+    if z <= table[0][0]:
+        return table[0][1]
+    for (z0, v0), (z1, v1) in zip(table, table[1:]):
+        if z <= z1:
+            return v0 + (v1 - v0) * _smooth((z - z0) / (z1 - z0))
+    return table[-1][1]
+
+
+# torso width factor by height: narrower hips, a fuller waist, broad shoulders
+MASC_WIDTH = [(0.66, 1.0), (0.84, 0.92), (0.92, 1.06), (0.99, 1.30), (1.07, 1.24), (1.15, 1.18),
+              (1.23, 1.26), (1.29, 1.30), (1.34, 1.0)]
+TORSO_HALF = 0.105   # past this |x| (arms, hands) points shift out with the shoulder instead of scaling
+
+
+def masc(p):
+    x, y, z = p.x, p.y, p.z
+    sx = _interp(MASC_WIDTH, z)
+    if abs(x) <= TORSO_HALF or z < 1.12:
+        nx = x * sx
+    else:                                     # arms: move out with the broader shoulders, and get a bit thicker
+        nx = x + math.copysign(TORSO_HALF * (sx - 1.0), x)
+        k = _smooth((abs(x) - TORSO_HALF) / 0.04) * _smooth((1.40 - z) / 0.04) * _smooth((z - 1.14) / 0.04)
+        y = y * (1 + 0.22 * k)
+        z = 1.28 + (z - 1.28) * (1 + 0.22 * k)
+    # flatter chest: pull the front of the bust (z ~1.10-1.22) back toward the body's midline
+    bust = _smooth(1 - abs(p.z - 1.155) / 0.075)
+    if y < 0 and abs(p.x) < 0.14:
+        y = y * (1 - 0.28 * bust)
+    # sturdier legs: thighs and calves a little thicker around each leg's own axis
+    if p.z < 0.80 and abs(p.x) > 0.01 and abs(p.x) < 0.14:
+        leg = _smooth((0.80 - p.z) / 0.06) * _smooth((p.z - 0.04) / 0.06)
+        cx = math.copysign(0.066, p.x)
+        nx = cx + (nx - cx) * (1 + 0.12 * leg)
+        y = y * (1 + 0.12 * leg)
+    # a thicker neck below the chin
+    neck = _smooth((1.36 - p.z) / 0.02) * _smooth((p.z - 1.29) / 0.02) * _smooth((0.05 - abs(p.x)) / 0.02)
+    if neck > 0:
+        nx = nx * (1 + 0.28 * neck)
+        y = 0.007 + (y - 0.007) * (1 + 0.28 * neck)
+    return Vector((nx, y, z))
+
+
+masc_count = 0
+for obj in rig.children:
+    if obj.type != "MESH":
+        continue
+    mw, inv = obj.matrix_world, obj.matrix_world.inverted()
+    if obj.data.shape_keys is None:
+        obj.shape_key_add(name="Basis", from_mix=False)
+    key = obj.shape_key_add(name="Masc", from_mix=False)
+    for i, v in enumerate(obj.data.vertices):
+        key.data[i].co = inv @ masc(mw @ v.co)
+    masc_count += 1
+print("masc shape keys:", masc_count)
+
 # ---------------------------------------------------------------- export
 
 bpy.ops.object.select_all(action="DESELECT")

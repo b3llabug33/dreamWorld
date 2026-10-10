@@ -54,7 +54,7 @@ namespace DreamWorld.CharacterCreation
         GameObject shapeControls;
         RectTransform optionsRoot, colorHeader, pickerRoot;
         Slider shapeSize, shapeX, shapeY, hueSlider, satSlider, valSlider;
-        Text shapeHeader, shapeXLabel, shapeYLabel, resetLabel;
+        Text shapeHeader, shapeSizeLabel, shapeXLabel, shapeYLabel, resetLabel;
         Texture2D hueTex, satTex, valTex;
         bool syncingSliders, syncingPicker, pickerDriving;
         NetMode chosenMode;
@@ -281,9 +281,11 @@ namespace DreamWorld.CharacterCreation
             shapeY = SliderRow(rect, "height", -146, -0.05f, 0.06f, _ => OnShapeSlider());
             shapeXLabel = rect.Find("spacing").GetComponent<Text>();
             shapeYLabel = rect.Find("height").GetComponent<Text>();
+            shapeSizeLabel = rect.Find("size").GetComponent<Text>();
             var reset = MakeButton(rect, "ResetShape", () =>
             {
-                if (currentCategory == OutfitCategory.Eyes) appearance.ResetEyes();
+                if (currentCategory == OutfitCategory.Skin) appearance.SetBody(0f);
+                else if (currentCategory == OutfitCategory.Eyes) appearance.ResetEyes();
                 else appearance.ResetPlacement(currentCategory);
                 SyncSliders();
             });
@@ -304,7 +306,17 @@ namespace DreamWorld.CharacterCreation
         void ConfigureShape(OutfitSlot slot)
         {
             syncingSliders = true;
-            if (slot.category == OutfitCategory.Eyes)
+            bool body = slot.category == OutfitCategory.Skin;   // skin tab: one "build" slider, soft -> broad
+            foreach (var go in new[] { shapeX.gameObject, shapeY.gameObject, shapeXLabel.gameObject, shapeYLabel.gameObject })
+                go.SetActive(!body);
+            shapeSizeLabel.text = body ? "build" : "size";
+            if (body)
+            {
+                shapeHeader.text = "== BODY ==";
+                SetRange(shapeSize, 0f, 1f);
+                resetLabel.text = "reset build";
+            }
+            else if (slot.category == OutfitCategory.Eyes)
             {
                 shapeHeader.text = "== SHAPE ==";
                 SetRange(shapeSize, 0.75f, 1.35f);
@@ -403,7 +415,7 @@ namespace DreamWorld.CharacterCreation
                 pickerRoot.anchoredPosition = new Vector2(0, y);
                 y -= 136;
             }
-            bool shape = slot.category == OutfitCategory.Eyes || (slot.movable && slot.CurrentStyle != null);
+            bool shape = slot.category == OutfitCategory.Eyes || slot.category == OutfitCategory.Skin || (slot.movable && slot.CurrentStyle != null);
             shapeControls.SetActive(shape);
             if (shape) ConfigureShape(slot);
             ((RectTransform)shapeControls.transform).anchoredPosition = new Vector2(0, y);
@@ -445,7 +457,8 @@ namespace DreamWorld.CharacterCreation
         void OnShapeSlider()
         {
             if (syncingSliders) return;
-            if (currentCategory == OutfitCategory.Eyes) appearance.SetEyes(shapeSize.value, shapeX.value, shapeY.value);
+            if (currentCategory == OutfitCategory.Skin) appearance.SetBody(shapeSize.value);
+            else if (currentCategory == OutfitCategory.Eyes) appearance.SetEyes(shapeSize.value, shapeX.value, shapeY.value);
             else appearance.SetPlacement(currentCategory, shapeX.value, shapeY.value, shapeSize.value);
         }
 
@@ -453,9 +466,10 @@ namespace DreamWorld.CharacterCreation
         {
             var slot = appearance.GetSlot(currentCategory);
             if (slot == null) return;
-            if (slot.category == OutfitCategory.Eyes || slot.movable) ConfigureShape(slot);
+            if (slot.category == OutfitCategory.Eyes || slot.category == OutfitCategory.Skin || slot.movable) ConfigureShape(slot);
             syncingSliders = true;
-            if (slot.category == OutfitCategory.Eyes)
+            if (slot.category == OutfitCategory.Skin) shapeSize.value = appearance.bodyShape;
+            else if (slot.category == OutfitCategory.Eyes)
             {
                 shapeSize.value = appearance.eyeScale;
                 shapeX.value = appearance.eyeSpacing;
