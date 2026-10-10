@@ -12,7 +12,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -35,9 +36,14 @@ Material:
     m_Floats:
     - _AffineStrength: 0
     - _Cutoff: 0
+    - _DstBlend: 0
     - _SnapStrength: 1
     - _Softness: 0.1
+    - _SrcBlend: 1
     - _Unlit: 0
+    - _VertexColor: 0
+    - _VertexGlow: 0
+    - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

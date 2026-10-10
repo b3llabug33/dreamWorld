@@ -1110,6 +1110,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 010000
+--- !u!1 &339948225481491819
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2497130959238630174}
+  m_Layer: 0
+  m_Name: Dreamer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2497130959238630174
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 339948225481491819}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1355023590329992444}
+  m_Father: {fileID: 154230858626139142}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &376214943454031161
 GameObject:
   m_ObjectHideFlags: 0
@@ -13578,38 +13610,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 00
---- !u!1 &4465935421507267605
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7229091109645016393}
-  m_Layer: 0
-  m_Name: Dreamer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7229091109645016393
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4465935421507267605}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1355023590329992444}
-  m_Father: {fileID: 154230858626139142}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4498800118519383251
 GameObject:
   m_ObjectHideFlags: 0
@@ -22514,6 +22514,7 @@ GameObject:
   - component: {fileID: 160468388456049784}
   - component: {fileID: 932566254359954340}
   - component: {fileID: 289036945193705633}
+  - component: {fileID: 148044995691454503}
   - component: {fileID: 7532118720689123329}
   - component: {fileID: 188992966220342750}
   - component: {fileID: 3132450499687821556}
@@ -23481,6 +23482,9 @@ MonoBehaviour:
     - 
     plot: -1
     plotChecked: 0
+    equipped: 
+    offhand: 
+    starterGiven: 0
   health: 0
   stamina: 0
   magic: 0
@@ -23503,6 +23507,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.Gameplay.PlayerLife
   autosaveSeconds: 30
   deathScreenSeconds: 3.5
+--- !u!114 &148044995691454503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7393309350760726872}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 155b79a8a5b3d9c459d6d85fbc1bcfab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.WeaponPose
+  lightTrail: {r: 1, g: 0.62, b: 0.9, a: 0.85}
+  heavyTrail: {r: 1, g: 0.85, b: 0.35, a: 0.95}
 --- !u!114 &7532118720689123329
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24022,7 +24040,7 @@ Transform:
   - {fileID: 9035339008186847360}
   - {fileID: 2563354612448759324}
   - {fileID: 2044554903310849876}
-  m_Father: {fileID: 7229091109645016393}
+  m_Father: {fileID: 2497130959238630174}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7671451663678425681
 GameObject:
@@ -27911,7 +27929,7 @@ Transform:
   - {fileID: 1548342962718860185}
   - {fileID: 3987847850217140828}
   - {fileID: 828345081664710672}
-  - {fileID: 7229091109645016393}
+  - {fileID: 2497130959238630174}
   - {fileID: 1184981552338111450}
   - {fileID: 8869934712251545236}
   - {fileID: 5436803660005572963}

@@ -52,6 +52,7 @@ namespace DreamWorld.EditorTools
         public static void BuildWorld()
         {
             LoadKit();
+            SetupModels();   // the code-built models (WorldBuilder.Assets.cs)
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             NightAtmosphere(fogStart: 18, fogEnd: 80);
             var root = new GameObject("MushroomHollow").transform;
@@ -65,7 +66,8 @@ namespace DreamWorld.EditorTools
             ground.GetComponent<Renderer>().sharedMaterial = TiledMaterial("Grass", 120);
 
             // the town square, its buildings + townsfolk, the paths, the plots and the woods (WorldBuilder.Town.cs)
-            BuildTown(root, rng, out _);
+            BuildTown(root, rng, out var homeContents);
+            BuildNewBuildings(root);   // bakery, greenhouse arcade, server cafe, watchtower (WorldBuilder.Assets.cs)
 
             // hills on the horizon
             for (int i = 0; i < 16; i++)
@@ -93,6 +95,9 @@ namespace DreamWorld.EditorTools
                 placed++;
             }
 
+            // weapon shop, enemies, props, furniture and critters (WorldBuilder.Assets.cs)
+            BuildModelAssets(root, homeContents);
+
             // player + camera
             var player = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));
             player.name = "Player";
@@ -105,6 +110,7 @@ namespace DreamWorld.EditorTools
             controller.areaRadius = 82f;
             player.AddComponent<PlayerStats>();
             player.AddComponent<PlayerLife>();
+            player.AddComponent<WeaponPose>();
 
             var camGo = new GameObject("Main Camera", typeof(Camera));
             camGo.tag = "MainCamera";
@@ -171,6 +177,7 @@ namespace DreamWorld.EditorTools
             go.AddComponent<PlayerController>();
             go.AddComponent<PlayerStats>();
             go.AddComponent<PlayerLife>();
+            go.AddComponent<WeaponPose>();
             go.AddComponent<NetworkObject>();
             go.AddComponent<NetworkTransform>();   // owner-driven position/rotation, synced to everyone
             go.AddComponent<NetPlayer>();
@@ -696,7 +703,11 @@ namespace DreamWorld.EditorTools
             strip.GetComponent<Renderer>().sharedMaterial = TiledMaterial("Paving", 1f);
             var mat = new Material(strip.GetComponent<Renderer>().sharedMaterial) { mainTextureScale = new Vector2(width / 1.2f, length / 1.2f) };
             var path = $"{MatDir}/PSX_W_Path_{Mathf.RoundToInt(width * 10)}_{Mathf.RoundToInt(length * 10)}.mat";
-            AssetDatabase.CreateAsset(mat, path);
+            // two strips the same size share one material (creating it again would replace the asset and
+            // leave the first strip with no material at all: a bright magenta path)
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) { existing.CopyPropertiesFromMaterial(mat); EditorUtility.SetDirty(existing); mat = existing; }
+            else AssetDatabase.CreateAsset(mat, path);
             strip.GetComponent<Renderer>().sharedMaterial = mat;
         }
 
