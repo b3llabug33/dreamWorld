@@ -55,8 +55,8 @@ SHAPES = {
         back=[(0.5, 1.0), (0.84, 1.38), (1.0, 1.32), (1.28, 1.18), (1.34, 1.0)],
         arm=1.5, leg=1.45, neck=1.32, bust=0.012),
     "Muscle": dict(   # balanced: a strong chest and arms, not a triangle
-        width=[(0.66, 1.0), (0.84, 1.02), (0.99, 1.08), (1.15, 1.12), (1.23, 1.15), (1.29, 1.16), (1.34, 1.0)],
-        front=[(0.7, 1.0), (0.99, 1.05), (1.10, 1.14), (1.2, 1.22), (1.28, 1.1), (1.34, 1.0)],
+        width=[(0.66, 1.0), (0.84, 1.02), (0.99, 1.08), (1.15, 1.1), (1.23, 1.1), (1.29, 1.1), (1.34, 1.0)],
+        front=[(0.7, 1.0), (0.99, 1.05), (1.10, 1.14), (1.2, 1.2), (1.28, 1.1), (1.34, 1.0)],
         back=[(0.7, 1.0), (1.0, 1.06), (1.2, 1.18), (1.30, 1.06), (1.34, 1.0)],
         arm=1.55, leg=1.25, neck=1.3),
 }
@@ -67,7 +67,7 @@ def make_field(sp):
         x, y, z = p.x, p.y, p.z
         if z > 1.36:                                   # head and hair above the chin: untouched
             return Vector((x, y, z))
-        hip = smooth((z - 0.70) / 0.09)                # torso shaping fades out at the top of the legs
+        hip = smooth((z - 0.64) / 0.16)                # torso shaping fades out gently into the thighs
         sx = 1 + (interp(sp["width"], z) - 1) * hip
         sf = 1 + (interp(sp["front"], z) - 1) * hip
         sb = 1 + (interp(sp["back"], z) - 1) * hip
@@ -86,7 +86,10 @@ def make_field(sp):
             leg = smooth((0.80 - z) / 0.08) * smooth((z - 0.03) / 0.06) * smooth((0.16 - abs(x)) / 0.05)
             if leg > 0:
                 cx = math.copysign(0.066, x) * (1 + (sx - 1))   # each leg's own center (only shifted where the hips are)
-                s = 1 + (sp["leg"] - 1) * leg
+                # thighs fill out toward the top to meet the hips' curve, then taper to the knee
+                hip_w = interp(sp["width"], 0.80) - 1
+                thigh = max(0.0, hip_w) * 0.85 * smooth((z - 0.42) / 0.36) * (1 - hip)
+                s = 1 + (sp["leg"] - 1) * leg + thigh * leg
                 nx = cx + (nx - cx) * s
                 ny = ny * s
         # bust: two rounded forms on the front of the chest (clothes over it get the same push, so they fit)
