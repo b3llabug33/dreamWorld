@@ -36,7 +36,7 @@ namespace DreamWorld.Quests
             ui = new TerminalUI(titleFont, bodyFont);
             canvas = ui.Canvas("DialogueUI", 9);
             box = ui.PanelBox(canvas, "DialogueBox");
-            TerminalUI.Place(box, new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(1100, 300), new Vector2(0.5f, 0));
+            TerminalUI.Place(box, new Vector2(0.5f, 0), new Vector2(0, 166), new Vector2(1100, 300), new Vector2(0.5f, 0));   // above the hotbar (y 74-146)
             speaker = ui.Label(box, "", 38, TerminalUI.Accent, TextAnchor.MiddleLeft, title: true);
             TerminalUI.Place(speaker.rectTransform, new Vector2(0, 1), new Vector2(40, -36), new Vector2(900, 44), new Vector2(0, 0.5f));
             body = ui.Label(box, "", 34, TerminalUI.Text, TextAnchor.UpperLeft);

@@ -89,7 +89,7 @@ namespace DreamWorld.Gameplay
             zoneToast.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.7f);
 
             promptLabel = ui.Label(canvas, "", 34, TerminalUI.Text);
-            TerminalUI.Place(promptLabel.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(900, 44));
+            TerminalUI.Place(promptLabel.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 188), new Vector2(900, 44));   // just above the hotbar (y 74-146)
             promptLabel.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.7f);
 
             toastRoot = new GameObject("Toasts", typeof(RectTransform)).GetComponent<RectTransform>();
