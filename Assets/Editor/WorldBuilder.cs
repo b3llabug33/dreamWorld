@@ -111,6 +111,8 @@ namespace DreamWorld.EditorTools
             BuildGround(root, rng);
             // Mistpine Hollow, the foggy woods west of town (WorldBuilder.Mistpine.cs)
             BuildMistpine(root, rng);
+            // trees to chop, rocks and ore to mine, cotton, berries... and the workbenches (WorldBuilder.Gathering.cs)
+            BuildGathering(root, rng);
 
             // player + camera
             var player = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));

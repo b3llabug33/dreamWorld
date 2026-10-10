@@ -3,7 +3,17 @@ using UnityEngine;
 
 namespace DreamWorld.Gameplay
 {
-    public enum ItemKind { Food, Potion, Material, Weapon, Shield }
+    public enum ItemKind { Food, Potion, Material, Weapon, Shield, Tool, Decor }
+
+    // The woods you gather in different places. What you craft from a wood takes its color (and wooden weapons
+    // a little of its strength): pine and oak around town, birch in the whimsical woods, fir, red cedar and
+    // mossy maple out in Mistpine Hollow.
+    public class Wood
+    {
+        public string id, name, where;
+        public Color color;
+        public int value;          // sell price per piece, and how much better it makes wooden weapons
+    }
 
     // What an item is. Every item in the game is listed in Items below; saves only store the id.
     public class ItemDef
@@ -20,7 +30,10 @@ namespace DreamWorld.Gameplay
         public float guard;          // shields: how much of a hit a guard blocks
         public string model;         // Resources/Weapons/<model> prefab held in the hand
         public float modelScale = 1f;
-        public bool Usable => kind != ItemKind.Material;
+        public Color tint = Color.white;   // wooden things take their wood's color (icon + model)
+        public string icon;                // icon to use (shared by every wood of a crafted item); null = id
+        public string wood;                // the wood it was made from (crafted items)
+        public bool Usable => kind != ItemKind.Material && kind != ItemKind.Tool && kind != ItemKind.Decor;
         public bool Equippable => kind == ItemKind.Weapon || kind == ItemKind.Shield;
     }
 
@@ -78,6 +91,7 @@ namespace DreamWorld.Gameplay
                               description = "a gray cloak that smells like rain. the Wolfpups can't smell you as well in it" });
             Weapon("glimmer_blade", "glimmer blade", "BeetleHornSword", 30, 1.05f, 1.1f, 2.4f, 0,
                    "a gift from the Mullens. it sparkles in the sun. obviously", 0.9f);
+            Gathering();
             Add(new ItemDef { id = "knight_cap", name = "knight's cap", kind = ItemKind.Material, maxStack = 5, sellPrice = 120,
                               description = "the shiny cap of the mushroom knight. proof you beat it" });
         }
@@ -93,11 +107,82 @@ namespace DreamWorld.Gameplay
 
         static void Add(ItemDef def) => all[def.id] = def;
 
+        // ---------------------------------------------------------------- gathering + crafting
+
+        public static readonly Wood[] Woods =
+        {
+            new Wood { id = "pine", name = "pine", where = "the woods around town", color = new Color(0.96f, 0.82f, 0.56f), value = 2 },
+            new Wood { id = "oak", name = "oak", where = "the round trees around town", color = new Color(0.78f, 0.56f, 0.36f), value = 3 },
+            new Wood { id = "birch", name = "birch", where = "the birches in the woods", color = new Color(1f, 0.97f, 0.9f), value = 3 },
+            new Wood { id = "fir", name = "mistpine fir", where = "Mistpine Hollow", color = new Color(0.55f, 0.5f, 0.48f), value = 5 },
+            new Wood { id = "cedar", name = "red cedar", where = "fallen logs in Mistpine Hollow", color = new Color(0.86f, 0.46f, 0.36f), value = 6 },
+            new Wood { id = "maple", name = "mossy maple", where = "the mossy trees in Mistpine Hollow", color = new Color(0.62f, 0.78f, 0.5f), value = 6 },
+        };
+        public static Wood GetWood(string id) => System.Array.Find(Woods, w => w.id == id);
+
+        static void Gathering()
+        {
+            foreach (var w in Woods)
+                Add(new ItemDef { id = "wood_" + w.id, name = w.name + " wood", kind = ItemKind.Material, maxStack = 99, sellPrice = w.value,
+                                  icon = "wood", tint = w.color, wood = w.id, description = $"wood from {w.where}. craft with it at a workbench" });
+            Add(new ItemDef { id = "stone", name = "stone", kind = ItemKind.Material, maxStack = 99, sellPrice = 1,
+                              description = "a good solid rock. break boulders and rock piles for more" });
+            Add(new ItemDef { id = "copper_ore", name = "copper ore", kind = ItemKind.Material, maxStack = 50, sellPrice = 6,
+                              description = "orange-streaked ore from copper veins in the woods" });
+            Add(new ItemDef { id = "silver_ore", name = "silver ore", kind = ItemKind.Material, maxStack = 50, sellPrice = 14,
+                              description = "shiny ore from silver veins. you need a pickaxe to mine it" });
+            Add(new ItemDef { id = "dream_crystal", name = "dream crystal", kind = ItemKind.Material, maxStack = 30, sellPrice = 30,
+                              description = "a glowing crystal grown out of a dream. you need a pickaxe to mine it" });
+            Add(new ItemDef { id = "thread", name = "thread", kind = ItemKind.Material, maxStack = 99, sellPrice = 2,
+                              description = "soft thread from cotton bushes, cocoons and old webs" });
+            Add(new ItemDef { id = "berries", name = "berries", kind = ItemKind.Food, maxStack = 20, food = 16, heal = 4, sellPrice = 2,
+                              description = "sweet wild berries. a little snack" });
+            Add(new ItemDef { id = "forest_mushroom", name = "forest mushroom", kind = ItemKind.Food, maxStack = 20, food = 12, heal = 8, sellPrice = 3,
+                              description = "a plump orange mushroom. the safe kind (probably)" });
+            Add(new ItemDef { id = "berry_tart", name = "berry tart", kind = ItemKind.Food, maxStack = 10, food = 50, heal = 25, sellPrice = 18,
+                              description = "a warm berry tart you baked yourself. very filling" });
+            Add(new ItemDef { id = "stone_axe", name = "stone axe", kind = ItemKind.Tool, sellPrice = 8,
+                              description = "keep it in your bag: trees give twice the wood" });
+            Add(new ItemDef { id = "pickaxe", name = "pickaxe", kind = ItemKind.Tool, sellPrice = 20,
+                              description = "keep it in your bag: mines silver and dream crystal, and more ore from every vein" });
+
+            // crafted decor, one item per wood (they look different), plus stone and thread ones
+            foreach (var r in DreamWorld.Gathering.Crafting.Recipes)
+            {
+                if (r.output != null) continue;   // fixed-output recipes are listed above
+                foreach (var w in r.usesWood ? Woods : new Wood[] { null })
+                {
+                    var def = new ItemDef
+                    {
+                        id = DreamWorld.Gathering.Crafting.OutputId(r, w?.id), name = (w != null ? w.name + " " : "") + r.name, kind = r.kind,
+                        maxStack = r.kind == ItemKind.Decor ? 10 : 1, icon = r.id, wood = w?.id,
+                        tint = w != null ? w.color : Color.white, sellPrice = r.sell + (w != null ? w.value * r.woodCount / 2 : 0),
+                        description = r.description + (w != null ? $" (made of {w.name})" : "") + (r.kind == ItemKind.Decor ? ". place it at your home (coming soon)" : ""),
+                    };
+                    if (r.kind == ItemKind.Weapon)
+                    {
+                        def.model = r.model;
+                        def.damage = r.damage + (w != null ? w.value : 0);
+                        def.speed = r.speed;
+                        def.reach = r.reach;
+                        def.heavy = r.heavy;
+                        def.modelScale = r.modelScale;
+                    }
+                    Add(def);
+                }
+            }
+        }
+
         public static ItemDef Get(string id) => !string.IsNullOrEmpty(id) && all.TryGetValue(id, out var d) ? d : null;
+
+        // An item's icon color: wooden things are tinted with their wood.
+        public static Color IconTint(string id) => Get(id)?.tint ?? Color.white;
 
         public static Sprite Icon(string id)
         {
             if (string.IsNullOrEmpty(id)) return null;
+            var def = Get(id);
+            if (def != null && !string.IsNullOrEmpty(def.icon)) id = def.icon;   // shared icon (all woods of an item)
             if (icons.TryGetValue(id, out var s)) return s;
             var tex = Resources.Load<Texture2D>("Icons/" + id);
             if (tex != null)

@@ -222,6 +222,7 @@ namespace DreamWorld.Gameplay
                 var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
                 iconGo.transform.SetParent(row, false);
                 iconGo.GetComponent<Image>().sprite = Items.Icon(id);
+                iconGo.GetComponent<Image>().color = Items.IconTint(id);
                 iconGo.GetComponent<Image>().raycastTarget = false;
                 TerminalUI.Place((RectTransform)iconGo.transform, new Vector2(0, 0.5f), new Vector2(10, 0), new Vector2(72, 72), new Vector2(0, 0.5f));
                 var label = ui.Label(row, $"{def.name}\n{def.buyPrice} coins", 30, TerminalUI.Text, TextAnchor.MiddleLeft);
@@ -240,6 +241,7 @@ namespace DreamWorld.Gameplay
             var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
             iconGo.transform.SetParent(cell, false);
             iconGo.GetComponent<Image>().sprite = Items.Icon(id);
+            iconGo.GetComponent<Image>().color = Items.IconTint(id);
             iconGo.GetComponent<Image>().raycastTarget = false;
             TerminalUI.Place((RectTransform)iconGo.transform, new Vector2(0, 0.5f), new Vector2(2, 0), new Vector2(64, 64), new Vector2(0, 0.5f));
             var label = ui.Label(cell, def.name, 24, TerminalUI.Text, TextAnchor.UpperLeft);
@@ -378,7 +380,7 @@ namespace DreamWorld.Gameplay
             if (stats == null || stats.Bag == null) { hotbarRoot.gameObject.SetActive(false); return; }
             hotbarRoot.gameObject.SetActive(!stats.Dead);
 
-            bool otherMenu = (GameHUD.Instance != null && GameHUD.Instance.MenuOpen) || Quests.DialogueUI.IsOpen;   // 1-6 pick dialogue choices
+            bool otherMenu = (GameHUD.Instance != null && GameHUD.Instance.MenuOpen) || Quests.DialogueUI.IsOpen || Gathering.CraftingUI.Busy;   // 1-6 pick dialogue choices
             if (!otherMenu && !stats.Dead && (Input.GetKeyDown(KeyCode.I) || Input.GetKeyDown(KeyCode.Tab))) Toggle();
             if (IsOpen && Input.GetKeyDown(KeyCode.Escape)) Open(false, Side.None);
             // walked away from the shop or computer: close it
@@ -440,6 +442,7 @@ namespace DreamWorld.Gameplay
         {
             var icon = Items.Icon(id);
             slot.icon.sprite = icon;
+            slot.icon.color = Items.IconTint(id);
             slot.icon.enabled = icon != null && count > 0;
             slot.count.text = count > 1 ? count.ToString() : "";
             slot.frame.color = isPicked ? PickedColor : SlotColor;

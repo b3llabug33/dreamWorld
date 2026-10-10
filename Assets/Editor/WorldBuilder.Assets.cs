@@ -21,7 +21,7 @@ namespace DreamWorld.EditorTools
         const string VCDir = "Assets/Materials/VC";
         const string EnemyDir = "Assets/Prefabs/Enemies";
         const string WeaponDir = "Assets/Resources/Weapons";
-        static readonly string[] ModelFolders = { "Weapons", "Enemies", "Props", "Buildings", "Critters" };
+        static readonly string[] ModelFolders = { "Weapons", "Enemies", "Props", "Buildings", "Critters", "Resources" };
 
         // ---------------------------------------------------------------- materials + imports
 

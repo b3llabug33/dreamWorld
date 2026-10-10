@@ -1063,6 +1063,36 @@ def slingshot():
     return m
 
 
+# crafted wooden weapons: the wood parts are pale and neutral so the game can tint them with the wood
+# they were made from (oak, birch, Mistpine fir...); wraps and crystals keep their own colors.
+WOOD_NEUTRAL = "#eadcc8"
+
+
+@prop("weapons")
+def wood_club():
+    m = Model("Prop_WoodClub")
+    m.tube([(0, 0, 0), (0, 0, 0.3), (0.01, 0, 0.62), (0, 0, 0.8)], [0.026, 0.03, 0.06, 0.07], WOOD_NEUTRAL, sides=8)
+    m.blob((0, 0, 0.8), (0.07, 0.07, 0.05), WOOD_NEUTRAL, seg=8, rings=5)
+    for z, a in ((0.5, 0.4), (0.66, 2.6), (0.72, 4.4)):   # knots
+        m.blob((math.cos(a) * 0.055, math.sin(a) * 0.055, z), (0.018, 0.018, 0.022), shade("#8a6a4a"))
+    for k in range(4):   # thread grip wrap
+        m.torus((0, 0, 0.05 + k * 0.045), 0.028, 0.008, CREAM, seg=8)
+    return m
+
+
+@prop("weapons")
+def wood_staff():
+    m = Model("Prop_WoodStaff")
+    m.tube([(0, 0, 0), (0.015, 0, 0.7), (-0.015, 0, 1.3), (0, 0, 1.5)], [0.022, 0.022, 0.02, 0.024], WOOD_NEUTRAL, sides=7)
+    # a curled crook holding a small dream crystal
+    m.tube([(0, 0, 1.5), (0.08, 0, 1.6), (0.05, 0, 1.72), (-0.04, 0, 1.7), (-0.06, 0, 1.6)], 0.016, WOOD_NEUTRAL, sides=6)
+    m.cyl((0, 0, 1.56), 0.04, 0.12, hsv(0.78, 0.5, 0.95), M_GLOW, sides=6, top=0.0)
+    m.cyl((0, 0, 1.56), 0.04, 0.05, hsv(0.78, 0.5, 0.95), M_GLOW, sides=6, top=0.0, rot=(180, 0, 0))
+    for k in range(3):
+        m.torus((0, 0, 0.75 + k * 0.04), 0.026, 0.007, CREAM, seg=8)
+    return m
+
+
 # ================================================================ home + garden (bases)
 
 @prop("home")

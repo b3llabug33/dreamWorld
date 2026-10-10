@@ -70,6 +70,8 @@ weapons	Prop_MantisScythe
 weapons	Prop_UmbrellaSword
 weapons	Prop_FryingPan
 weapons	Prop_Slingshot
+weapons	Prop_WoodClub
+weapons	Prop_WoodStaff
 home	Prop_WelcomeMat
 home	Prop_FlowerWindowBox
 home	Prop_VampireGnome

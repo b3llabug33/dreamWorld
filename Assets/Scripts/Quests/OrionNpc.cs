@@ -49,7 +49,7 @@ namespace DreamWorld.Quests
             toPlayer.y = 0;
 
             // first arrival in the square: go say hi
-            bool menus = GameHUD.Instance != null && GameHUD.Instance.MenuOpen || InventoryUI.IsOpen;   // never greet over a menu
+            bool menus = GameHUD.Instance != null && GameHUD.Instance.MenuOpen || InventoryUI.IsOpen || Gathering.CraftingUI.IsOpen;   // never greet over a menu
             if (mode == Mode.Idle && !q.Has("orion_met") && !DialogueUI.IsOpen && !menus)
             {
                 var zone = ZoneMap.At(p.transform.position);

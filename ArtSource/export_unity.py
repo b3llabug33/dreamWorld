@@ -26,6 +26,8 @@ WEAPONS = {
     "Prop_FryingPan": ((0.5, 0, 0.03), Matrix.Rotation(math.radians(90), 4, "Y")),         # pan -X -> +Z
     "Prop_Slingshot": ((0, 0, 0.08), Matrix.Identity(4)),
     "Prop_PetalShield": ((0, 0, 0.0), Matrix.Identity(4)),                                   # face +Z (Unity +Y)
+    "Prop_WoodClub": ((0, 0, 0.12), Matrix.Identity(4)),
+    "Prop_WoodStaff": ((0, 0, 0.6), Matrix.Identity(4)),
 }
 
 PROPS = """Prop_StoneFountain Prop_MarketStall Prop_NoticeBoard Prop_CrookedSignpost Prop_BugHotel Prop_PicketFence
@@ -105,6 +107,14 @@ def run():
         if o:
             to_origin(o, base_center=True)
             export([o], os.path.join(OUT, "Critters", name.replace("Critter_", "") + ".fbx"))
+
+
+    # gathering nodes: trees/rocks/ore/thread/food, each with a _Used (chopped / mined / picked) version
+    bpy.ops.wm.open_mainfile(filepath=os.path.join(HERE, "Resources.blend"))
+    for o in list(bpy.data.objects):
+        if o.type == "MESH" and o.name.startswith("Res_"):
+            to_origin(o, base_center=True)
+            export([o], os.path.join(OUT, "Resources", o.name.replace("Res_", "") + ".fbx"))
 
 
 run()

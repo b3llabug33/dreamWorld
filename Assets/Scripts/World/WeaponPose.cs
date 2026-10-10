@@ -110,10 +110,21 @@ namespace DreamWorld.World
             foreach (var c in go.GetComponentsInChildren<Collider>()) Destroy(c);
             // length along the blade (+Y from the grip), for the trail
             float top = 0.5f;
+            var woodTint = new MaterialPropertyBlock();
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
                 top = Mathf.Max(top, r.bounds.max.y - go.transform.position.y);
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                // crafted wooden weapons: the pale wood parts (the matte material) take the wood's color
+                if (def.tint == Color.white) continue;
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] == null || !mats[i].name.StartsWith("VC_Matte")) continue;
+                    woodTint.Clear();
+                    woodTint.SetColor("_Color", def.tint);
+                    r.SetPropertyBlock(woodTint, i);
+                }
             }
             length = top;
             return go.transform;

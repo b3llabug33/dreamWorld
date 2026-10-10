@@ -152,7 +152,7 @@ def glow_tree_used():
 @node("wood")
 def fallen_log():
     m = Model("Res_Log_Fallen")
-    m.cyl((0, 0, 0.35), 0.38, 3.2, bark(), sides=9, rot=(0, 90, 8))
+    m.cyl((-1.6, 0, 0.38), 0.38, 3.2, bark(), sides=9, rot=(0, 90, 0))   # lying along x, centered
     m.blob((0.4, 0, 0.72), (0.5, 0.3, 0.08), shade(MOSS))
     m.blob((-0.7, 0.2, 0.68), (0.3, 0.2, 0.06), shade(MOSS))
     for k in range(4):
@@ -235,43 +235,68 @@ def standing_stone_used():
 
 # ================================================================ ore
 
+def craggy(m, faces, rnd, amount):
+    """Jitter a blob's vertices so it reads as a chipped rock, not a smooth ball."""
+    from mathutils import Vector
+    for v in {v for f in faces for v in f.verts}:
+        v.co += Vector((rnd.uniform(-amount, amount), rnd.uniform(-amount, amount), rnd.uniform(-amount, amount) * 0.6))
+
+
 def ore_vein(name, ore_col, glow=False, shine=True):
+    """A knee-high cluster of chipped rocks with chunks of ore (or crystal spikes) sticking out on every side."""
     m = Model(name)
-    m.blob((0, 0, 0.5), (0.85, 0.75, 0.6), rock_color, seg=9, rings=6, rot=(0, 0, 15))
-    rnd = random.Random(len(name))
-    for k in range(9):
-        a = rnd.uniform(-1.2, 1.6)
-        z = rnd.uniform(0.25, 0.85)
-        r = 0.78 * math.sqrt(max(0.05, 1 - ((z - 0.5) / 0.6) ** 2))
-        x, y = math.cos(a) * r, -abs(math.sin(a)) * r * 0.95
+    rnd = random.Random(len(name) * 7)
+    rocks = [((0, 0, 0.36), (0.55, 0.48, 0.42), 20), ((0.5, 0.25, 0.2), (0.3, 0.28, 0.24), 70), ((-0.42, 0.3, 0.17), (0.26, 0.24, 0.2), 140)]
+    for c, r, yaw in rocks:
+        craggy(m, m.blob(c, r, rock_color, seg=7, rings=5, rot=(rnd.uniform(-8, 8), rnd.uniform(-8, 8), yaw)), rnd, 0.045)
+    # ore on the big rock's surface, all the way round, poking well out
+    n = 7 if glow else 12
+    for k in range(n):
+        az = 2 * math.pi * (k + rnd.uniform(-0.3, 0.3)) / n
+        el = rnd.uniform(0.15, 1.1) if glow else rnd.uniform(-0.3, 0.9)
+        nx, ny, nz = math.cos(el) * math.cos(az), math.cos(el) * math.sin(az), math.sin(el)
+        cx, cy, cz = 0.5 * nx, 0.44 * ny, 0.36 + 0.38 * nz
         if glow:
-            m.cyl((x, y, z), 0.07, 0.25, ore_col, M_GLOW, sides=5, top=0.0, rot=(rnd.uniform(-40, 40), rnd.uniform(-40, 40), 0))
+            tilt = math.degrees(math.acos(max(-1, min(1, nz))))
+            for j in range(rnd.choice((2, 3))):
+                h = rnd.uniform(0.28, 0.5)
+                m.cyl((cx, cy, cz), rnd.uniform(0.07, 0.1), h, ore_col, M_GLOW, sides=5, top=0.0,
+                      rot=(0, tilt + rnd.uniform(-18, 18), math.degrees(az) + rnd.uniform(-25, 25)))
         else:
-            m.blob((x, y, z), (0.1, 0.06, 0.08), ore_col, M_SHINY if shine else M_MATTE, seg=6, rings=4)
+            s = rnd.uniform(0.09, 0.14)
+            m.blob((cx + nx * 0.03, cy + ny * 0.03, cz + nz * 0.03), (s, s * 0.85, s * 0.8), ore_col,
+                   M_SHINY if shine else M_MATTE, seg=5, rings=3, rot=(rnd.uniform(0, 60), rnd.uniform(0, 60), rnd.uniform(0, 360)))
+    if glow:   # one big crystal on top
+        m.cyl((0.05, 0, 0.7), 0.13, 0.7, ore_col, M_GLOW, sides=6, top=0.0, rot=(8, 6, 0))
     return m
 
 
 @node("ore")
 def copper_vein():
-    return ore_vein("Res_Ore_Copper", hsv(0.07, 0.75, 0.85))
+    return ore_vein("Res_Ore_Copper", hsv(0.065, 0.8, 0.95))
 
 
 @node("ore")
 def silver_vein():
-    return ore_vein("Res_Ore_Silver", (0.85, 0.87, 0.92))
+    return ore_vein("Res_Ore_Silver", (0.92, 0.94, 1.0))
 
 
 @node("ore")
 def dream_crystal_vein():
-    return ore_vein("Res_Ore_DreamCrystal", hsv(0.78, 0.5, 0.95), glow=True)
+    return ore_vein("Res_Ore_DreamCrystal", hsv(0.79, 0.62, 1.0), glow=True)
 
 
 @node("ore")
 def ore_used():
     m = Model("Res_Ore_Used")
-    m.blob((0, 0, 0.35), (0.7, 0.6, 0.4), rock_color, seg=8, rings=5, rot=(0, 0, 15))
-    for k in range(4):
-        m.blob((-0.3 + k * 0.2, -0.55, 0.3), (0.08, 0.04, 0.06), hsv(0.62, 0.05, 0.22))   # empty dug-out holes
+    rnd = random.Random(77)
+    for c, r, yaw in [((0, 0, 0.3), (0.52, 0.46, 0.34), 20), ((0.5, 0.25, 0.17), (0.28, 0.26, 0.2), 70), ((-0.42, 0.3, 0.15), (0.24, 0.22, 0.17), 140)]:
+        craggy(m, m.blob(c, r, rock_color, seg=7, rings=5, rot=(0, 0, yaw)), rnd, 0.045)
+    for k in range(6):   # dug-out holes where the ore was
+        az = 2 * math.pi * k / 6
+        m.blob((0.5 * math.cos(az), 0.44 * math.sin(az), 0.32), (0.08, 0.08, 0.06), hsv(0.62, 0.05, 0.2), seg=5, rings=3)
+    for k in range(5):   # chips on the ground
+        m.blob((rnd.uniform(-0.8, 0.8), rnd.uniform(-0.7, 0.7), 0.03), (0.07, 0.06, 0.04), rock_color, seg=5, rings=3)
     return m
 
 
