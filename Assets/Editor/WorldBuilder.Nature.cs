@@ -359,7 +359,7 @@ namespace DreamWorld.EditorTools
             // (only the full 3D shrubs: the Aberrant bushes are crossed flat cards that look like sheets turned the wrong way)
             Scatter(50, 26, 78, 0.8f, 0.5f, () => Pick("RN_Bush1", "RN_Bush2", "RN_Bush3", "RN_Bush6", "RN_Bush7", "RN_Bush8", "RT_Bush1", "RT_Bush2", "RT_Bush3", "RT_Bush4"), 0.9f, 1.8f, Seasonal, dusk);
             // little things: mushrooms (it is Mushroom Hollow), crystals, owls on rocks, frogs
-            Scatter(45, 24, 76, 0.6f, 0f, () => Pick("AC_Mushroom1", "AC_Mushroom2", "AC_Mushroom3", "RT_Mushroom", "RT_Mushroom"), 0.25f, 0.55f);
+            Scatter(12, 24, 76, 0.6f, 0f, () => Pick("AC_Mushroom1", "AC_Mushroom2", "RT_Mushroom"), 0.25f, 0.5f);
             Scatter(10, 30, 74, 1f, 0.6f, () => Pick("AC_Crystal1", "AC_Crystal2"), 0.8f, 1.5f, null, new Color(0.9f, 0.85f, 1f));
             Scatter(8, 24, 70, 0.6f, 0f, () => "AC_Frog", 0.12f, 0.16f);
             for (int i = 0; i < 4; i++)

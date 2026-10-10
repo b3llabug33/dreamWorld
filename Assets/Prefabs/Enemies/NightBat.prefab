@@ -165,6 +165,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1994744092305958174}
   - component: {fileID: 1478827106282741736}
+  - component: {fileID: 7113016277580372172}
   - component: {fileID: 8068631051581214085}
   m_Layer: 0
   m_Name: NightBat
@@ -212,6 +213,21 @@ CapsuleCollider:
   m_Height: 1.1256
   m_Direction: 1
   m_Center: {x: 0, y: 1.8599999, z: 0.000000044703484}
+--- !u!114 &7113016277580372172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4618278314543631463}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
+  probeUp: 3
+  probeDown: 8
+  smoothing: 14
 --- !u!114 &8068631051581214085
 MonoBehaviour:
   m_ObjectHideFlags: 0

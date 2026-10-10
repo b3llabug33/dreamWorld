@@ -56,6 +56,7 @@ namespace DreamWorld.EditorTools
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             NightAtmosphere(fogStart: 18, fogEnd: 80);
             var root = new GameObject("MushroomHollow").transform;
+            PathSegs.Clear();
             var rng = new Random(42);
 
             // ground: big enough for the town, the plots and the woods around them
@@ -106,6 +107,8 @@ namespace DreamWorld.EditorTools
             BuildModelAssets(root, homeContents);
             // the third-party nature packs: trees, shrubs, grass, rocks, mushrooms, owls (WorldBuilder.Nature.cs)
             NatureDressing(root, rng);
+            // rolling hills out in the woods, real grass everywhere, a pond and a stream (WorldBuilder.Ground.cs)
+            BuildGround(root, rng);
             // Mistpine Hollow, the foggy woods west of town (WorldBuilder.Mistpine.cs)
             BuildMistpine(root, rng);
 
@@ -292,6 +295,7 @@ namespace DreamWorld.EditorTools
                 eye.GetComponent<Renderer>().sharedMaterial = PropMaterial("IronDark", false);
             }
             AddLight(body.transform, new Vector3(0, 1.2f, 0), MushroomGlow["Mushroom_Purple"], 2.5f, 0.8f);
+            root.AddComponent<DreamWorld.World.GroundFollow>();   // the woods have hills now
             var monster = root.AddComponent<Monster>();
             monster.body = body.transform;
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, "Assets/Prefabs/Shroomling.prefab");
@@ -720,8 +724,12 @@ namespace DreamWorld.EditorTools
         }
 
         // A flat paved strip from a to b (slightly above the grass so it doesn't flicker).
+        // every path strip laid this build (a, b, width): the ground pass keeps grass off them
+        static readonly List<(Vector3 a, Vector3 b, float w)> PathSegs = new List<(Vector3, Vector3, float)>();
+
         static void PathStrip(Transform parent, Vector3 a, Vector3 b, float width)
         {
+            PathSegs.Add((a, b, width));
             var strip = GameObject.CreatePrimitive(PrimitiveType.Quad);
             strip.name = "Path";
             UnityEngine.Object.DestroyImmediate(strip.GetComponent<Collider>());

@@ -38,7 +38,7 @@ Prop_FlowerWindowBox Prop_VampireGnome Prop_VegetablePatch Prop_Hammock Prop_Cam
 Prop_MoonflowerLamp Prop_BugArcade Prop_Jukebox Prop_ClawMachine Prop_BeetleCart Prop_AntHill Prop_Caterpillar
 Prop_SnailShellPlanter Prop_MossyServerRack Prop_OvergrownTerminal Prop_CableArch Prop_PlaidBanner Prop_WindChimes
 Prop_BugSpecimenFrame Prop_StrawberryCake Prop_MushroomBread Prop_FruitCrate Prop_CandleCluster""".split()
-BUILDINGS = "MushroomBakery GreenhouseArcade MossServerCafe StiltWatchtower".split()
+BUILDINGS = "MushroomBakery GreenhouseArcade MossServerCafe StiltWatchtower BeetleShellHouse AquariumShop CircuitGroveShrine MossyArchBridge".split()
 CRITTERS = "Critter_RainbowStagBeetle Critter_Ladybug Critter_LunaMoth Critter_Firefly Critter_MushroomSnail".split()
 
 

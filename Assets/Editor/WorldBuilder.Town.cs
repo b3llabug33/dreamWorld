@@ -19,6 +19,19 @@ namespace DreamWorld.EditorTools
         const float Story = 3.12f;   // one floor of the village kit
         static readonly Vector3 Plaza = new Vector3(0, 0, 8);
 
+        // The town grew: everything placed within ~28 m of the plaza moves out by 25% (a smooth falloff to
+        // no change at 48 m), so the square is bigger without re-laying-out every building and prop by hand.
+        const float TownSpread = 1.25f;
+        static Vector3 Spread(Vector3 p)
+        {
+            var d = new Vector3(p.x - Plaza.x, 0, p.z - Plaza.z);
+            float r = d.magnitude;
+            if (r < 0.001f || r >= 48f) return p;
+            float nr = r <= 28f ? r * TownSpread : 28f * TownSpread + (r - 28f) * (48f - 28f * TownSpread) / 20f;
+            return new Vector3(Plaza.x, p.y, Plaza.z) + d * (nr / r);
+        }
+        static Vector3 Spread(float x, float z) => Spread(new Vector3(x, 0, z));
+
         // keep-out areas for scattering trees, monsters, etc. (x0, z0, x1, z1)
         static readonly List<Rect> KeepOut = new List<Rect>();
 
@@ -51,18 +64,31 @@ namespace DreamWorld.EditorTools
             return Color.white;
         }
 
+        const string PixelTexDir = "Assets/ThirdParty/FlakDeau_PixelTextures";
+
+        // A building's own wall/roof textures (FlakDeau pixel textures) replacing the kit's plaster, brick and roof
+        // tiles, so the buildings around the square don't all look alike. Null = the kit's texture.
+        static string currentWallTex, currentRoofTex;
+
         static Material QMaterial(Material original, Color tint, string model)
         {
             EnsureFolder(QMatDir);
             string name = original != null ? original.name.Replace(" (Instance)", "") : "none";
             bool flat = !QTextures.ContainsKey(name) && name != "MI_WindowGlass";
+            string swap = (name == "MI_Plaster" || name == "MI_UnevenBrick") ? currentWallTex : name == "MI_RoundTiles" ? currentRoofTex : null;
             // flat-colored materials share names across models (every animal has a "Main"), so key them by model too
-            string key = flat ? $"{model}_{name}_g" : $"{name}_{ColorUtility.ToHtmlStringRGB(tint)}";
+            string key = flat ? $"{model}_{name}_g" : $"{name}_{ColorUtility.ToHtmlStringRGB(tint)}" + (swap != null ? "_" + swap : "");
             var path = $"{QMatDir}/PSX_Q_{key}.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat != null) return mat;
             mat = new Material(Shader.Find("DreamWorld/PSX Lit"));
-            if (QTextures.TryGetValue(name, out var tex))
+            if (swap != null)
+            {
+                mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{PixelTexDir}/{swap}.png");
+                mat.mainTextureScale = name == "MI_RoundTiles" ? new Vector2(2, 2) : Vector2.one;
+                mat.color = tint;
+            }
+            else if (QTextures.TryGetValue(name, out var tex))
             {
                 mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{QDir}/{tex}.png");
                 mat.color = tint;
@@ -156,6 +182,7 @@ namespace DreamWorld.EditorTools
             public Color wall = White, roof = White;
             public string floor = "Floor_WoodDark";
             public bool woodGridSides;
+            public string wallTex, roofTex;   // FlakDeau texture names (see QMaterial), null = the kit's own
         }
 
         // A rectangular building, w x d meters (multiples of 2), front (door) facing local -z.
@@ -166,6 +193,8 @@ namespace DreamWorld.EditorTools
             var b = new GameObject(name).transform;
             b.SetParent(parent);
             b.SetPositionAndRotation(pos, Quaternion.Euler(0, yaw, 0));
+            currentWallTex = st.wallTex;
+            currentRoofTex = st.roofTex;
             string M = "MedievalVillage/";
             string fam = st.family;
             string straight = $"{M}Wall_{fam}_Straight";
@@ -212,6 +241,7 @@ namespace DreamWorld.EditorTools
                 AddLight(b, new Vector3(0, Story * 0.8f, 0), new Color(1f, 0.78f, 0.5f), Mathf.Max(w, d) + 2, 1.3f);
             // a warm lamp by the door, outside
             AddLight(b, new Vector3(0, 2.6f, -d / 2f - 1.2f), Warm, 5f, 0.9f);
+            currentWallTex = currentRoofTex = null;
             return b;
         }
 
@@ -372,24 +402,13 @@ namespace DreamWorld.EditorTools
             town.SetParent(root);
 
             // --- the town square: big round plaza + cross paths, all a safe zone
-            SafeZone(root, "town square", new Vector3(0, 0, 8), new Vector3(54, 0, 50), 0);
-            Keep(-27, -17, 27, 33);
-            var plaza = Place(town, "Stage", new Vector3(0, -0.06f, 8), 0, 5.2f, collider: false);   // the round paved plaza
-            plaza.transform.localScale = new Vector3(5.2f, 2.6f, 5.2f);   // wide but still just a small step up
-            PathStrip(town, new Vector3(0, 0, -17), new Vector3(0, 0, 33), 3.2f);
-            PathStrip(town, new Vector3(-27, 0, 8), new Vector3(27, 0, 8), 3.2f);
-            Place(town, "Well", Plaza, 20);
-            foreach (var a in new[] { 30f, 150f, 210f, 330f })
-            {
-                var p = Plaza + Quaternion.Euler(0, a, 0) * Vector3.forward * 5.2f;
-                Place(town, "Bench", p, a + 180, 1f, collider: false);
-            }
-            for (int i = 0; i < 8; i++)
-            {
-                var p = Plaza + Quaternion.Euler(0, 22.5f + i * 45, 0) * Vector3.forward * 12.5f;
-                var lamp = Place(town, "Lamp_Post", p, i * 45, 1f, collider: false);
-                AddLight(lamp.transform, new Vector3(0, 2.3f, 0), Warm, 8f, 1.4f);
-            }
+            SafeZone(root, "town square", new Vector3(0, 0, 8), new Vector3(68, 0, 64), 0);
+            Keep(-34, -24, 34, 40);
+            BuildPlaza(town);   // the big tiled plaza, fountain, planters, benches, lamps (WorldBuilder.Ground.cs)
+            PathStrip(town, new Vector3(0, 0, -24), new Vector3(0, 0, -9.5f), 3.4f);
+            PathStrip(town, new Vector3(0, 0, 18.2f), new Vector3(0, 0, 27.6f), 3.4f);    // up to the tavern door
+            PathStrip(town, new Vector3(-25.4f, 0, 8), new Vector3(-17.5f, 0, 8), 3.4f);  // up to the wizard tower door
+            PathStrip(town, new Vector3(17.5f, 0, 8), new Vector3(34, 0, 8), 3.4f);
             var townSpawn = new GameObject("TownSpawn").AddComponent<RespawnPoint>();
             townSpawn.transform.SetParent(town);
             townSpawn.transform.SetPositionAndRotation(new Vector3(0, 0.05f, -10), Quaternion.identity);
@@ -406,9 +425,9 @@ namespace DreamWorld.EditorTools
             var nightRoof = new Color(0.55f, 0.55f, 0.8f);
 
             // tavern (north)
-            var tavernPos = new Vector3(0, 0, 27);
+            var tavernPos = Spread(new Vector3(0, 0, 27));
             var tavern = Building(town, "Tavern", tavernPos, FaceYaw(tavernPos, Plaza), 8, 8, 1,
-                                  new Style { wall = peach, roof = redRoof, woodGridSides = true }, chimney: true);
+                                  new Style { wall = White, roof = White, woodGridSides = true, wallTex = "Painted_Wall_01_Yellow_1", roofTex = "Roof_Tiles_01_Red_1" }, chimney: true);
             DoorSign(tavern, 8, "the sleepy spore", "the sleepy spore", "a cozy tavern. drinks + stories coming soon!");
             Q(tavern, "FantasyProps/Table_Large", new Vector3(-1.5f, 0, 1.5f), 90);
             Q(tavern, "FantasyProps/Table_Large", new Vector3(1.8f, 0, 1.5f), 90);
@@ -424,9 +443,9 @@ namespace DreamWorld.EditorTools
             Q(tavern, "MedievalVillage/Prop_Wagon", new Vector3(5.5f, 0, -2f), 20);
 
             // general store (north east)
-            var storePos = new Vector3(15, 0, 23);
+            var storePos = Spread(new Vector3(15, 0, 23));
             var store = Building(town, "GeneralStore", storePos, FaceYaw(storePos, Plaza), 6, 6, 1,
-                                 new Style { wall = mint, roof = tealRoof });
+                                 new Style { wall = White, roof = White, wallTex = "Painted_Wall_01_Green_2", roofTex = "Roof_Tiles_01_Blue_1" });
             DoorSign(store, 6, "general store", "general store", "coming soon! (for now, the snack stand by the well sells food)");
             Q(store, "FantasyProps/Shelf_Small_Bottles", new Vector3(-2.6f, 1.2f, 1.5f), 90, collider: false);
             Q(store, "FantasyProps/Shelf_Small_Bottles", new Vector3(2.6f, 1.2f, 1.5f), -90, collider: false);
@@ -437,9 +456,9 @@ namespace DreamWorld.EditorTools
             Q(store, "FantasyProps/Crate_Wooden", new Vector3(-2.2f, 0, -1.8f), 15);
 
             // fashion studio (north west): for the fashion design to come
-            var tailorPos = new Vector3(-16, 0, 23);
+            var tailorPos = Spread(new Vector3(-16, 0, 23));
             var tailor = Building(town, "FashionStudio", tailorPos, FaceYaw(tailorPos, Plaza), 6, 8, 1,
-                                  new Style { family = "UnevenBrick", wall = pink, roof = purpleRoof, floor = "Floor_WoodLight" });
+                                  new Style { family = "UnevenBrick", wall = White, roof = pink, floor = "Floor_WoodLight", wallTex = "Bricks_01_Red_1", roofTex = "Roof_Tiles_01_Grey_1" });
             DoorSign(tailor, 8, "fashion studio", "fashion studio", "coming soon! design and sell your own clothes here");
             Q(tailor, "FantasyProps/Dummy", new Vector3(-1.8f, 0, 2.6f), 160);
             Q(tailor, "FantasyProps/Dummy", new Vector3(0, 0, 3f), 180);
@@ -449,9 +468,9 @@ namespace DreamWorld.EditorTools
             Q(tailor, "FantasyProps/Mug", new Vector3(2.4f, 0.95f, -0.6f), 0, collider: false);
 
             // land office (east), right by the path to the plots
-            var officePos = new Vector3(21, 0, 4);
+            var officePos = Spread(new Vector3(21, 0, 4));
             var office = Building(town, "LandOffice", officePos, FaceYaw(officePos, Plaza), 6, 6, 1,
-                                  new Style { wall = lavender, roof = nightRoof, floor = "Floor_RedBrick" });
+                                  new Style { wall = White, roof = White, floor = "Floor_RedBrick", wallTex = "Painted_Wall_01_Blue_2", roofTex = "Roof_Tiles_01_Grey_1" });
             DoorSign(office, 6, "land office", "land office", "buy your own plot of land inside! (100 coins)");
             Q(office, "FantasyProps/Table_Large", new Vector3(0, 0, 0.8f), 0);
             Q(office, "FantasyProps/Book_Stack_1", new Vector3(-0.8f, 0.82f, 0.8f), 20, collider: false);
@@ -460,9 +479,9 @@ namespace DreamWorld.EditorTools
             Q(office, "FantasyProps/Bookcase_2", new Vector3(1.2f, 0, 2.6f), 0);
 
             // wizard tower (west): three stories, a potion shop downstairs
-            var towerPos = new Vector3(-22, 0, 7);
+            var towerPos = Spread(new Vector3(-22, 0, 7));
             var tower = Building(town, "WizardTower", towerPos, FaceYaw(towerPos, Plaza), 4, 4, 3,
-                                 new Style { family = "UnevenBrick", wall = lavender, roof = purpleRoof, floor = "Floor_UnevenBrick" },
+                                 new Style { family = "UnevenBrick", wall = lavender, roof = purpleRoof, floor = "Floor_UnevenBrick", wallTex = "Bricks_02_Grey_1", roofTex = "Roof_Tiles_01_Blue_1" },
                                  roofPiece: "Roof_Tower_RoundTiles");
             DoorSign(tower, 4, "potions", "potion shop", "coming soon! the wizard is out picking mushrooms");
             Q(tower, "FantasyProps/Cauldron", new Vector3(0, 0, 0.6f), 0);
@@ -471,14 +490,14 @@ namespace DreamWorld.EditorTools
             AddLight(tower, new Vector3(0, 1f, 0.6f), new Color(0.6f, 1f, 0.6f), 4f, 1.4f);   // green cauldron glow
 
             // the wobbly house (south west): three crooked stories, nobody knows who lives there
-            var wobblyPos = new Vector3(-16, 0, -8);
+            var wobblyPos = Spread(new Vector3(-16, 0, -8));
             var wobbly = new GameObject("WobblyHouse").transform;
             wobbly.SetParent(town);
             wobbly.SetPositionAndRotation(wobblyPos, Quaternion.Euler(0, FaceYaw(wobblyPos, Plaza), 0));
             for (int f = 0; f < 3; f++)
             {
                 var floor = Building(wobbly, "Floor" + f, Vector3.zero, 0, 4, 4, 1,
-                                     new Style { wall = f % 2 == 0 ? butter : pink, roof = tealRoof }, enterable: f == 0);
+                                     new Style { wall = White, roof = tealRoof, wallTex = f % 2 == 0 ? "Painted_Wall_01_Red_2" : "Painted_Wall_01_Yellow_2", roofTex = "Roof_Tiles_01_Blue_1" }, enterable: f == 0);
                 floor.localPosition = new Vector3(f * 0.35f, f * Story, f * -0.2f);
                 floor.localRotation = Quaternion.Euler(f * 2.5f, f * 9f, -f * 3f);
                 if (f < 2)   // only the top floor keeps its roof
@@ -488,23 +507,22 @@ namespace DreamWorld.EditorTools
             DoorSign(wobbly, 4, "???", "the wobbly house", "nobody knows who lives here. the lights are always on");
 
             // bakery / empty shop (south east)
-            var shopPos = new Vector3(16, 0, -8);
+            var shopPos = Spread(new Vector3(16, 0, -8));
             var shop = Building(town, "EmptyShop", shopPos, FaceYaw(shopPos, Plaza), 6, 6, 1,
-                                new Style { wall = butter, roof = redRoof, woodGridSides = true }, chimney: true);
+                                new Style { wall = White, roof = White, woodGridSides = true, wallTex = "Plaster_01_Orange_1", roofTex = "Roof_Tiles_01_Red_1" }, chimney: true);
             DoorSign(shop, 6, "for rent", "empty shop", "coming soon! this one's waiting for someone with big ideas");
             Q(shop, "FantasyProps/Stall_Cart_Empty", new Vector3(0, 0, 1.2f), 0);
             Q(shop, "FantasyProps/Crate_Wooden", new Vector3(-2f, 0, 2f), 30);
             Q(shop, "FantasyProps/Crate_Wooden", new Vector3(-2f, 0.75f, 2f), 70);
 
             // mushroom houses from the original village tucked between
-            Place(town, "Mushroom_House", new Vector3(-23, 0, -3), 60, 1.2f);
-            Place(town, "Mushroom_House", new Vector3(24, 0, 15), -110, 1.1f);
-            Place(town, "Mushroom_House", new Vector3(8, 0, -14), -20, 0.9f);
+            Place(town, "Mushroom_House", Spread(8, -14), -20, 0.9f);
+            TownExtraBuildings(town);   // the beetle shell house + the tide pool aquarium shop (WorldBuilder.Ground.cs)
 
             // market stalls, carts and odds + ends around the plaza
-            foreach (var (p, label) in new[] { (new Vector3(-8, 0, 15), "flower stall"), (new Vector3(8, 0, 16), "trinket stall"),
-                                               (new Vector3(-9, 0, 0), "rock stall") })
+            foreach (var (angle, label) in new[] { (-70f, "flower stall"), (72f, "trinket stall"), (162f, "rock stall") })
             {
+                var p = Plaza + Quaternion.Euler(0, angle, 0) * Vector3.forward * 21f;   // in the gaps between buildings, just off the paving
                 var stall = Q(town, "FantasyProps/Stall_Empty", p, FaceYaw(p, Plaza));
                 var sign = new GameObject("Sign_" + label).AddComponent<BuildingSign>();
                 sign.transform.SetParent(town);
@@ -512,15 +530,17 @@ namespace DreamWorld.EditorTools
                 sign.title = label;
                 sign.message = label == "rock stall" ? "just rocks. very nice rocks though" : "empty for now. a player could run this someday";
             }
-            Q(town, "FantasyProps/Barrel", new Vector3(-6.5f, 0, 16.3f), 0);
-            Q(town, "FantasyProps/Crate_Wooden", new Vector3(9.6f, 0, 17f), 20);
-            Q(town, "FantasyProps/Crate_Wooden", new Vector3(9.8f, 0, 17.1f) + Vector3.up * 0.76f, 55);
-            Q(town, "FantasyProps/Crate_Wooden", new Vector3(9.7f, 1.5f, 17f), 10, tilt: 8);   // the teetering stack
-            Q(town, "MedievalVillage/Prop_Crate", new Vector3(-10.5f, 0, -1f), 40);
-            BuildSnackStand(town, new Vector3(5.5f, 0, 1.5f), -150);
+            var nearFlowers = Plaza + Quaternion.Euler(0, -62, 0) * Vector3.forward * 22.5f;
+            var nearTrinkets = Plaza + Quaternion.Euler(0, 80, 0) * Vector3.forward * 22.5f;
+            Q(town, "FantasyProps/Barrel", nearFlowers, 0);
+            Q(town, "FantasyProps/Crate_Wooden", nearTrinkets, 20);
+            Q(town, "FantasyProps/Crate_Wooden", nearTrinkets + Vector3.up * 0.76f, 55);
+            Q(town, "FantasyProps/Crate_Wooden", nearTrinkets + Vector3.up * 1.5f, 10, tilt: 8);   // the teetering stack
+            Q(town, "MedievalVillage/Prop_Crate", Plaza + Quaternion.Euler(0, 170, 0) * Vector3.forward * 22.5f, 40);
+            BuildSnackStand(town, Plaza + Quaternion.Euler(0, 210, 0) * Vector3.forward * 19f, 30);
 
             // silly: a giant mug used as a planter, overflowing with mushrooms
-            var mugPos = new Vector3(-6, 0, -5);
+            var mugPos = Spread(new Vector3(-6, 0, -5));
             Q(town, "FantasyProps/Mug", mugPos, 200, 9f);
             Place(town, "Mushroom_Pink", mugPos + new Vector3(0, 1.2f, 0), 0, 0.8f, collider: false);
             Place(town, "Mushroom_Cluster", mugPos + new Vector3(0.3f, 1.25f, 0.2f), 60, 0.9f, collider: false);
@@ -536,11 +556,11 @@ namespace DreamWorld.EditorTools
             // --- townsfolk
             var npcs = new GameObject("Townsfolk").transform;
             npcs.SetParent(root);
-            Npc(npcs, "Count Snackula", new Vector3(7.3f, 0, 0.4f), -120,
-                "Body=1;Skin=#EEEAF4;Eyes=CatEye #D01E32;Mouth=Fang;Brows=Angled 0;Hair=Ponytail 0;Top=Cardigan 11;Bottom=SkinnyJeans 11 rise:High;Legwear=none;Shoes=Boots 11;Neck=Chain 2;Headwear=none;Glasses=none;Extra1=none",
+            Npc(npcs, "Count Snackula", Plaza + Quaternion.Euler(0, 210, 0) * Vector3.forward * 19f + Quaternion.Euler(0, 30, 0) * new Vector3(1.6f, 0, -1.2f), 210,
+                "Body=1;Skin=#EEEAF4;Eyes=CatEye #D01E32;Mouth=Fang;Brows=Angled 0;Hair=Undercut 0 length:Medium;Top=ButtonUp 11;Bottom=Slacks 11 rise:High;Legwear=none;Shoes=Boots 11;Neck=Chain 2;Headwear=none;Glasses=none;Extra1=none",
                 new[] { "i vant to sell you... a snack. ten coins.", "fruit punch only. what else would i drink?", "garlic? never heard of her.",
                         "i sleep all day in the wobbly house. kidding. or am i" });
-            Npc(npcs, "Vesper", new Vector3(-4, 0, 12), 0,
+            Npc(npcs, "Vesper", new Vector3(-6, 0, 13), 0,
                 "Skin=#E8E6F2;Eyes=Doe #B0122A;Mouth=Fang;Brows=Thin 0;Hair=Long 0 bangs:Straight length:Long;Top=SlipDress 12;Bottom=none;Legwear=Fishnets 11;Shoes=Platforms 11;Neck=Choker 11;Headwear=none;Glasses=none;Extra1=TearTattoo",
                 new[] { "the moon is so pretty in mushroom hollow.", "don't mind me, just haunting.", "ever tried being a bat? overrated." },
                 wander: 6f);
@@ -548,7 +568,7 @@ namespace DreamWorld.EditorTools
                 "Skin=5;Eyes=Almond #3FA86A;Brows=Soft 1;Hair=Long 13 bangs:Middle length:Long;Top=PuffBlouse 6;Bottom=LongSkirt 4;Legwear=none;Shoes=MaryJanes 10;Headwear=StarClips 2;Neck=none;Glasses=none;Extra1=Freckles",
                 new[] { "welcome to my studio! soon you'll design clothes here.", "elves have the best fashion sense. it's in the ears.",
                         "stripes AND leopard? bold. i love it." }, elf: true);
-            Npc(npcs, "Fennel", new Vector3(-12, 0, 4), 90,
+            Npc(npcs, "Fennel", Spread(-12, 4), 90,
                 "Skin=1;Eyes=Upturned #8A5CF0;Brows=Straight 8;Hair=Pixie 8;Top=Hoodie 4;Bottom=Cargo 10 rise:Mid;Legwear=none;Shoes=Boots 10;Glasses=Round 2;Headwear=none;Neck=none;Extra1=none",
                 new[] { "the woods to the west glow at night. go look!", "i'm an elf. yes, the ears are real.", "have you seen a fox around? he owes me a mushroom." },
                 elf: true, wander: 5f);
@@ -560,7 +580,7 @@ namespace DreamWorld.EditorTools
                 "Skin=3;Eyes=Puppy 1;Brows=Soft 0;Hair=Twintails 3 bangs:Choppy length:Short tie:Low;Top=Sailor 3;Bottom=Skirt 3;Legwear=KneeSocks 0;Shoes=MaryJanes 11;Glasses=Round 11;Headwear=none;Neck=none;Mouth=Tiny;Extra1=Blush",
                 null).AddComponent<LandOffice>().range = 3.2f;
             Npc(npcs, "Bartholomew", tavern.TransformPoint(new Vector3(0, 0, 2.6f)), tavern.eulerAngles.y + 180,
-                "Body=1;Skin=4;Eyes=Toon 6;Brows=Thick 0;Hair=Buns 0;Top=Flannel 8;Bottom=BaggyJeans 21 rise:Mid;Legwear=none;Shoes=Combat 11;Mouth=Grin;Headwear=Beanie 11;Neck=none;Glasses=none;Extra1=none",
+                "Body=1;Skin=4;Eyes=Toon 6;Brows=Thick 0;Hair=Crew 0 length:Medium;Top=Flannel 8;Bottom=BaggyJeans 21 rise:Mid;Legwear=none;Shoes=Combat 11;Mouth=Grin;Headwear=Beanie 11;Neck=none;Glasses=none;Extra1=none",
                 new[] { "the sleepy spore is open! well, almost. no drinks yet.", "i make a mean mushroom soup. someday.", "pull up a stool!" });
             Npc(npcs, "Juniper", Plaza + new Vector3(-3, 0, -4), 30,
                 "Skin=0;Eyes=Sparkly 4;Brows=Arched 4;Hair=Twintails 4 bangs:Straight length:Medium tie:High;Top=Oversized 1;Bottom=Shorts 22 rise:High;Legwear=FrillySocks 0;Shoes=Sneakers 0;Mouth=Cat;Headwear=Halo 9;Neck=none;Glasses=none;Extra1=HeartBlush",
@@ -581,10 +601,10 @@ namespace DreamWorld.EditorTools
             Animal(animals, "Horse_White", new Vector3(4, 0, -26), 1.6f, 4f, "Moonbeam", new[] { "*neighs majestically*", "*has never once been ridden*" });
 
             // --- paths out of town (safe) into the woods
-            Trail(root, "the south path", new[] { new Vector3(0, 0, -17), new Vector3(-3, 0, -28), new Vector3(2, 0, -40), new Vector3(-2, 0, -52) }, 2.6f, 9f);
-            Trail(root, "the north path", new[] { new Vector3(0, 0, 33), new Vector3(5, 0, 44), new Vector3(1, 0, 56) }, 2.6f, 9f);
-            Trail(root, "the glow trail", new[] { new Vector3(-27, 0, 8), new Vector3(-36, 0, 15), new Vector3(-45, 0, 11), new Vector3(-54, 0, 19) }, 2.2f, 6f);
-            Trail(root, "the plot road", new[] { new Vector3(27, 0, 8), new Vector3(33, 0, 6) }, 3f, 0f);
+            Trail(root, "the south path", new[] { new Vector3(0, 0, -24), new Vector3(-3, 0, -31), new Vector3(2, 0, -40), new Vector3(-2, 0, -52) }, 2.6f, 9f);
+            Trail(root, "the north path", new[] { new Vector3(2.5f, 0, 25f), new Vector3(7.2f, 0, 30f), new Vector3(7.2f, 0, 40f), new Vector3(5, 0, 47), new Vector3(1, 0, 56) }, 2.6f, 9f);
+            Trail(root, "the glow trail", new[] { new Vector3(-21f, 0, 11f), new Vector3(-26f, 0, 14.5f), new Vector3(-33f, 0, 15.5f), new Vector3(-38, 0, 15), new Vector3(-45, 0, 11), new Vector3(-54, 0, 19) }, 2.2f, 6f);
+            Trail(root, "the plot road", new[] { new Vector3(34, 0, 8), new Vector3(36, 0, 6) }, 3f, 0f);
 
             // --- the plots: buy one at the land office for 100 coins
             BuildPlots(root, out homeContents);
@@ -608,7 +628,7 @@ namespace DreamWorld.EditorTools
                 trees++;
             }
             int giants = 0;
-            for (int tries = 0; tries < 600 && giants < 22; tries++)
+            for (int tries = 0; tries < 600 && giants < 8; tries++)
             {
                 float a = (float)(rng.NextDouble() * Math.PI * 2), r = 29 + (float)rng.NextDouble() * 30;
                 var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r + 6);
@@ -627,14 +647,17 @@ namespace DreamWorld.EditorTools
                 float size = 0.8f + (float)rng.NextDouble() * 0.8f;
                 if (n % 4 == 0) PutNature(woods, new[] { "RN_Bush2", "RN_Bush3", "RN_Bush6" }[yaw % 3], p, yaw, 1.1f * size, "summer", NatureDusk);
                 else if (n % 4 == 3) PutNature(woods, n % 8 == 3 ? "AC_Rock1" : "AC_Rock2", p, yaw, 1.1f * size, "summer", NatureDusk);
-                else Place(woods, n % 4 == 1 ? "Flowers" : "Mushroom_Cluster", p, yaw, size, collider: false);
+                else if (n % 8 == 2) Place(woods, "Mushroom_Cluster", p, yaw, size, collider: false);
+                else Place(woods, "Flowers", p, yaw, size, collider: false);
                 n++;
             }
             // flowers inside town too
             for (int i = 0, n = 0; i < 300 && n < 26; i++)
             {
-                var p = new Vector3((float)(rng.NextDouble() * 48 - 24), 0, (float)(rng.NextDouble() * 44 - 14));
-                if ((p - Plaza).magnitude < 11 || Mathf.Abs(p.x) < 2.5f || Mathf.Abs(p.z - 8) < 2.5f) continue;
+                var p = new Vector3((float)(rng.NextDouble() * 60 - 30), 0, (float)(rng.NextDouble() * 56 - 20));
+                if ((p - Plaza).magnitude < 21 || Mathf.Abs(p.x) < 2.8f || Mathf.Abs(p.z - 8) < 2.8f) continue;
+                Physics.SyncTransforms();
+                if (Physics.CheckSphere(p + Vector3.up * 1.2f, 2.2f, ~0, QueryTriggerInteraction.Ignore)) continue;   // inside / against a building
                 Place(town, "Flowers", p, rng.Next(360), 0.9f + (float)rng.NextDouble() * 0.5f, collider: false);
                 n++;
             }
@@ -647,7 +670,7 @@ namespace DreamWorld.EditorTools
             AddLight(woods, potionPos + Vector3.up * 1.5f, new Color(1f, 0.5f, 0.8f), 7f, 1.5f);
             Q(woods, "FantasyProps/Cage_Small", new Vector3(14, 0, 44), 40, 3f);
             Q(woods, "FantasyProps/Coin_Pile", new Vector3(-30, 0, -24), 0, 3f, collider: false);   // treasure!
-            Q(woods, "FantasyProps/Dummy", new Vector3(-26, 0, 30), 120, 1.4f);
+            Q(woods, "FantasyProps/Dummy", new Vector3(-31, 0, 38), 120, 1.4f);
             Animal(animals, "Fox", new Vector3(-42, 0, 4), 0.55f, 8f, "a fox", new[] { "*stares at you, holding a mushroom*", "yip!" });
             Animal(animals, "Fox", new Vector3(-36, 0, 26), 0.5f, 8f, "another fox", new[] { "*yawns*" });
             Animal(animals, "Deer", new Vector3(12, 0, -38), 1.3f, 9f, "a deer", new[] { "*blinks slowly*" });

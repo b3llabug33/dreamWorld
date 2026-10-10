@@ -133,6 +133,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3214082725375756820}
   - component: {fileID: 4920084853909510607}
+  - component: {fileID: 2613343352283366293}
   - component: {fileID: 2834011168532852144}
   m_Layer: 0
   m_Name: IvySerpent
@@ -180,6 +181,21 @@ CapsuleCollider:
   m_Height: 1.8401585
   m_Direction: 2
   m_Center: {x: 0, y: 0.26385787, z: 0}
+--- !u!114 &2613343352283366293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6468640116859235833}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
+  probeUp: 3
+  probeDown: 8
+  smoothing: 14
 --- !u!114 &2834011168532852144
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -10,8 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1656141187356342505}
   - component: {fileID: 5819377631183776215}
-  - component: {fileID: 4647228540448288426}
   - component: {fileID: 275881999598845451}
+  - component: {fileID: 4647228540448288426}
+  - component: {fileID: 5262993891071868097}
   m_Layer: 0
   m_Name: Mist_BoulderBrute
   m_TagString: Untagged
@@ -58,6 +59,21 @@ CapsuleCollider:
   m_Height: 2.2
   m_Direction: 1
   m_Center: {x: 0, y: 1.0749999, z: 0.00000017881393}
+--- !u!114 &275881999598845451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 603294827809426556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
+  probeUp: 3
+  probeDown: 8
+  smoothing: 14
 --- !u!114 &4647228540448288426
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,7 +117,7 @@ MonoBehaviour:
   poise: 1
   barHeight: 4.5
   body: {fileID: 866027016248781398}
---- !u!114 &275881999598845451
+--- !u!114 &5262993891071868097
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

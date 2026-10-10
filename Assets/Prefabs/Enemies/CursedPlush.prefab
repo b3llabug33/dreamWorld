@@ -42,6 +42,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4644857420229137059}
   - component: {fileID: 6641176248365412650}
+  - component: {fileID: 508704576228786168}
   - component: {fileID: 7549779719334198870}
   m_Layer: 0
   m_Name: CursedPlush
@@ -89,6 +90,21 @@ CapsuleCollider:
   m_Height: 1.3550999
   m_Direction: 1
   m_Center: {x: 0, y: 0.67754996, z: 0.000000059604645}
+--- !u!114 &508704576228786168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2627192726319547407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
+  probeUp: 3
+  probeDown: 8
+  smoothing: 14
 --- !u!114 &7549779719334198870
 MonoBehaviour:
   m_ObjectHideFlags: 0

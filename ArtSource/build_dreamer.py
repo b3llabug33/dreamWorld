@@ -949,6 +949,30 @@ def pixie_extra(bm, li):
         lock(bm, th, 1.54, th, 1.47 - 0.01 * li, 0.028, tip=0.3, off0=-0.006, off1=0.004)
 
 
+def crew_extra(bm, li):
+    """Crew cut: short all over, a little longer on top. Short = buzz, Medium = crew, Long = textured top
+    with a small lifted front."""
+    top = (0.004, 0.009, 0.016)[li]
+    for k in range(14):                                     # short crown pieces lying flat, longer with length
+        th = math.radians(-40 + k * 260 / 13)
+        lock(bm, th, 1.635, th + 0.06, 1.585 - 0.01 * li, 0.055, tip=0.6, steps=3,
+             off0=-0.008 + top, off1=-0.004 + top * 0.5, s0=1.04, s1=1.04)
+    for k, x in enumerate(np.linspace(0.06, -0.06, 5)):     # a short front edge, lifted a bit on the longer cuts
+        fringe_lock(bm, x * 0.6, x, 1.565 + 0.012 * li, 0.034, tip=0.7)
+
+
+def undercut_extra(bm, li):
+    """Undercut: buzzed sides and back, a longer top swept back and to one side."""
+    reach = (1.55, 1.52, 1.49)[li]
+    for k in range(9):                                      # long top locks from the hairline back over the crown
+        x = -0.06 + k * 0.015
+        th0 = FRONT + math.atan2(x, 0.11)
+        lock(bm, th0, 1.59, th0 + math.radians(150) * (0.6 + 0.04 * k), reach + 0.04, 0.05 + 0.006 * li,
+             tip=0.45, steps=5, off0=0.012 + 0.004 * li, off1=0.006, s0=1.06, s1=1.06)
+    for k, x in enumerate(np.linspace(0.05, -0.07, 4)):     # a swoop falling to one side at the front
+        fringe_lock(bm, 0.05, x, 1.57 - 0.012 * li, 0.04, tip=0.5)
+
+
 def build_hair():
     return (hair_set("Long", long_extra) +
             hair_set("Bob", bob_extra, BANGS[:5]) +
@@ -957,7 +981,9 @@ def build_hair():
             hair_set("Twintails", pigtails_extra, BANGS[:5], suffix="Low") +       # tie: low = pigtails
             hair_set("Ponytail", ponytail_extra, ("Choppy",)) +
             hair_set("Buns", buns_extra, ("Choppy",)) +
-            hair_set("Pixie", pixie_extra, None, hairline=0.03, nape=-0.08, side_cut=-0.005, cap_scale=1.05))
+            hair_set("Pixie", pixie_extra, None, hairline=0.03, nape=-0.08, side_cut=-0.005, cap_scale=1.05) +
+            hair_set("Crew", crew_extra, None, hairline=0.04, nape=-0.07, side_cut=-0.006, cap_scale=1.03) +
+            hair_set("Undercut", undercut_extra, None, hairline=0.04, nape=-0.06, side_cut=-0.008, cap_scale=1.02))
 
 
 # ---------------------------------------------------------------- clothes
@@ -1092,6 +1118,19 @@ def top_flannel():
         parts.append(part(f"collar{sx}", "Chest", lambda bm, sx=sx: strand(
             bm, (0.06 * sx, -0.045, 1.33), (0.035 * sx, -0.085, 1.25), 0.025, 0.008, flat_tip=0.3), m))
     return join("Top_Flannel", parts + sleeve(1, 0.56, m, grow=G + 0.014) + sleeve(-1, 0.56, m, grow=G + 0.014))
+
+
+def top_button_up():
+    """Button-up shirt: a straight untucked hem, a pointed collar and a button placket, long sleeves."""
+    m = material("Cotton")
+    parts = torso_shell("bu", m, grow=G + 0.004, hem=((0, 0, 0.90), 0.118 + G, 0.086 + G))
+    for sx in (1, -1):   # collar points
+        parts.append(part(f"buCollar{sx}", "Chest", lambda bm, sx=sx: strand(
+            bm, (0.045 * sx, -0.05, 1.335), (0.03 * sx, -0.09, 1.28), 0.026, 0.008, flat_tip=0.3), m))
+    parts.append(part("buCollarBack", "Chest", lambda bm: loft(bm, [((0, 0.006, 1.30), 0.052, 0.048),
+                                                                    ((0, 0.008, 1.35), 0.048, 0.045)], 8), m))
+    parts += buttons([0.94, 1.01, 1.08, 1.15, 1.22, 1.29], -0.088 - G)
+    return join("Top_ButtonUp", parts + sleeve(1, 0.60, m, grow=G + 0.004) + sleeve(-1, 0.60, m, grow=G + 0.004))
 
 
 def top_oversized():
@@ -1498,7 +1537,8 @@ pieces += [brows(b) for b in eye_designs.BROWS]
 pieces += extras()
 pieces += build_hair()
 pieces += [top_tee(), top_long_sleeve(), top_tank(), top_crop(), top_sweater(), top_hoodie(), top_sailor(),
-           top_flannel(), top_oversized(), top_cardigan(), top_puff_blouse(), top_slip_dress()]
+           top_flannel(), top_oversized(), top_cardigan(), top_puff_blouse(), top_slip_dress(),
+           top_button_up()]   # new pieces go last: saves store each piece by its place in the list
 pieces += [bottom_skirt("Bottom_Skirt", "Tweed"),
            bottom_skirt("Bottom_Pleated", "Plaid", pleats=True),
            bottom_ruffle("Bottom_RuffleSkirt", "Gingham"),
@@ -1511,7 +1551,8 @@ for rise in ("High", "Mid", "Low"):   # every pair of pants comes in three rises
                bottom_wide(f"Bottom_Cargo_{rise}", "Cotton", thigh=0.078, knee=0.074, hem=0.072, pockets=True, rise=r),
                bottom_wide(f"Bottom_FlareJeans_{rise}", "JeansDark", knee=0.046 + G, hem=0.092, hem_z=0.02, fitted_thigh=True, rise=r),
                bottom_legs(f"Bottom_Shorts_{rise}", "Jeans", knee_z=0.66, rise=r),
-               bottom_legs(f"Bottom_ShortShorts_{rise}", "Jeans", knee_z=0.715, rise=r)]
+               bottom_legs(f"Bottom_ShortShorts_{rise}", "Jeans", knee_z=0.715, rise=r),
+               bottom_wide(f"Bottom_Slacks_{rise}", "Cotton", thigh=0.068, knee=0.062, hem=0.06, hem_z=0.025, rise=r)]   # new: last
 pieces += [legwear("Legwear_KneeSocks", "Knit", 0.42, z_bottom=0.0),
            legwear("Legwear_ThighHighs", "Knit", 0.66),
            legwear("Legwear_Tights", "Mesh", 0.92, grow=0.004),
@@ -1582,6 +1623,10 @@ def masc(p):
         cx = math.copysign(0.066, p.x)
         nx = cx + (nx - cx) * (1 + 0.12 * leg)
         y = y * (1 + 0.12 * leg)
+    # a squarer, wider jaw: the lower face widens toward the jaw corners
+    jaw = _smooth((1.445 - p.z) / 0.035) * _smooth((p.z - 1.345) / 0.02) * _smooth((abs(p.x) - 0.02) / 0.03)
+    if jaw > 0 and abs(p.x) < 0.14:
+        nx = nx * (1 + 0.09 * jaw)
     # a thicker neck below the chin
     neck = _smooth((1.36 - p.z) / 0.02) * _smooth((p.z - 1.29) / 0.02) * _smooth((0.05 - abs(p.x)) / 0.02)
     if neck > 0:

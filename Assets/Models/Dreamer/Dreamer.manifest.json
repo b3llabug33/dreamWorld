@@ -1741,6 +1741,60 @@
    ]
   },
   {
+   "name": "Hair_Crew_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Crew_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Crew_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Undercut_Short",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Undercut_Medium",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
+   "name": "Hair_Undercut_Long",
+   "submeshes": [
+    {
+     "texture": "Hair",
+     "tint": true
+    }
+   ]
+  },
+  {
    "name": "Top_Tee",
    "submeshes": [
     {
@@ -1873,6 +1927,19 @@
    ]
   },
   {
+   "name": "Top_ButtonUp",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "White",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Bottom_Skirt",
    "submeshes": [
     {
@@ -1987,6 +2054,19 @@
    ]
   },
   {
+   "name": "Bottom_Slacks_High",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Bottom_SkinnyJeans_Mid",
    "submeshes": [
     {
@@ -2065,6 +2145,19 @@
    ]
   },
   {
+   "name": "Bottom_Slacks_Mid",
+   "submeshes": [
+    {
+     "texture": "Cotton",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
    "name": "Bottom_SkinnyJeans_Low",
    "submeshes": [
     {
@@ -2134,6 +2227,19 @@
    "submeshes": [
     {
      "texture": "Jeans",
+     "tint": true
+    },
+    {
+     "texture": "Gold",
+     "tint": false
+    }
+   ]
+  },
+  {
+   "name": "Bottom_Slacks_Low",
+   "submeshes": [
+    {
+     "texture": "Cotton",
      "tint": true
     },
     {

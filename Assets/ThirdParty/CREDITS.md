@@ -5,3 +5,4 @@
 - **Quaternius** packs (CC0): `Quaternius/`.
 - **Retro PSX Tree Pack** by RATODDY (https://ratoddy.itch.io/retro-psx-tree-pack). Folder: `Ratoddy_RetroPSXTrees/`.
 - **PS1/PSX Playground** by CursedLake (https://cursedlake.itch.io/ps1psx-playground). Free for commercial use, not for resale/redistribution as-is. Folder: `CursedLake_Playground/`.
+- **1000+ Pixel Art Textures (256x256)** by FlakDeau (https://flakdeau19.itch.io/pixel-art-texture-pack-256x256), CC0. A subset in `FlakDeau_PixelTextures/`.

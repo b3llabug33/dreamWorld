@@ -74,6 +74,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3665160517650393950}
   - component: {fileID: 767241592028371419}
+  - component: {fileID: 3121108501766299175}
   - component: {fileID: 7918637275430714396}
   m_Layer: 0
   m_Name: MossGolem
@@ -121,6 +122,21 @@ CapsuleCollider:
   m_Height: 2.2
   m_Direction: 1
   m_Center: {x: 0, y: 1.0749999, z: 0.00000017881393}
+--- !u!114 &3121108501766299175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7647506219927003583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
+  probeUp: 3
+  probeDown: 8
+  smoothing: 14
 --- !u!114 &7918637275430714396
 MonoBehaviour:
   m_ObjectHideFlags: 0

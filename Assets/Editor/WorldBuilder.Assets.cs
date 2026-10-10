@@ -325,27 +325,24 @@ namespace DreamWorld.EditorTools
         {
             var t = new GameObject("TownProps").transform;
             t.SetParent(root);
-            Put(t, "StoneFountain", W(-7, -13), 0, 1f, "box");
-            Put(t, "NoticeBoard", W(3.6f, -11.5f), Toward(W(3.6f, -11.5f), W(0, -11.5f)));
+            Put(t, "NoticeBoard", Spread(3.6f, -11.5f), Toward(Spread(3.6f, -11.5f), Spread(0, -11.5f)));
             var board = new GameObject("Sign_notice board").AddComponent<BuildingSign>();
             board.transform.SetParent(t);
-            board.transform.position = W(2.6f, -11.5f);
+            board.transform.position = Spread(2.6f, -11.5f);
             board.title = "notice board";
             board.message = "NEW: the weapon shop is open (south east). beware the mushroom knight in the south west woods!";
-            Put(t, "CrookedSignpost", W(-3.4f, -19), Toward(W(-3.4f, -19), W(0, -19)), 1f, "none");
-            Put(t, "MarketStall", W(12, 14), Toward(W(12, 14), Plaza));
-            Put(t, "FruitCrate", W(11, 12.6f), 20);
-            Put(t, "FruitCrate", W(13.4f, 12.9f), -15);
-            Put(t, "BugHotel", W(-21, 15.5f), Toward(W(-21, 15.5f), Plaza));
-            Put(t, "DuckStatue", W(12, -1.5f), Toward(W(12, -1.5f), Plaza));
-            Put(t, "SnailBench", W(-4.6f, -9.5f), Toward(W(-4.6f, -9.5f), W(0, -9.5f)));
-            Put(t, "LostSockPile", W(9.5f, -3.5f), 40, 1f, "none");
-            Put(t, "BeetleCart", W(13, -2.5f), 70);
-            Put(t, "PicketFence", W(-11.5f, -16), 0, 1f);
-            Put(t, "PicketFence", W(-8f, -16), 0, 1f);
-            Put(t, "LanternString", W(0, 20.5f), 0, 1.4f, "none", glow: new Color(1f, 0.8f, 0.5f), glowRange: 6f);
-            Put(t, "LanternString", W(19.5f, 8), 90, 1.3f, "none", glow: new Color(1f, 0.8f, 0.5f), glowRange: 6f);
-            foreach (var p in new[] { W(-4.8f, -24), W(1f, -32), W(-3.6f, -43), W(3.8f, 41), W(29.5f, 9.6f) })
+            Put(t, "CrookedSignpost", Spread(-3.4f, -19), Toward(Spread(-3.4f, -19), Spread(0, -19)), 1f, "none");
+            Put(t, "MarketStall", Spread(12, 14), Toward(Spread(12, 14), Plaza));
+            Put(t, "FruitCrate", Spread(11, 12.6f), 20);
+            Put(t, "FruitCrate", Spread(13.4f, 12.9f), -15);
+            Put(t, "BugHotel", Spread(-21, 15.5f), Toward(Spread(-21, 15.5f), Plaza));
+            Put(t, "DuckStatue", Spread(12, -1.5f), Toward(Spread(12, -1.5f), Plaza));
+            Put(t, "SnailBench", Spread(-4.6f, -9.5f), Toward(Spread(-4.6f, -9.5f), Spread(0, -9.5f)));
+            Put(t, "LostSockPile", Spread(9.5f, -3.5f), 40, 1f, "none");
+            Put(t, "BeetleCart", Spread(13, -2.5f), 70);
+            Put(t, "LanternString", Spread(0, 20.5f), 0, 1.4f, "none", glow: new Color(1f, 0.8f, 0.5f), glowRange: 6f);
+            Put(t, "LanternString", Spread(19.5f, 8), 90, 1.3f, "none", glow: new Color(1f, 0.8f, 0.5f), glowRange: 6f);
+            foreach (var p in new[] { W(-4.8f, -27), W(1f, -34), W(-3.6f, -43), W(10.2f, 44f), W(36f, 10f) })
                 Put(t, "MushroomStreetlamp", p, 0, 1f, "none", glow: new Color(0.85f, 0.6f, 1f), glowRange: 7f);
             // the tavern's banners and the general store's chimes
             var tavern = root.Find("Town/Tavern");
@@ -366,14 +363,14 @@ namespace DreamWorld.EditorTools
                 Put(wobbly, "Props", "BatCandelabra", new Vector3(-1.5f, 0, -2.6f), 180, 1f, "box", new Color(1f, 0.55f, 0.3f), 3f);
                 Put(wobbly, "Props", "BatCandelabra", new Vector3(1.5f, 0, -2.6f), 180, 1f, "box", new Color(1f, 0.55f, 0.3f), 3f);
             }
-            Put(g, "CoffinBed", W(-20.5f, -12.5f), 30);
-            Put(g, "SpookyTreeLamp", W(-21, -5), 0, 1f, "box", new Color(0.8f, 0.4f, 1f), 6f);
-            Put(g, "GraveFlowers", W(-19.2f, -14.5f), 10);
-            Put(g, "GraveFlowers", W(-12.6f, -13.3f), 200);
-            Put(g, "WitchCauldron", W(-12.4f, -10.6f), 0, 1f, "box", new Color(0.5f, 1f, 0.5f), 4f);
-            Put(g, "VampireGnome", W(4.3f, 3.6f), Toward(W(4.3f, 3.6f), Plaza), 1f, "none", new Color(1f, 0.3f, 0.35f), 2f);
-            Put(g, "VampireGnome", W(7.6f, -1.6f), Toward(W(7.6f, -1.6f), Plaza), 1f, "none");
-            Put(g, "CandleCluster", W(5.2f, 3.1f), 0, 1f, "none", new Color(1f, 0.7f, 0.4f), 2.5f);
+            Put(g, "CoffinBed", Spread(-20.5f, -12.5f), 30);
+            Put(g, "SpookyTreeLamp", Spread(-21, -5), 0, 1f, "box", new Color(0.8f, 0.4f, 1f), 6f);
+            Put(g, "GraveFlowers", Spread(-19.2f, -14.5f), 10);
+            Put(g, "GraveFlowers", Spread(-12.6f, -13.3f), 200);
+            Put(g, "WitchCauldron", Spread(-12.4f, -10.6f), 0, 1f, "box", new Color(0.5f, 1f, 0.5f), 4f);
+            Put(g, "VampireGnome", Spread(4.3f, 3.6f), Toward(Spread(4.3f, 3.6f), Plaza), 1f, "none", new Color(1f, 0.3f, 0.35f), 2f);
+            Put(g, "VampireGnome", Spread(7.6f, -1.6f), Toward(Spread(7.6f, -1.6f), Plaza), 1f, "none");
+            Put(g, "CandleCluster", Spread(5.2f, 3.1f), 0, 1f, "none", new Color(1f, 0.7f, 0.4f), 2.5f);
         }
 
         // Furniture inside the walk-in buildings, fashion props in the studio, home props by your cottage.
@@ -465,13 +462,13 @@ namespace DreamWorld.EditorTools
             Scatter("FernClump", 22, 27, 70, "none");
             Scatter("AutumnBush", 12, 28, 70, "none");
             Scatter("CrystalCluster", 10, 34, 72, "none", new Color(0.7f, 0.6f, 1f), 2, 1f, 1.8f);
-            Scatter("GlowcapCluster", 14, 28, 70, "none", new Color(0.4f, 0.9f, 1f), 3, 0.9f, 1.5f);
+            Scatter("GlowcapCluster", 5, 28, 70, "none", new Color(0.4f, 0.9f, 1f), 3, 0.9f, 1.5f);
             Scatter("AntHill", 3, 32, 66, "none");
             Scatter("Caterpillar", 4, 30, 66, "none");
             // along the glow trail: an archway at its start and moonflower lamps
-            Put(w, "LeafArchway", W(-29, 9.2f), Quaternion.LookRotation(W(-36, 15) - W(-27, 8)).eulerAngles.y + 90, 1.2f, "none",
+            Put(w, "LeafArchway", W(-29.5f, 15.2f), Quaternion.LookRotation(W(-33, 15.5f) - W(-26, 14.5f)).eulerAngles.y + 90, 1.2f, "none",
                  new Color(0.6f, 1f, 0.6f), 5f);
-            foreach (var p in new[] { W(-33, 9.5f), W(-39.5f, 16), W(-46, 9), W(-51, 18.5f) })
+            foreach (var p in new[] { W(-30, 17.6f), W(-39.5f, 17.2f), W(-46, 9), W(-51, 18.5f) })
                 Put(w, "MoonflowerLamp", p, 0, 1f, "none", new Color(0.75f, 0.85f, 1f), 6f);
             foreach (var p in new[] { W(-2, 46), W(4.5f, 52), W(-0.8f, 38) })
                 Put(w, "FireflyLantern", p + Vector3.up * 0f, 0, 1.6f, "none", new Color(1f, 0.95f, 0.5f), 4f);
@@ -499,6 +496,7 @@ namespace DreamWorld.EditorTools
             col.height = Mathf.Max(longBody ? b.size.z : b.size.y, col.radius * 2f);
             col.center = b.center;
             if (glow.HasValue) AddLight(body, new Vector3(0, b.size.y * 0.6f, 0), glow.Value, 3f, 1f);
+            root.AddComponent<DreamWorld.World.GroundFollow>();   // the woods have hills now
             var m = root.AddComponent<Monster>();
             m.kind = kind;
             m.displayName = name;

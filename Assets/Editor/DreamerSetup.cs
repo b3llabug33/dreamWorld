@@ -56,8 +56,8 @@ namespace DreamWorld.EditorTools
         // Which styles get the "pattern" option (pieces with their own print/plaid/denim are left alone).
         static readonly Dictionary<OutfitCategory, string[]> PatternBases = new Dictionary<OutfitCategory, string[]>
         {
-            { OutfitCategory.Top, new[] { "Tee", "LongSleeve", "Tank", "Crop", "Sweater", "Hoodie", "Oversized", "Cardigan", "Sailor", "SlipDress" } },
-            { OutfitCategory.Bottom, new[] { "Skirt", "Pleated", "RuffleSkirt", "LongSkirt", "Cargo" } },
+            { OutfitCategory.Top, new[] { "Tee", "LongSleeve", "Tank", "Crop", "Sweater", "Hoodie", "Oversized", "Cardigan", "Sailor", "SlipDress", "ButtonUp" } },
+            { OutfitCategory.Bottom, new[] { "Skirt", "Pleated", "RuffleSkirt", "LongSkirt", "Cargo", "Slacks" } },
             { OutfitCategory.Legwear, new[] { "KneeSocks", "ThighHighs", "Tights", "FrillySocks", "LegWarmers" } },
         };
 

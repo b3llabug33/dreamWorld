@@ -166,6 +166,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7126699232362501522}
   - component: {fileID: 2205826574761206585}
+  - component: {fileID: 1221299086232755764}
   - component: {fileID: 7639983516602113232}
   m_Layer: 0
   m_Name: MushroomKnight
@@ -213,6 +214,21 @@ CapsuleCollider:
   m_Height: 1.75
   m_Direction: 1
   m_Center: {x: 0, y: 0.87499994, z: 0.00000011920929}
+--- !u!114 &1221299086232755764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6860383651468467076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
+  probeUp: 3
+  probeDown: 8
+  smoothing: 14
 --- !u!114 &7639983516602113232
 MonoBehaviour:
   m_ObjectHideFlags: 0
