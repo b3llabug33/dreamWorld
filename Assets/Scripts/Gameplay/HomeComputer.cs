@@ -15,6 +15,12 @@ namespace DreamWorld.Gameplay
             Mine = this;
         }
 
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+            if (Mine == this) Mine = null;
+        }
+
         public override string Prompt(PlayerStats player) => "use home computer (bank)";
         public override void Interact(PlayerStats player) => GameHUD.Instance?.OpenBank();
 

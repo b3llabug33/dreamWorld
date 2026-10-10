@@ -22,6 +22,8 @@ namespace DreamWorld.Gameplay
         public ItemStack[] bag;            // 28 slots you carry
         public ItemStack[] storage;        // 56 slots in your home computer
         public string[] hotbar = new string[4];   // item ids on the 1-4 quick slots
+        public int plot = -1;              // the plot of land you own (-1 = none yet; buy one at the land office)
+        public bool plotChecked;           // older saves had a free home: they keep plot #1
     }
 
     // A player's bars, level and money. Health/stamina/magic grow with the points spent on them;
@@ -86,6 +88,13 @@ namespace DreamWorld.Gameplay
                 var old = progress.hotbar;
                 progress.hotbar = new string[4];
                 for (int i = 0; old != null && i < old.Length && i < 4; i++) progress.hotbar[i] = old[i];
+            }
+            if (!progress.plotChecked)
+            {
+                bool played = progress.banked > 0 || progress.deaths > 0 || progress.level > 0 ||
+                              System.Array.Exists(progress.storage, s => !s.Empty);
+                if (played && progress.plot < 0) progress.plot = 0;
+                progress.plotChecked = true;
             }
             if (progress.snacks > 0)
             {

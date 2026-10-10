@@ -21,7 +21,7 @@ namespace DreamWorld.EditorTools
     // dreamWorld > Build World: Mushroom Hollow  - (re)creates the first world area scene.
     // dreamWorld > Build Creator Backdrop         - the creator/login stage: a forest overgrowing a giant old computer.
     // Props come from Assets/Models/World/WorldKit.fbx (made by ArtSource/build_world.py).
-    public static class WorldBuilder
+    public static partial class WorldBuilder
     {
         const string KitPath = "Assets/Models/World/WorldKit.fbx";
         const string KitDir = "Assets/Models/World";
@@ -53,90 +53,27 @@ namespace DreamWorld.EditorTools
         {
             LoadKit();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            NightAtmosphere(fogStart: 14, fogEnd: 62);
+            NightAtmosphere(fogStart: 18, fogEnd: 80);
             var root = new GameObject("MushroomHollow").transform;
             var rng = new Random(42);
 
-            // ground + paths
+            // ground: big enough for the town, the plots and the woods around them
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
             ground.transform.SetParent(root);
-            ground.transform.localScale = new Vector3(14, 1, 14);
-            ground.GetComponent<Renderer>().sharedMaterial = TiledMaterial("Grass", 70);
-            PathStrip(root, new Vector3(0, 0, -16), new Vector3(0, 0, 2), 2.4f);
-            PathStrip(root, new Vector3(0, 0, 6), new Vector3(0, 0, 15), 2.4f);
-            PathStrip(root, new Vector3(-2.5f, 0, 4), new Vector3(-6.5f, 0, 5.5f), 1.8f);
-            PathStrip(root, new Vector3(2.5f, 0, 4.5f), new Vector3(6.5f, 0, 8f), 1.8f);
-            Place(root, "Stage", new Vector3(0, -0.06f, 4), 0, 2.6f);   // round paved plaza
+            ground.transform.localScale = new Vector3(24, 1, 24);
+            ground.GetComponent<Renderer>().sharedMaterial = TiledMaterial("Grass", 120);
 
-            // the village
-            Place(root, "Well", new Vector3(0, 0, 4), 20);
-            Place(root, "Bench", new Vector3(3.2f, 0, 3), -110);
-            Place(root, "Bench", new Vector3(-3.2f, 0, 3), 110);
-            Place(root, "Cottage", new Vector3(-9, 0, 6.5f), 100);
-            Place(root, "Cottage", new Vector3(9, 0, 10), -115);
-            Place(root, "Mushroom_House", new Vector3(-6, 0, 15), 155);
-            Place(root, "Mushroom_House", new Vector3(6.5f, 0, -1.5f), -70);
-            Place(root, "Mushroom_House", new Vector3(0.5f, 0, 19), 180, 1.2f);
-            Place(root, "Signpost", new Vector3(2, 0, -9), -20);
-            foreach (var (pos, yaw) in new[] { (new Vector3(-12.3f, 0, 4), 90f), (new Vector3(-12.3f, 0, 6.1f), 90f), (new Vector3(-12.3f, 0, 8.2f), 90f),
-                                               (new Vector3(-11, 0, 9.5f), 0f), (new Vector3(12.2f, 0, 9), 80f), (new Vector3(11.9f, 0, 11.1f), 80f) })
-                Place(root, "Fence", pos, yaw);
+            // the town square, its buildings + townsfolk, the paths, the plots and the woods (WorldBuilder.Town.cs)
+            BuildTown(root, rng, out _);
 
-            // lamps along the path, each with a warm vertex-lit point light
-            foreach (var z in new[] { -13f, -7f, 0.5f, 8.5f, 13.5f })
-                foreach (var side in new[] { -1, 1 })
-                {
-                    if ((z > 0 && z < 1) && side > 0) continue;
-                    var lamp = Place(root, "Lamp_Post", new Vector3(side * 1.9f, 0, z + side * 0.6f), side > 0 ? -90 : 90);
-                    AddLight(lamp.transform, new Vector3(0, 2.3f, 0), Warm, 7f, 1.5f);
-                }
-
-            // glowing mushrooms, clusters, flowers, bushes and rocks around the village
-            var mushrooms = new[] { "Mushroom_Purple", "Mushroom_Blue", "Mushroom_Pink" };
+            // hills on the horizon
             for (int i = 0; i < 16; i++)
             {
-                var pos = Scatter(rng, 9, 22, avoidPath: true);
-                string kind = mushrooms[rng.Next(3)];
-                var m = Place(root, kind, pos, rng.Next(360), 0.8f + (float)rng.NextDouble() * 1.1f);
-                if (i % 2 == 0) AddLight(m.transform, new Vector3(0, 1.6f, 0), MushroomGlow[kind], 5f, 1.1f);
+                float a = i * Mathf.PI * 2 / 16 + (float)rng.NextDouble() * 0.2f;
+                float r = 86 + (float)rng.NextDouble() * 10;
+                Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r + 6), rng.Next(360), 1.2f + (float)rng.NextDouble() * 0.6f, collider: false);
             }
-            for (int i = 0; i < 14; i++) Place(root, "Mushroom_Cluster", Scatter(rng, 3, 20, avoidPath: true), rng.Next(360), 0.8f + (float)rng.NextDouble());
-            for (int i = 0; i < 22; i++) Place(root, "Flowers", Scatter(rng, 2.5f, 16, avoidPath: true), rng.Next(360), 1f + (float)rng.NextDouble());
-            for (int i = 0; i < 14; i++) Place(root, "Bush", Scatter(rng, 7, 26, avoidPath: true), rng.Next(360), 0.8f + (float)rng.NextDouble() * 0.7f);
-            for (int i = 0; i < 9; i++) Place(root, i % 3 == 0 ? "Rock_B" : "Rock_A", Scatter(rng, 8, 30, avoidPath: true), rng.Next(360), 0.7f + (float)rng.NextDouble());
-
-            // forest ring + hills on the horizon
-            for (int i = 0; i < 70; i++)
-                Place(root, rng.NextDouble() < 0.55 ? "Tree_Pine" : "Tree_Round", Scatter(rng, 21, 44, avoidPath: true), rng.Next(360),
-                      0.85f + (float)rng.NextDouble() * 0.6f);
-            for (int i = 0; i < 12; i++)
-            {
-                float a = i * Mathf.PI * 2 / 12 + (float)rng.NextDouble() * 0.3f;
-                float r = 56 + (float)rng.NextDouble() * 8;
-                Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r), rng.Next(360), 0.9f + (float)rng.NextDouble() * 0.5f);
-            }
-
-            // safe zones: the town square and the paths (no PvP, monsters stay out); everything else is wild
-            SafeZone(root, "town square", new Vector3(0, 0, 4), new Vector3(16, 0, 16), 0);
-            SafeStrip(root, "the path", new Vector3(0, 0, -16.5f), new Vector3(0, 0, 2), 3.4f);
-            SafeStrip(root, "the path", new Vector3(0, 0, 6), new Vector3(0, 0, 15.5f), 3.4f);
-            SafeStrip(root, "the path", new Vector3(-2.5f, 0, 4), new Vector3(-6.8f, 0, 5.6f), 2.8f);
-            SafeStrip(root, "the path", new Vector3(2.5f, 0, 4.5f), new Vector3(6.8f, 0, 8.2f), 2.8f);
-
-            // town: a snack stand (food) by the well
-            BuildSnackStand(root, new Vector3(3.8f, 0, 6.6f), -140);
-
-            // home: your cottage and home computer (bank + where you wake up). Homes are not safe zones.
-            var homePos = new Vector3(12.5f, 0, -10f);
-            Place(root, "Cottage", homePos + new Vector3(2.2f, 0, -2.2f), -45);
-            var homeZone = new GameObject("Zone_home").AddComponent<Zone>();
-            homeZone.kind = ZoneKind.Home;
-            homeZone.displayName = "home";
-            homeZone.transform.SetParent(root);
-            homeZone.transform.SetPositionAndRotation(homePos + new Vector3(1, 3, -1), Quaternion.Euler(0, -45, 0));
-            homeZone.transform.localScale = new Vector3(9, 8, 9);
-            BuildHomeComputer(root, homePos, -135);
 
             // monsters out in the wilds (solo for now)
             var shroomling = BuildShroomlingPrefab();
@@ -144,10 +81,12 @@ namespace DreamWorld.EditorTools
             monsters.transform.SetParent(root);
             monsters.prefab = shroomling;
             int placed = 0;
-            for (int tries = 0; tries < 200 && placed < 8; tries++)
+            for (int tries = 0; tries < 600 && placed < 12; tries++)
             {
-                var pos = Scatter(rng, 11, 24, avoidPath: true);
-                if (Vector3.Distance(pos, homePos) < 11f || pos.magnitude > 30f) continue;   // not right outside your door
+                // out in the woods: never in a safe zone, the plots, or right next to a path
+                float ang = (float)(rng.NextDouble() * Math.PI * 2), rad = 32 + (float)rng.NextDouble() * 28;
+                var pos = new Vector3(Mathf.Cos(ang) * rad, 0, Mathf.Sin(ang) * rad + 6);
+                if (!Free(pos, 4f)) continue;
                 var spot = new GameObject("Spot").transform;
                 spot.SetParent(monsters.transform);
                 spot.SetPositionAndRotation(pos, Quaternion.Euler(0, rng.Next(360), 0));
@@ -157,12 +96,13 @@ namespace DreamWorld.EditorTools
             // player + camera
             var player = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));
             player.name = "Player";
-            player.transform.SetPositionAndRotation(new Vector3(0, 0.05f, -13), Quaternion.identity);
+            player.transform.SetPositionAndRotation(new Vector3(0, 0.05f, -10), Quaternion.identity);
             var turntable = player.GetComponent<CharacterTurntable>();
             if (turntable != null) UnityEngine.Object.DestroyImmediate(turntable);
             var cc = player.AddComponent<CharacterController>();
             cc.height = 1.6f; cc.radius = 0.25f; cc.center = new Vector3(0, 0.82f, 0);
             var controller = player.AddComponent<PlayerController>();
+            controller.areaRadius = 82f;
             player.AddComponent<PlayerStats>();
             player.AddComponent<PlayerLife>();
 
@@ -171,7 +111,7 @@ namespace DreamWorld.EditorTools
             var cam = camGo.GetComponent<Camera>();
             cam.clearFlags = CameraClearFlags.Skybox;
             cam.fieldOfView = 50;
-            cam.farClipPlane = 140;
+            cam.farClipPlane = 190;
             camGo.transform.position = new Vector3(0, 2, -18);
             var psx = camGo.AddComponent<PSXCamera>();
             psx.postShader = Shader.Find("Hidden/DreamWorld/PSXPost");
@@ -202,7 +142,7 @@ namespace DreamWorld.EditorTools
             {
                 var sp = new GameObject("NetSpawn").transform;
                 sp.SetParent(nmGo.transform);
-                sp.SetPositionAndRotation(new Vector3(x, 0.05f, -13 + Mathf.Abs(x)), Quaternion.identity);
+                sp.SetPositionAndRotation(new Vector3(x, 0.05f, -10 + Mathf.Abs(x)), Quaternion.identity);
                 spawns.Add(sp);
             }
             spawner.Spawns = spawns.ToArray();

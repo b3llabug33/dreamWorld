@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DreamWorld.Gameplay
 {
     // Loads and saves the player's progress, and handles dying: the death screen ("you woke up"),
-    // losing the coins you were carrying, and waking up at your home computer.
+    // losing the coins you were carrying, and waking up at your home computer (or in town if you don't own a plot yet).
     // Saves every 30 seconds and right after anything important (level up, banking, dying).
     [RequireComponent(typeof(PlayerStats))]
     public class PlayerLife : MonoBehaviour
@@ -67,7 +67,9 @@ namespace DreamWorld.Gameplay
             GameHUD.Instance?.ShowDeath(coinsLost);
             yield return new WaitForSeconds(deathScreenSeconds);
             var home = HomeComputer.Mine;
-            if (controller != null && home != null) controller.Warp(home.SpawnPosition, home.SpawnRotation);
+            var town = DreamWorld.Town.RespawnPoint.Town;
+            if (controller != null && home != null && home.isActiveAndEnabled) controller.Warp(home.SpawnPosition, home.SpawnRotation);
+            else if (controller != null && town != null) controller.Warp(town.transform.position, town.transform.rotation);   // no plot yet: wake up in town
             stats.Respawn();
             if (controller != null) controller.InputEnabled = true;
             GameHUD.Instance?.HideDeath();
