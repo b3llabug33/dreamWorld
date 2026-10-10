@@ -507,6 +507,8 @@ namespace DreamWorld.Gameplay
         // Tints the whole model (keeps each material's own alpha, so glass stays see-through).
         void Tint(Color c)
         {
+            if (block == null) block = new MaterialPropertyBlock();   // lost if scripts recompile during Play
+            if (renderers == null) renderers = body.GetComponentsInChildren<Renderer>();
             foreach (var r in renderers)
             {
                 var mats = r.sharedMaterials;

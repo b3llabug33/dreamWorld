@@ -89,8 +89,8 @@ namespace DreamWorld.Quests
             d.Line("fight2", O, "inside the town and on the paths you're safe. nothing can hurt you there.", "hello");
             d.Line("barter", O, "some folks here trade item for item instead of coins. bring them what they're looking for and they'll swap you something good.", "hello");
             d.Line("sell", O, "shops buy what you find out there. monster drops, extra materials, things you made. open your bag at a shop and pick something to sell it.", "hello");
-            d.Line("collect", O, "chop trees for wood, break rocks for stone, mine ore from glowing veins, and gather thread from cotton and old webs.", "collect2");
-            d.Line("collect2", O, "you can turn all of it into decor for your house. i like the mushroom stools. obviously.", "hello");
+            d.Line("collect", O, "chop trees for wood, break rocks for stone, mine ore out of the rocks in the woods, and gather thread from cotton and old webs.", "collect2");
+            d.Line("collect2", O, "then make things at the workbench here in the square. decor for your house, tools, even weapons. i like the mushroom stools. obviously.", "hello");
             d.Line("all0", O, "that's okay! here's the short version.", "all1");
             d.Line("all1", O, "fighting: the wilds are dangerous, the town and paths are safe. roll, swing, lock on.", "all2");
             d.Line("all2", O, "bartering and selling: trade with people, or sell your stuff at the shops for coins.", "all3");
