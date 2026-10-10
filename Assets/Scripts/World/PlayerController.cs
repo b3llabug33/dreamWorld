@@ -6,8 +6,8 @@ using UnityEngine;
 namespace DreamWorld.World
 {
     // Elden Ring-style third-person controls (keyboard + mouse, same keys as Elden Ring on PC):
-    //   WASD move (jog)         Space: tap = roll (i-frames), hold = sprint      F: jump
-    //   Left click: attack (3-hit combo)   Shift + left click: heavy attack      Right click: guard
+    //   WASD move (jog)         Shift (hold, while moving): sprint      Space: tap = roll (i-frames), hold = sprint too
+    //   F: jump   Left click: attack (3-hit combo)   Shift + left click: heavy attack      Right click: guard
     //   Q: lock on / off (strafe around the target)   E: interact   1-4: quick items (InventoryUI)
     // Rolling, sprinting, jumping, attacking and guarding all cost stamina (PlayerStats).
     // Getting hit hard staggers you for a moment. The model rolls/punches through IdleMotion; with a
@@ -43,6 +43,8 @@ namespace DreamWorld.World
         public bool InputEnabled { get; set; } = true;   // menus turn this off
         // Lets a script steer instead of the keyboard (recording clips, cutscenes later).
         public bool UseScriptedInput { get; set; }
+        public bool ScriptedSprint { get; set; }     // tests: sprint while UseScriptedInput
+        public bool Sprinting => sprinting;          // the camera widens its view while you sprint
         public Vector2 ScriptedInput { get; set; }
         public IDamageable LockTarget { get; private set; }
         public bool Busy => action != Action.None;
@@ -110,6 +112,8 @@ namespace DreamWorld.World
             if (moveDir.sqrMagnitude > 1) moveDir.Normalize();
 
             if (InputEnabled && !dead && !UseScriptedInput) ReadActions();
+            else if (UseScriptedInput && !ScriptedSprint) sprintLocked = false;
+            if (UseScriptedInput) sprinting = ScriptedSprint && !sprintLocked && moveDir.sqrMagnitude > 0.01f && action == Action.None && !dead;
             if (LockTarget != null && (!LockTarget.Alive || Vector3.Distance(LockTarget.Body.position, transform.position) > 18f))
                 LockTarget = null;
 
@@ -131,7 +135,10 @@ namespace DreamWorld.World
                 spaceDown = -1f;
                 sprintLocked = false;
             }
-            sprinting = holding && !sprintLocked && moveDir.sqrMagnitude > 0.01f && action == Action.None;
+            // Shift: hold while moving to sprint (Shift + click is still the heavy attack: clicking doesn't need you to move)
+            bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.RightShift)) sprintLocked = false;
+            sprinting = (holding || shift) && !sprintLocked && moveDir.sqrMagnitude > 0.01f && action == Action.None;
 
             if (Input.GetKeyDown(KeyCode.F)) Jump();
             if (Input.GetMouseButtonDown(0))

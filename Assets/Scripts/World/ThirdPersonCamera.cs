@@ -35,10 +35,23 @@ namespace DreamWorld.World
             if (target != null) yaw = target.eulerAngles.y;
         }
 
+        // Sprinting widens the view a little (eases in and out).
+        public float sprintFovBoost = 6f;
+        float baseFov = -1f, fovBoost;
+        Camera cam;
+
         void LateUpdate()
         {
             if (target == null) return;
             if (player == null || player.transform != target) player = target.GetComponent<PlayerController>();
+            if (cam == null) cam = GetComponent<Camera>();
+            if (cam != null)
+            {
+                if (baseFov < 0f) baseFov = cam.fieldOfView;
+                bool sprint = player != null && player.Sprinting && !Showcase;
+                fovBoost = Mathf.MoveTowards(fovBoost, sprint ? sprintFovBoost : 0f, Time.deltaTime * sprintFovBoost * 3f);
+                cam.fieldOfView = baseFov + fovBoost;
+            }
 
             bool free = CursorFree || !Application.isFocused;
             Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
