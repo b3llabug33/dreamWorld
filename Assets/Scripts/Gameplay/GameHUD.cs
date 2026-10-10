@@ -408,7 +408,7 @@ namespace DreamWorld.Gameplay
             for (int i = 0; i < enemyBars.Count; i++)
             {
                 bool on = i < shown.Count && cam != null;
-                Vector3 screen = on ? cam.WorldToScreenPoint(shown[i].m.transform.position + Vector3.up * 1.3f) : Vector3.zero;
+                Vector3 screen = on ? cam.WorldToScreenPoint(shown[i].m.transform.position + Vector3.up * shown[i].m.barHeight) : Vector3.zero;
                 on &= screen.z > 0;
                 enemyBars[i].root.gameObject.SetActive(on);
                 if (!on) continue;
