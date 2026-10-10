@@ -190,136 +190,161 @@ class Critter:
 
 
 def rainbow_stag_beetle():
-    """Phalacrognathus muelleri (male), like Orion. Metallic shell that runs green -> gold -> copper ->
-    red -> violet toward the head, with an iridescent shift across the curve of every plate."""
+    """Phalacrognathus muelleri, female, matched to photos of Orion: short black mandibles and black legs,
+    a bronze-copper pronotum with green edges, and wing covers that are metallic green at the rim with
+    magenta-pink and teal-blue streaks running lengthwise down the middle, shifting with the light."""
     c = Critter("Critter_RainbowStagBeetle")
 
-    def irid(base_shift=0.0, sat=0.9, dark_seam=False):
-        def color(p, n):
-            t = min(1.0, max(0.0, (p.y + 0.5) / 1.15))
-            hue = (0.34 - 0.5 * t + base_shift + 0.07 * n.x * (1 if p.x >= 0 else -1) - 0.05 * n.z) % 1.0
-            val = 0.55 + 0.4 * max(0.0, n.z) + 0.1 * abs(n.x)
-            if dark_seam and abs(p.x) < 0.012:
-                val *= 0.55
-            r, g, b = colorsys.hsv_to_rgb(hue, sat, min(1.0, val))
-            return (r, g, b)
-        return color
+    def hsv(h, s_, v):
+        return colorsys.hsv_to_rgb(h % 1.0, max(0.0, min(1.0, s_)), max(0.0, min(1.0, v)))
 
-    shell = irid(dark_seam=True)
-    plate = irid(0.0, 0.85)
-    leg = irid(-0.05, 0.75)
-    underside = rgb("#2a1b33")
+    def elytra(p, n):
+        side = abs(p.x) / 0.245                       # 0 at the seam, 1 at the rim
+        light = 0.28 + 0.62 * max(0.0, n.z) ** 1.5    # deep metallic: dark sides, bright top
+        if side > 0.82 or p.y < -0.42:                # green rim all the way round
+            return hsv(0.34 + 0.02 * n.x, 0.95, light)
+        # one strong magenta streak with a teal-blue edge on a green shell, running lengthwise
+        band = side + 0.05 * math.sin(p.y * 7)
+        stops = [(0.0, 0.32, 0.9), (0.2, 0.36, 0.95), (0.34, 0.52, 0.9), (0.46, 0.88, 0.85),
+                 (0.62, 0.92, 0.8), (0.74, 0.4, 0.95), (1.0, 0.34, 0.95)]
+        for (a, ha, sa), (b, hb, sb) in zip(stops, stops[1:]):
+            if a <= band <= b:
+                t = (band - a) / (b - a)
+                dh = ((hb - ha + 0.5) % 1.0) - 0.5
+                return hsv(ha + dh * t, sa + (sb - sa) * t, light)
+        return hsv(0.33, 0.85, light)
 
-    # wing covers (elytra): two halves with a seam, rounded at the back, a little flattened on top
-    c.blob((0, -0.14, 0.16), (0.245, 0.37, 0.13), shell, M_SHINY, seg=18, rings=10)        # one domed shell
-    c.tube([(0, 0.2, 0.25), (0, -0.2, 0.29), (0, -0.46, 0.18)], 0.008, irid(0.02, 0.9, False), M_SHINY)   # the seam
-    c.blob((0, -0.12, 0.09), (0.23, 0.36, 0.07), underside, seg=12, rings=6)              # belly
-    # scutellum: the little triangle between the wing covers and the pronotum
-    c.blob((0, 0.17, 0.235), (0.04, 0.035, 0.012), plate, M_SHINY, seg=6, rings=4)
-    # pronotum: broad, rounded at the sides, with a thin raised rim
-    c.blob((0, 0.27, 0.19), (0.235, 0.12, 0.095), plate, M_SHINY, seg=16, rings=8)
-    c.tube([(-0.2, 0.22, 0.17), (-0.235, 0.28, 0.18), (-0.21, 0.35, 0.17)], 0.01, plate, M_SHINY)
-    c.tube([(0.2, 0.22, 0.17), (0.235, 0.28, 0.18), (0.21, 0.35, 0.17)], 0.01, plate, M_SHINY)
-    # head: wide and flat, cheeks flaring behind the eyes, a ridge (canthus) over each eye
-    c.blob((0, 0.44, 0.17), (0.225, 0.11, 0.072), plate, M_SHINY, seg=14, rings=8)
+    def pronotum(p, n):
+        light = 0.4 + 0.55 * max(0.0, n.z)
+        edge = abs(p.x) > 0.17
+        return hsv(0.3 if edge else 0.08 + 0.03 * n.x, 0.9 if edge else 0.7, light * 0.8)   # dark bronze, green edges
+
+    def head(p, n):
+        return hsv(0.22 + 0.05 * n.x, 0.85, 0.25 + 0.5 * max(0.0, n.z))                # green-gold
+
+    black = (0.05, 0.045, 0.05)
+    sheen_black = lambda p, n: tuple(0.04 + 0.12 * max(0.0, n.z) for _ in range(3))
+
+    # wing covers: one domed oval with a raised seam, slightly squarer shoulders than the back
+    c.blob((0, -0.12, 0.16), (0.245, 0.38, 0.13), elytra, M_SHINY, seg=20, rings=12)
+    c.tube([(0, 0.2, 0.255), (0, -0.2, 0.29), (0, -0.48, 0.17)], 0.007, lambda p, n: hsv(0.33, 0.9, 0.5), M_SHINY)
+    c.blob((0, -0.12, 0.08), (0.23, 0.36, 0.07), black, seg=12, rings=6)                # dark belly
+    c.blob((0, 0.17, 0.235), (0.035, 0.03, 0.01), pronotum, M_SHINY, seg=6, rings=4)     # scutellum
+    # pronotum: wide, rounded, a touch narrower than the shell
+    c.blob((0, 0.28, 0.18), (0.215, 0.12, 0.09), pronotum, M_SHINY, seg=16, rings=8)
+    # head: small and flat (females have a small head), eyes at the sides
+    c.blob((0, 0.42, 0.15), (0.13, 0.08, 0.055), head, M_SHINY, seg=12, rings=6)
     for sx in (1, -1):
-        c.blob((sx * 0.17, 0.41, 0.16), (0.06, 0.07, 0.055), plate, M_SHINY)          # cheek flare
-        c.blob((sx * 0.185, 0.47, 0.175), (0.038, 0.04, 0.036), (0.06, 0.04, 0.07), M_SHINY)   # eye
-        c.tube([(sx * 0.13, 0.5, 0.2), (sx * 0.2, 0.48, 0.21), (sx * 0.22, 0.44, 0.2)], 0.012, plate, M_SHINY)  # canthus
-        # mandibles: long, sweeping forward and out, then curling up and in; a row of inner teeth
-        mand = [(sx * 0.07, 0.5, 0.165), (sx * 0.15, 0.6, 0.18), (sx * 0.18, 0.72, 0.21), (sx * 0.15, 0.84, 0.27),
-                (sx * 0.08, 0.92, 0.36), (sx * 0.03, 0.93, 0.42)]
-        c.tube(mand, [0.05, 0.045, 0.038, 0.03, 0.02, 0.008], irid(0.04, 0.9), M_SHINY, sides=7)
-        for (y, z, size) in ((0.66, 0.2, 0.03), (0.76, 0.23, 0.028), (0.85, 0.28, 0.022)):
-            x = sx * (0.14 if y < 0.7 else 0.13 if y < 0.8 else 0.1)
-            c.spike((x, y, z), (x - sx * size * 1.6, y + size * 0.4, z + size * 0.3), 0.014, irid(0.04, 0.9), M_SHINY)
-        # elbowed antenna: long first segment, then bead segments, then a 3-leaf club
-        base = Vector((sx * 0.16, 0.5, 0.19))
-        elbow = base + Vector((sx * 0.1, 0.08, 0.05))
-        c.tube([base, elbow], [0.012, 0.01], leg, M_SHINY)
+        c.blob((sx * 0.125, 0.43, 0.15), (0.03, 0.032, 0.03), black, M_SHINY)          # eyes
+        # short, stout black mandibles curving inward, with a tooth
+        c.tube([(sx * 0.06, 0.48, 0.14), (sx * 0.1, 0.55, 0.15), (sx * 0.07, 0.61, 0.16), (sx * 0.02, 0.63, 0.16)],
+               [0.03, 0.026, 0.018, 0.008], sheen_black, M_SHINY, sides=6)
+        c.spike((sx * 0.09, 0.56, 0.15), (sx * 0.05, 0.58, 0.17), 0.012, sheen_black, M_SHINY)
+        # black elbowed antennae with a small club
+        base = Vector((sx * 0.1, 0.47, 0.17))
+        elbow = base + Vector((sx * 0.07, 0.07, 0.04))
+        c.tube([base, elbow], [0.009, 0.008], sheen_black)
         tip = elbow
         for k in range(4):
-            nxt = tip + Vector((sx * 0.025, 0.022, 0.005))
-            c.blob(tip.lerp(nxt, 0.5), (0.01, 0.014, 0.01), leg, M_SHINY, seg=6, rings=4)
+            nxt = tip + Vector((sx * 0.02, 0.02, 0.0))
+            c.blob(tip.lerp(nxt, 0.5), (0.008, 0.011, 0.008), sheen_black, seg=6, rings=4)
             tip = nxt
-        for k in range(3):   # lamellae: the fanned club
-            c.blob(tip + Vector((sx * (0.012 + k * 0.016), 0.012, 0)), (0.008, 0.026, 0.02), leg, M_SHINY,
-                   seg=6, rings=4, rot=(0, 0, sx * 25))
-
-    # legs: front ones dig (toothed tibia), middle/hind ones have small spines; each ends in tarsi + claws
+        for k in range(3):
+            c.blob(tip + Vector((sx * (0.01 + k * 0.013), 0.01, 0)), (0.007, 0.02, 0.015), sheen_black, seg=6, rings=4,
+                   rot=(0, 0, sx * 25))
+    # black legs: front tibiae toothed for digging, spines on the others
     for sx in (1, -1):
-        c.jointed_leg([(sx * 0.13, 0.25, 0.11), (sx * 0.24, 0.32, 0.13), (sx * 0.33, 0.4, 0.06), (sx * 0.36, 0.5, 0.0)],
-                      [0.03, 0.032, 0.024, 0.016], leg, M_SHINY, foot=(sx * 0.02, 0.1, -0.005),
-                      spines=[(2, 4, 0.03, (sx * 1, 0.3, 0))])
-        c.jointed_leg([(sx * 0.15, 0.02, 0.1), (sx * 0.29, 0.05, 0.14), (sx * 0.4, 0.0, 0.05), (sx * 0.45, -0.04, 0.0)],
-                      [0.03, 0.03, 0.022, 0.015], leg, M_SHINY, foot=(sx * 0.06, -0.08, -0.005),
-                      spines=[(2, 2, 0.018, (sx * 1, -0.2, 0))])
-        c.jointed_leg([(sx * 0.15, -0.16, 0.1), (sx * 0.29, -0.2, 0.14), (sx * 0.38, -0.32, 0.05), (sx * 0.42, -0.4, 0.0)],
-                      [0.03, 0.03, 0.022, 0.015], leg, M_SHINY, foot=(sx * 0.04, -0.1, -0.005),
-                      spines=[(2, 2, 0.018, (sx * 1, -0.2, 0))])
+        c.jointed_leg([(sx * 0.12, 0.26, 0.11), (sx * 0.23, 0.33, 0.12), (sx * 0.31, 0.42, 0.05), (sx * 0.33, 0.52, 0.0)],
+                      [0.028, 0.03, 0.022, 0.014], sheen_black, M_SHINY, foot=(sx * 0.02, 0.09, -0.005),
+                      spines=[(2, 5, 0.03, (sx * 1, 0.3, 0))])
+        c.jointed_leg([(sx * 0.15, 0.02, 0.1), (sx * 0.28, 0.06, 0.13), (sx * 0.39, 0.0, 0.05), (sx * 0.44, -0.05, 0.0)],
+                      [0.028, 0.028, 0.02, 0.013], sheen_black, M_SHINY, foot=(sx * 0.06, -0.08, -0.005),
+                      spines=[(2, 3, 0.02, (sx * 1, -0.2, 0))])
+        c.jointed_leg([(sx * 0.15, -0.16, 0.1), (sx * 0.28, -0.22, 0.13), (sx * 0.37, -0.34, 0.05), (sx * 0.41, -0.43, 0.0)],
+                      [0.028, 0.028, 0.02, 0.013], sheen_black, M_SHINY, foot=(sx * 0.04, -0.1, -0.005),
+                      spines=[(2, 3, 0.02, (sx * 1, -0.2, 0))])
     return c.finish()
 
 
-def praying_mantis(name="Critter_Mantis", body="#6fbf5e", light="#a9df8f", eye="#a9d85a", edge="#8a6a3f"):
-    """Chinese mantis (Tenodera sinensis) style: triangular head with corner eyes, long neck (prothorax),
-    spiny folded grabbing forelegs, leathery wing covers with a brown leading edge over a segmented
-    abdomen, long thin walking legs with feet, and cerci at the tail."""
+def praying_mantis(name="Critter_Mantis"):
+    """Chinese mantis in a threat pose: reared up on its walking legs, raptorial forelegs raised and
+    spread with dark spines showing, wings half-lifted. Muted olive-green and brown, angular head,
+    small hard eyes, veined wing covers. Meant to look a little scary, not cute."""
     c = Critter(name)
-    body, light, eye, edge = rgb(body), rgb(light), rgb(eye), rgb(edge)
-    dark = (0.08, 0.1, 0.06)
+    olive, olive_dk, tan, brown, spine = rgb("#5a7230"), rgb("#3b4a22"), rgb("#7d8a4a"), rgb("#5e4529"), rgb("#2a2416")
 
-    def shaded(col):
+    def shaded(col, dark=0.5):
         def color(p, n):
-            k = 0.78 + 0.28 * max(0.0, n.z)
+            k = dark + (1.05 - dark) * max(0.0, n.z) + 0.1 * abs(n.x)
             return tuple(min(1.0, ch * k) for ch in col)
         return color
 
-    b = shaded(body)
-    # abdomen: 7 segments, widest in the middle, drooping slightly toward the tip
-    c.segmented((0, -0.08, 0.27), (0, -0.66, 0.2), (0.07, 0.05), (0.06, 0.045), 7, b, droop=0.02)
-    c.segmented((0, -0.08, 0.27), (0, -0.38, 0.26), (0.09, 0.085), (0.075, 0.07), 3, b)
-    for sx in (1, -1):   # cerci: two little tail feelers
-        c.tube([(sx * 0.02, -0.68, 0.19), (sx * 0.05, -0.76, 0.21)], [0.008, 0.003], b)
-    # wing covers (tegmina): long and narrow, folded flat over the back, brown along the outer edge
+    b = shaded(olive)
+    bd = shaded(olive_dk, 0.45)
+    # abdomen: one smooth tapering body, with thin dark rings marking the 7 segments
+    c.tube([(0, -0.06, 0.3), (0, -0.25, 0.28), (0, -0.45, 0.25), (0, -0.6, 0.21), (0, -0.67, 0.19)],
+           [0.06, 0.07, 0.062, 0.045, 0.025], b, sides=10)
+    for k in range(1, 7):
+        t = k / 7
+        y = -0.06 - 0.61 * t
+        z = 0.3 - 0.11 * t
+        r = 0.06 + 0.01 * math.sin(t * math.pi) - 0.035 * t * t
+        c.tube([(0, y + 0.006, z), (0, y - 0.006, z)], r + 0.004, bd, sides=10)
+    for sx in (1, -1):
+        c.tube([(sx * 0.02, -0.68, 0.19), (sx * 0.05, -0.77, 0.21), (sx * 0.06, -0.8, 0.22)], [0.008, 0.005, 0.002], bd)
+    # wing covers half-lifted and spread (threat display), with veins and a brown leading edge
     for sx in (1, -1):
         def wing(p, n, sx=sx):
-            outer = abs(p.x) > 0.055
-            return edge if outer else (light if n.z > 0.5 else body)
-        c.blob((sx * 0.045, -0.3, 0.335), (0.06, 0.32, 0.018), wing, rot=(-4, 0, sx * 2), seg=10, rings=6)
-    # thorax that the legs hang from
-    c.blob((0, -0.02, 0.27), (0.065, 0.11, 0.06), b)
-    # long neck (prothorax), rising toward the head, with a bump where the forelegs attach
-    c.tube([(0, 0.06, 0.29), (0, 0.2, 0.37), (0, 0.32, 0.47), (0, 0.38, 0.53)], [0.045, 0.035, 0.032, 0.038], b, sides=7)
-    c.blob((0, 0.33, 0.48), (0.05, 0.05, 0.04), b)
-    # head: wide triangle, eyes on the top corners, mouth at the bottom point
-    c.blob((0, 0.42, 0.6), (0.09, 0.045, 0.06), b, rot=(25, 0, 0), seg=10, rings=6)
-    c.blob((0, 0.45, 0.55), (0.03, 0.03, 0.035), shaded(light))          # mouth parts
+            outer = abs(p.x) > 0.1
+            vein = (abs(p.x) * 40) % 1.0 < 0.12 or (abs(p.y) * 25) % 1.0 < 0.08
+            base = brown if outer else tan
+            k = 0.5 + 0.4 * max(0.0, n.z)
+            col = tuple(ch * (0.7 if vein else 1.0) * k for ch in base)
+            return col
+        c.blob((sx * 0.1, -0.28, 0.37), (0.09, 0.3, 0.012), wing, rot=(-10, sx * 18, sx * 14), seg=12, rings=8)
+    # thorax and the long neck rising steeply (reared up)
+    c.blob((0, -0.02, 0.3), (0.06, 0.1, 0.055), b)
+    neck = [(0, 0.04, 0.33), (0, 0.1, 0.45), (0, 0.15, 0.58), (0, 0.18, 0.66)]
+    c.tube(neck, [0.04, 0.032, 0.03, 0.036], b, sides=7)
+    c.tube([(-0.035, 0.1, 0.45), (0.035, 0.1, 0.45)], 0.008, bd)          # ridge at the leg joint
+    # head: sharp triangle, eyes on the top corners, small and hard, mandibles at the point
+    hc = Vector((0, 0.22, 0.75))
+    c.blob(hc, (0.095, 0.04, 0.05), b, rot=(10, 0, 0), seg=8, rings=5)
+    c.tube([hc + Vector((0, 0.02, -0.03)), hc + Vector((0, 0.035, -0.09))], [0.03, 0.012], bd, sides=5)   # face to jaw
     for sx in (1, -1):
-        c.blob((sx * 0.085, 0.41, 0.64), (0.042, 0.04, 0.05), eye)       # compound eyes
-        c.blob((sx * 0.1, 0.435, 0.645), (0.012, 0.01, 0.014), dark)    # pseudopupil
-        c.blob((sx * 0.012, 0.44, 0.66), (0.007, 0.007, 0.007), light)  # simple eyes (ocelli)
-        c.tube([(sx * 0.02, 0.44, 0.67), (sx * 0.07, 0.56, 0.8), (sx * 0.15, 0.68, 0.88), (sx * 0.24, 0.74, 0.9)],
-               [0.006, 0.005, 0.004, 0.002], b)                          # long thin antennae
-        # raptorial foreleg: long coxa down-forward, thick spiny femur up, spiny tibia folded back down
-        cox0, cox1 = Vector((sx * 0.04, 0.33, 0.47)), Vector((sx * 0.07, 0.43, 0.33))
-        fem1 = Vector((sx * 0.07, 0.56, 0.45))
-        tib1 = Vector((sx * 0.065, 0.47, 0.38))
-        c.tube([cox0, cox1], [0.028, 0.024], b, sides=6)
-        c.blob(cox0.lerp(cox1, 0.55) + Vector((-sx * 0.02, 0, 0)), (0.012, 0.016, 0.014), dark)   # coxa eyespot
-        c.tube([cox1, cox1.lerp(fem1, 0.4) + Vector((0, 0.0, 0.0)), fem1], [0.024, 0.032, 0.02], b, sides=6)
-        c.tube([fem1, tib1, tib1 + Vector((0, -0.03, -0.03))], [0.018, 0.014, 0.008], b, sides=5)
-        for k in range(5):      # spines along the inside of the femur
-            t = 0.25 + k * 0.14
-            base = cox1.lerp(fem1, t)
-            c.spike(base + Vector((-sx * 0.012, -0.012, -0.012)), base + Vector((-sx * 0.02, -0.04, -0.03)), 0.006, light)
-        for k in range(3):      # and the tibia
-            base = fem1.lerp(tib1, 0.3 + k * 0.25)
-            c.spike(base, base + Vector((-sx * 0.012, 0.02, 0.022)), 0.005, light)
-        # walking legs: long and thin, knees up high, with feet
-        c.jointed_leg([(sx * 0.05, 0.02, 0.25), (sx * 0.24, 0.1, 0.36), (sx * 0.36, 0.16, 0.04)],
-                      [0.016, 0.013, 0.009], b, foot=(sx * 0.03, 0.06, -0.01), foot_segments=4, claw=0.014)
-        c.jointed_leg([(sx * 0.05, -0.06, 0.25), (sx * 0.26, -0.18, 0.36), (sx * 0.4, -0.38, 0.04)],
-                      [0.016, 0.013, 0.009], b, foot=(sx * 0.03, -0.07, -0.01), foot_segments=4, claw=0.014)
+        eye_c = hc + Vector((sx * 0.09, 0.0, 0.03))
+        c.blob(eye_c, (0.03, 0.03, 0.04), shaded(rgb("#8a9a54"), 0.6), seg=8, rings=6)
+        c.blob(eye_c + Vector((sx * 0.012, 0.024, 0.0)), (0.006, 0.004, 0.012), spine)          # narrow pseudopupil
+        c.tube([hc + Vector((sx * 0.03, 0.03, 0.035)), hc + Vector((sx * 0.07, 0.025, 0.06))], 0.006, bd)   # brow ridge
+        c.spike(hc + Vector((sx * 0.015, 0.035, -0.09)), hc + Vector((sx * 0.0, 0.05, -0.12)), 0.008, spine)  # jaws
+        c.tube([hc + Vector((sx * 0.02, 0.03, 0.05)), hc + Vector((sx * 0.1, 0.18, 0.2)),
+                hc + Vector((sx * 0.22, 0.3, 0.22)), hc + Vector((sx * 0.32, 0.34, 0.18))],
+               [0.005, 0.004, 0.003, 0.0015], bd)                                            # long antennae
+        # raised raptorial forelegs, spread wide, jaws of the claws open
+        cox0 = Vector((sx * 0.035, 0.1, 0.46))
+        cox1 = Vector((sx * 0.12, 0.2, 0.52))
+        fem1 = Vector((sx * 0.2, 0.3, 0.74))
+        tib1 = Vector((sx * 0.17, 0.4, 0.66))
+        claw = tib1 + Vector((sx * -0.02, 0.03, -0.05))
+        c.tube([cox0, cox1], [0.026, 0.024], b, sides=6)
+        c.tube([cox1, cox1.lerp(fem1, 0.45), fem1], [0.024, 0.034, 0.02], b, sides=7)
+        c.tube([fem1, tib1, claw], [0.018, 0.014, 0.005], b, sides=6)
+        inner = Vector((-sx * 0.6, 0.6, -0.3)).normalized()
+        for k in range(7):   # long dark spines down the femur
+            base = cox1.lerp(fem1, 0.2 + k * 0.11)
+            ln = 0.035 if k % 2 == 0 else 0.022
+            c.spike(base + inner * 0.015, base + inner * (0.015 + ln) + Vector((0, 0.01, 0.005)), 0.006, spine)
+        for k in range(4):   # and the tibia
+            base = fem1.lerp(tib1, 0.25 + k * 0.2)
+            c.spike(base, base + Vector((-sx * 0.012, -0.02, -0.025)), 0.005, spine)
+        c.blob(cox0.lerp(cox1, 0.6) + Vector((-sx * 0.018, 0, -0.006)), (0.01, 0.014, 0.012), spine)   # coxa eyespot
+        # walking legs: long, thin, knees high, planted wide
+        c.jointed_leg([(sx * 0.05, 0.02, 0.28), (sx * 0.26, 0.12, 0.42), (sx * 0.4, 0.2, 0.02)],
+                      [0.015, 0.012, 0.008], bd, foot=(sx * 0.03, 0.06, -0.01), foot_segments=4, claw=0.012,
+                      spines=[(1, 3, 0.012, (sx * 0.2, -1, 0))])
+        c.jointed_leg([(sx * 0.05, -0.06, 0.28), (sx * 0.3, -0.18, 0.42), (sx * 0.46, -0.4, 0.02)],
+                      [0.015, 0.012, 0.008], bd, foot=(sx * 0.03, -0.07, -0.01), foot_segments=4, claw=0.012,
+                      spines=[(1, 3, 0.012, (sx * 0.2, 1, 0))])
     return c.finish()
 
 
@@ -478,7 +503,7 @@ for obj in objs:
     center = obj.location + Vector((0, 0, 0.25))
     views = [("q", 35, 25, 1.9), ("side", 90, 8, 1.9)]
     if obj.name in ("Critter_RainbowStagBeetle", "Critter_Mantis"):   # the detailed ones get a closer look
-        views += [("top", 0, 89, 1.7), ("front", 0, 18, 1.2), ("close", 140, 30, 1.0)]
+        views += [("top", 0, 89, 1.7), ("front", 0, 12, 1.4), ("close", 140, 22, 1.1)]
     for label, yaw, pitch, scale in views:
         a, p = math.radians(yaw), math.radians(pitch)
         cam.location = center + Vector((math.sin(a) * math.cos(p), math.cos(a) * math.cos(p), math.sin(p))) * 5
