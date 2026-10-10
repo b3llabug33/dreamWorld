@@ -35,6 +35,27 @@ Extras: berries and mushrooms from bushes (food), sap from trees, moss from moss
 - Crafted decor goes into the bag and can be placed at your base (base building comes next).
 - Most of the 102 props in Design/Props can become recipes.
 
+## Wood types by biome (requested 2026-10-09)
+
+Each biome's trees drop their own wood, and the wood you build with sets the look (color, grain, trim) of the furniture, decor and wooden weapons you craft. Same recipe, different wood = different finish, so players collect woods for style and can trade them.
+
+| Wood | Where | Look | Example crafts |
+|---|---|---|---|
+| Pine | town paths, starter woods | pale honey, knotty | basic chairs, crates, starter club |
+| Oak | town square, whimsical woods | warm mid brown, straight grain | tables, bookshelves, sturdy staff |
+| Birch | whimsical woods | creamy white bark trim | cottagecore stools, picture frames, bow |
+| Mistpine fir | Mistpine Hollow | dark gray-brown, damp | moody glass-house furniture, Mullen-style shelves |
+| Red cedar | Mistpine Hollow | reddish, fluted | chests, wardrobes, cedar bat (baseball clearing nod) |
+| Mossy maple | Mistpine Hollow | brown with green moss inlay | planters, moss lamps, mossy staff |
+| Glow wood | dream glades (later) | violet with faint glow seams | glowing bed frames, night lamps, wand |
+| Driftwood | Quillet Riverbank | silver-gray, smooth | rustic benches, wind chimes, spear |
+
+Implementation notes:
+- Items: `wood_<type>` (stackable). Tree nodes (`Res_Tree_*`) carry a `woodType` field set by the zone/biome they spawn in.
+- Recipes ask for "any wood" or a specific one. The crafted item stores `material = wood type`; one model per item with the wood applied as a palette/texture swap (vertex-color tint in PSX Lit) so we don't need a model per wood.
+- Wooden weapons (club, staff, bow, bat, spear, wand) use the same swap, and rarer woods can add a small stat perk (glow wood +magic, cedar +durability).
+- Shop/trade value scales with rarity: pine < oak/birch < Mistpine woods < driftwood < glow wood.
+
 ## Models (made): ArtSource/build_resources.py
 Choppable trees (with stumps), rock nodes (with rubble), ore veins, thread sources (cotton bush, cocoon
 cluster, web), berry bushes, plus their "used up" states.
