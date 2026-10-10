@@ -9,6 +9,6 @@ namespace DreamWorld.Town
         public string message = "coming soon!";
 
         public override string Prompt(PlayerStats player) => $"read sign: {title}";
-        public override void Interact(PlayerStats player) => GameHUD.Instance?.Toast($"{title}: {message}");
+        public override void Interact(PlayerStats player) => GameHUD.Instance?.Say(title, message);
     }
 }

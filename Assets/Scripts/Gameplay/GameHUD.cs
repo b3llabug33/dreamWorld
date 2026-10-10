@@ -37,7 +37,7 @@ namespace DreamWorld.Gameplay
         CanvasGroup zoneToastGroup, deathGroup;
         RectTransform lockMarker;
         readonly List<(RectTransform root, RectTransform fill)> enemyBars = new List<(RectTransform, RectTransform)>();
-        readonly List<(Text text, float time)> toasts = new List<(Text, float)>();
+        readonly List<(Text text, float time, bool talk)> toasts = new List<(Text, float, bool)>();
         RectTransform toastRoot;
         RectTransform levelPanel, bankPanel, pausePanel;
         Text levelPoints, bankLabel;
@@ -240,13 +240,24 @@ namespace DreamWorld.Gameplay
 
         // ---------- public calls ----------
 
-        public void Toast(string message)
+        public void Toast(string message) => AddToast(message, false);
+
+        // A townsperson talking. Opening the bag or a shop clears these so they never sit on top of it.
+        public void Say(string speaker, string line) => AddToast($"{speaker}: {line}", true);
+
+        public void ClearDialogue()
+        {
+            for (int i = toasts.Count - 1; i >= 0; i--)
+                if (toasts[i].talk) { Destroy(toasts[i].text.gameObject); toasts.RemoveAt(i); }
+        }
+
+        void AddToast(string message, bool talk)
         {
             if (toastRoot == null) return;
             var t = ui.Label(toastRoot, message, 34, TerminalUI.Text);
             t.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.8f);
             t.rectTransform.sizeDelta = new Vector2(1000, 40);
-            toasts.Add((t, Time.time));
+            toasts.Add((t, Time.time, talk));
         }
 
         public void OpenBank() => SetPanel(bankPanel, true);
@@ -432,6 +443,10 @@ namespace DreamWorld.Gameplay
                 if (age > 3.5f) { Destroy(toasts[i].text.gameObject); toasts.RemoveAt(i); continue; }
                 toasts[i].text.color = new Color(1f, 0.96f, 0.92f, Mathf.Clamp01(3.5f - age));
             }
+            // with the bag, a shop or a menu open, messages move up to the strip above the panels
+            bool menus = InventoryUI.IsOpen || AnyPanel;
+            toastRoot.anchorMin = toastRoot.anchorMax = menus ? new Vector2(0.5f, 1f) : new Vector2(0.5f, 0.32f);
+            toastRoot.anchoredPosition = menus ? new Vector2(0, -115) : Vector2.zero;
             for (int i = 0; i < toasts.Count; i++)   // newest at the bottom, older ones float up
                 toasts[i].text.rectTransform.anchoredPosition = new Vector2(0, (toasts.Count - 1 - i) * 42 + (Time.time - toasts[i].time) * 6f);
         }

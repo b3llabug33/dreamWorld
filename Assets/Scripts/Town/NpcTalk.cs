@@ -14,7 +14,8 @@ namespace DreamWorld.Town
         public override void Interact(PlayerStats player)
         {
             if (lines.Length == 0) return;
-            GameHUD.Instance?.Toast($"{npcName}: {lines[next % lines.Length]}");
+            if (InventoryUI.IsOpen) InventoryUI.Instance.Toggle();   // close the bag so they don't overlap
+            GameHUD.Instance?.Say(npcName, lines[next % lines.Length]);
             next++;
             var walker = GetComponent<Wanderer>();
             if (walker != null) walker.PauseFor(4f, player.transform.position);

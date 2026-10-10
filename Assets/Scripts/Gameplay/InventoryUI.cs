@@ -189,6 +189,7 @@ namespace DreamWorld.Gameplay
         {
             if (stats == null) return;
             side = open ? withSide : Side.None;
+            if (open) GameHUD.Instance?.ClearDialogue();   // townsfolk chatter would sit on top of the panels
             bagPanel.gameObject.SetActive(open);
             storagePanel.gameObject.SetActive(open && side == Side.Storage);
             shopPanel.gameObject.SetActive(open && side == Side.Shop);
