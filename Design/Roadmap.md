@@ -43,3 +43,11 @@ The town square and paths are safe; everywhere else (including homes) has monste
   player bounties, networked monsters
 - Public hosting so anyone can join (see the multiplayer notes)
 - Minigames in town
+
+## Core build plan (agreed 2026-10-10)
+Phases (each system gets its own files so parallel work doesn't collide):
+1. Quests + bounty board (main session), settings menu (agent), music + sound (agent)
+2. Gathering + crafting (biome woods -> decor/furniture/wooden weapons), home decor placement on owned plots
+3. Magic + abilities (magic bar spells), tougher enemies with new moves (options; she'll rearrange spawns later),
+   more weapons, armor that can be reskinned to any look for a special currency
+4. Trading + player market, multiplayer for real (synced swings/outfits, shared monsters, PvP, public server)
