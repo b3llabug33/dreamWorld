@@ -209,15 +209,17 @@ namespace DreamWorld.Gameplay
 
         void BuildPausePanel()
         {
-            pausePanel = Panel("Pause", new Vector2(620, 380), "== PAUSED ==");
+            pausePanel = Panel("Pause", new Vector2(620, 466), "== PAUSED ==");
             var resume = ui.Button(pausePanel, "resume", 36, () => SetPanel(pausePanel, false));
             TerminalUI.Place((RectTransform)resume.transform, new Vector2(0.5f, 1), new Vector2(0, -130), new Vector2(400, 66));
+            var settings = ui.Button(pausePanel, "settings", 36, () => SettingsMenu.Open(titleFont, bodyFont));
+            TerminalUI.Place((RectTransform)settings.transform, new Vector2(0.5f, 1), new Vector2(0, -216), new Vector2(400, 66));
             var back = ui.Button(pausePanel, "back to make you", 36, () =>
             {
                 ThirdPersonCamera.CursorFree = false;
                 SceneManager.LoadScene(creatorScene);
             });
-            TerminalUI.Place((RectTransform)back.transform, new Vector2(0.5f, 1), new Vector2(0, -216), new Vector2(400, 66));
+            TerminalUI.Place((RectTransform)back.transform, new Vector2(0.5f, 1), new Vector2(0, -302), new Vector2(400, 66));
         }
 
         void BuildDeathScreen()

@@ -1,3 +1,4 @@
+using DreamWorld.Gameplay;
 using UnityEngine;
 
 namespace DreamWorld.World
@@ -87,7 +88,7 @@ namespace DreamWorld.World
             else if (!free)
             {
                 yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-                pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+                pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity * (Settings.InvertY ? -1f : 1f);
             }
             pitch = Mathf.Clamp(pitch, -10f, 65f);
             if (!free) distance = Mathf.Clamp(distance - Input.mouseScrollDelta.y * 0.5f, minDistance, maxDistance);

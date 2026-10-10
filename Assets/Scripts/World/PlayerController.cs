@@ -76,7 +76,7 @@ namespace DreamWorld.World
         bool comboQueued, heavyQueued, shotFired;
         float lastLightEnd = -9f;
         float spaceDown = -1f;
-        bool sprinting, sprintLocked;
+        bool sprinting, sprintLocked, sprintToggled;   // sprintToggled: the "toggle sprint" setting is on and Shift switched it on
         readonly HashSet<IDamageable> hitThisSwing = new HashSet<IDamageable>();
 
         void Start()
@@ -138,6 +138,18 @@ namespace DreamWorld.World
             // Shift: hold while moving to sprint (Shift + click is still the heavy attack: clicking doesn't need you to move)
             bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.RightShift)) sprintLocked = false;
+            if (Settings.ToggleSprint)
+            {
+                // toggle sprint (settings): tap Shift to start, tap again (or stop moving / run out of stamina) to end
+                if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
+                {
+                    sprintToggled = !sprintToggled;
+                    if (sprintToggled) sprintLocked = false;
+                }
+                if (moveDir.sqrMagnitude <= 0.01f || sprintLocked) sprintToggled = false;
+                shift = sprintToggled;
+            }
+            else sprintToggled = false;
             sprinting = (holding || shift) && !sprintLocked && moveDir.sqrMagnitude > 0.01f && action == Action.None;
 
             if (Input.GetKeyDown(KeyCode.F)) Jump();

@@ -1,3 +1,4 @@
+using DreamWorld.Gameplay;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -18,7 +19,7 @@ namespace DreamWorld.World
         public Color dimColor = new Color(0.78f, 0.74f, 0.92f, 1f);
         public Color accentColor = new Color(0.98f, 0.66f, 0.78f, 1f);
 
-        Text banner, subtitle, status;
+        Text banner, subtitle, status, hint;
         CanvasGroup bannerGroup;
         float timer;
         string fullBanner;
@@ -48,7 +49,7 @@ namespace DreamWorld.World
             banner.gameObject.AddComponent<Shadow>().effectColor = new Color(0, 0, 0, 0.6f);
             subtitle = MakeText(groupRect, "a cozy clearing in the dream woods", bodyFont, 34, dimColor, new Vector2(0, -36));
 
-            var hint = MakeText(canvas, "WASD move   mouse look   shift: sprint   space: roll   F jump   click: attack   shift+click: heavy   right click: guard   Q lock on   E use / bag   1-4 quick items   L level up   esc menu",
+            hint = MakeText(canvas, "WASD move   mouse look   shift: sprint   space: roll   F jump   click: attack   shift+click: heavy   right click: guard   Q lock on   E use / bag   1-4 quick items   L level up   esc menu",
                                 bodyFont, 22, dimColor, Vector2.zero);
             hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0.5f, 0);
             hint.rectTransform.anchoredPosition = new Vector2(0, 30);
@@ -89,6 +90,7 @@ namespace DreamWorld.World
         void Update()
         {
             timer += Time.deltaTime;
+            hint.enabled = Settings.ShowControlsHint;   // settings menu: "controls hint"
             // type the banner out letter by letter, with a blinking cursor, then fade it all away
             int letters = Mathf.Clamp((int)((timer - 0.5f) * 22f), 0, fullBanner.Length);
             bool cursor = letters < fullBanner.Length || timer % 1f < 0.5f;
