@@ -557,7 +557,7 @@ namespace DreamWorld.EditorTools
             var npcs = new GameObject("Townsfolk").transform;
             npcs.SetParent(root);
             Npc(npcs, "Count Snackula", Plaza + Quaternion.Euler(0, 210, 0) * Vector3.forward * 19f + Quaternion.Euler(0, 30, 0) * new Vector3(1.6f, 0, -1.2f), 210,
-                "Body=1;Skin=#EEEAF4;Eyes=CatEye #D01E32;Mouth=Fang;Brows=Angled 0;Hair=Undercut 0 length:Medium;Top=ButtonUp 11;Bottom=Slacks 11 rise:High;Legwear=none;Shoes=Boots 11;Neck=Chain 2;Headwear=none;Glasses=none;Extra1=none",
+                "Body=1;Skin=#EEEAF4;Eyes=CatEye #D01E32;Mouth=Fang;Brows=Angled 0;Hair=Curtains 0 length:Medium;Top=ButtonUp 11;Bottom=Slacks 11 rise:High;Legwear=none;Shoes=Boots 11;Neck=Chain 2;Headwear=none;Glasses=none;Extra1=none",
                 new[] { "i vant to sell you... a snack. ten coins.", "fruit punch only. what else would i drink?", "garlic? never heard of her.",
                         "i sleep all day in the wobbly house. kidding. or am i" });
             Npc(npcs, "Vesper", new Vector3(-6, 0, 13), 0,
@@ -580,7 +580,7 @@ namespace DreamWorld.EditorTools
                 "Skin=3;Eyes=Puppy 1;Brows=Soft 0;Hair=Twintails 3 bangs:Choppy length:Short tie:Low;Top=Sailor 3;Bottom=Skirt 3;Legwear=KneeSocks 0;Shoes=MaryJanes 11;Glasses=Round 11;Headwear=none;Neck=none;Mouth=Tiny;Extra1=Blush",
                 null).AddComponent<LandOffice>().range = 3.2f;
             Npc(npcs, "Bartholomew", tavern.TransformPoint(new Vector3(0, 0, 2.6f)), tavern.eulerAngles.y + 180,
-                "Body=1;Skin=4;Eyes=Toon 6;Brows=Thick 0;Hair=Crew 0 length:Medium;Top=Flannel 8;Bottom=BaggyJeans 21 rise:Mid;Legwear=none;Shoes=Combat 11;Mouth=Grin;Headwear=Beanie 11;Neck=none;Glasses=none;Extra1=none",
+                "Body=1;Skin=4;Eyes=Toon 6;Brows=Thick 0;Hair=Shaggy 0 length:Medium;Top=Flannel 8;Bottom=BaggyJeans 21 rise:Mid;Legwear=none;Shoes=Combat 11;Mouth=Grin;Headwear=Beanie 11;Neck=none;Glasses=none;Extra1=none",
                 new[] { "the sleepy spore is open! well, almost. no drinks yet.", "i make a mean mushroom soup. someday.", "pull up a stool!" });
             Npc(npcs, "Juniper", Plaza + new Vector3(-3, 0, -4), 30,
                 "Skin=0;Eyes=Sparkly 4;Brows=Arched 4;Hair=Twintails 4 bangs:Straight length:Medium tie:High;Top=Oversized 1;Bottom=Shorts 22 rise:High;Legwear=FrillySocks 0;Shoes=Sneakers 0;Mouth=Cat;Headwear=Halo 9;Neck=none;Glasses=none;Extra1=HeartBlush",

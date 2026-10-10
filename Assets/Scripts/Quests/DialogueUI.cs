@@ -105,6 +105,20 @@ namespace DreamWorld.Quests
             }
         }
 
+        // For scripted scenes (promo clips, tests): the same as pressing space, or a number key.
+        public bool Typing => IsOpen && node != null && typed < node.text.Length;
+        public int ChoiceCount => IsOpen && node != null && choicesShown ? node.choices.Count : 0;
+        public void Advance()
+        {
+            if (!IsOpen || node == null) return;
+            if (typed < node.text.Length) { typed = node.text.Length; body.text = node.text; }
+            else if (node.choices.Count == 0) Go(node.next);
+        }
+        public void Choose(int i)
+        {
+            if (ChoiceCount > i) Pick(node.choices[i]);
+        }
+
         void Pick(Dialogue.Choice choice)
         {
             choice.onPick?.Invoke();

@@ -82,6 +82,25 @@ namespace DreamWorld.CharacterCreation
 
         public int StyleCount => BaseNames.Count + (optional ? 1 : 0);
 
+        // Styles that stay in the list (saves store positions, so nothing is ever removed or reordered)
+        // but can't be picked in the creator any more, because they looked broken.
+        public static readonly Dictionary<OutfitCategory, string[]> Retired = new Dictionary<OutfitCategory, string[]>
+        {
+            { OutfitCategory.Hair, new[] { "Crew", "Undercut", "Mullet", "EmoSwoop", "ManBun", "Butterfly", "Curly" } },
+        };
+
+        public bool IsRetired(int index)
+        {
+            if (!Retired.TryGetValue(category, out var names)) return false;
+            var names2 = BaseNames;
+            int i = optional ? index - 1 : index;
+            return i >= 0 && i < names2.Count && System.Array.IndexOf(names, names2[i]) >= 0;
+        }
+
+        // What the creator shows: "3 / 11" counting only the styles you can pick.
+        public int PickableCount { get { int n = 0; for (int i = 0; i < StyleCount; i++) if (!IsRetired(i)) n++; return n; } }
+        public int PickableNumber { get { int n = 0; for (int i = 0; i <= styleIndex && i < StyleCount; i++) if (!IsRetired(i)) n++; return Mathf.Max(1, n); } }
+
         public string CurrentBase
         {
             get
@@ -264,7 +283,11 @@ namespace DreamWorld.CharacterCreation
             var slot = GetSlot(category);
             if (slot == null || slot.StyleCount == 0) return;
             // Wrap around in both directions (the extra + count keeps the result non-negative).
-            slot.styleIndex = (slot.styleIndex + direction + slot.StyleCount) % slot.StyleCount;
+            for (int tries = 0; tries < slot.StyleCount; tries++)   // skip retired styles
+            {
+                slot.styleIndex = (slot.styleIndex + direction + slot.StyleCount) % slot.StyleCount;
+                if (!slot.IsRetired(slot.styleIndex)) break;
+            }
             int baseIndex = slot.optional ? slot.styleIndex - 1 : slot.styleIndex;
             if (baseIndex >= 0 && baseIndex < slot.baseColors.Count)   // e.g. a new piercing starts silver
             {

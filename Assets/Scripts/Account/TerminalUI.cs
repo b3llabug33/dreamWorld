@@ -78,6 +78,9 @@ namespace DreamWorld.Account
             text.color = color;
             text.alignment = anchor;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            // titles are one line: the pixel font is taller than its size, and Unity hides (not clips) a
+            // line that doesn't fit its box, which made the speaker's name vanish in conversations
+            if (title) text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
             text.text = content;
             return text;

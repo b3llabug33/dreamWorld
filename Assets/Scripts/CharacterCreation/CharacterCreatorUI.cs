@@ -665,7 +665,7 @@ namespace DreamWorld.CharacterCreation
             var slot = appearance.GetSlot(currentCategory);
             if (slot == null) return;
             styleName.text = slot.CurrentStyleName;
-            styleCount.text = $"{slot.styleIndex + 1} / {slot.StyleCount}";
+            styleCount.text = $"{slot.PickableNumber} / {slot.PickableCount}";
             for (int i = 0; i < swatches.Count; i++)
                 swatches[i].ring.color = !slot.useCustom && i == slot.colorIndex ? textColor : new Color(0, 0, 0, 0.6f);
             LayoutPanel(slot);

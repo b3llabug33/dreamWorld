@@ -159,7 +159,7 @@ namespace DreamWorld.EditorTools
                 var go = Npc(folks, name, pos, Face(pos, house + Vector3.right * 12), look, lines);
                 go.AddComponent<GroundFollow>();
             }
-            Folk("Carlily Mullen", Broad + Pale + "Brows=Soft #D8C080;Hair=Crew #E8D08A length:Long;Top=ButtonUp 0;Bottom=Slacks 11 rise:High;Legwear=none;Shoes=Loafers 11;Neck=none;Headwear=none;Glasses=none;Extra1=none",
+            Folk("Carlily Mullen", Broad + Pale + "Brows=Soft #D8C080;Hair=Curtains #E8D08A length:Short;Top=ButtonUp 0;Bottom=Slacks 11 rise:High;Legwear=none;Shoes=Loafers 11;Neck=none;Headwear=none;Glasses=none;Extra1=none",
                  new[] { "welcome to our home. we're vegetarians. we mostly eat snacks.", "i've been a doctor for... a while. don't ask how long.",
                          "the fog keeps us comfortable. and hidden. mostly comfortable." });
             Folk("Esmay Mullen", Pale + "Brows=Soft #7A4A2A;Hair=Long #8A5A3A bangs:Middle length:Long;Top=Cardigan 4;Bottom=LongSkirt 10;Legwear=none;Shoes=MaryJanes 10;Neck=none;Headwear=none;Glasses=none;Extra1=none",
@@ -173,7 +173,7 @@ namespace DreamWorld.EditorTools
                  new[] { "sorry, i'm feeling everyone's feelings right now.", "i'll keep my distance. it's a me thing, not a you thing." });
             Folk("Rosaleaf Mullen", Pale + "Brows=Arched #C8A860;Hair=Long #F0D890 bangs:Side length:Long;Top=SlipDress 0;Bottom=none;Legwear=none;Shoes=Platforms 0;Neck=Chain 2;Headwear=none;Glasses=none;Extra1=none",
                  new[] { "don't touch the convertible.", "i'm not mean, i'm just perfect.", "fine. you can stay. for a bit." });
-            Folk("Emmitt Mullen", Broad + Pale + "Brows=Thick #2A1A10;Hair=Curly #2A1A10 length:Short;Top=Hoodie 8;Bottom=BaggyJeans 11 rise:Mid;Legwear=none;Shoes=Sneakers 11;Neck=none;Headwear=none;Glasses=none;Extra1=none",
+            Folk("Emmitt Mullen", Broad + Pale + "Brows=Thick #2A1A10;Hair=Shaggy #2A1A10 length:Short;Top=Hoodie 8;Bottom=BaggyJeans 11 rise:Mid;Legwear=none;Shoes=Sneakers 11;Neck=none;Headwear=none;Glasses=none;Extra1=none",
                  new[] { "wanna arm wrestle? no? coward.", "the big rock guy in the quarry? i'd fight him. you go first though.", "batter up! storm's coming." });
             Folk("Stella", "Skin=1;Eyes=Doe #5A3A28;Mouth=Tiny;Brows=Soft #4A2A18;Hair=Long #5A3A28 bangs:Middle length:Long;Top=Flannel 8;Bottom=BaggyJeans 21 rise:Mid;Legwear=none;Shoes=Combat 11;Neck=none;Headwear=none;Glasses=none;Extra1=none",
                  new[] { "my truck is older than everyone here. except the mullens.", "is it weird that i like the rain?", "i'm not clumsy. the ground is uneven." });
