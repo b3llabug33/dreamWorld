@@ -1398,6 +1398,195 @@ def snail_shell_planter():
     return m
 
 
+# ================================================================ enemies (static drafts; rigged later)
+
+def _eyes(m, center, spread, size, color="#e0304a"):
+    for s in (1, -1):
+        c = Vector(center) + Vector((s * spread, 0, 0))
+        m.blob(c, (size, size * 0.6, size), color, M_GLOW)
+
+
+@prop("enemies")
+def moss_golem():
+    """Slow tank of the woods: a walking boulder overgrown with moss and mushrooms."""
+    m = Model("Enemy_MossGolem")
+    rock = lambda p, n: hsv(0.24, 0.5, 0.3 + 0.25 * n.z) if n.z > 0.35 else hsv(0.08, 0.1, 0.35 + 0.15 * n.z)
+    m.blob((0, 0, 1.2), (0.8, 0.6, 0.7), rock, seg=9, rings=6)                       # body
+    m.blob((0, -0.35, 1.85), (0.38, 0.32, 0.3), rock, seg=8, rings=5)               # head
+    _eyes(m, (0, -0.64, 1.88), 0.13, 0.06, "#c8ff7a")
+    for s in (1, -1):
+        m.blob((s * 0.95, -0.1, 1.2), (0.3, 0.28, 0.35), rock, seg=8, rings=5)      # shoulders
+        m.blob((s * 1.1, -0.2, 0.6), (0.28, 0.26, 0.45), rock, seg=8, rings=5)      # big fists
+        m.blob((s * 0.4, 0, 0.35), (0.28, 0.28, 0.35), rock, seg=8, rings=5)        # legs
+    rnd = random.Random(101)
+    for k in range(5):
+        x, y = rnd.uniform(-0.5, 0.5), rnd.uniform(-0.3, 0.3)
+        h = rnd.uniform(0.15, 0.35)
+        m.cyl((x, y, 1.75), 0.03, h, CREAM, sides=6)
+        m.blob((x, y, 1.75 + h), (0.1, 0.1, 0.05), hsv(rnd.choice([0.78, 0.55]), 0.6, 0.9), M_GLOW)
+    return m
+
+
+@prop("enemies")
+def glitch_moth():
+    """Fast flier near the old tech: a moth whose wings are corrupted pixels."""
+    m = Model("Enemy_GlitchMoth")
+    m.tube([(0, 0.3, 1.5), (0, 0, 1.5), (0, -0.35, 1.45)], [0.08, 0.1, 0.05], shade("#3a3446"), sides=6)
+    m.blob((0, 0.36, 1.52), (0.08, 0.07, 0.07), shade("#3a3446"))
+    _eyes(m, (0, 0.42, 1.55), 0.05, 0.03, "#4affd8")
+    rnd = random.Random(102)
+    for s in (1, -1):
+        for i in range(6):
+            for j in range(5):
+                if rnd.random() < 0.18:
+                    continue   # missing pixels
+                x = s * (0.1 + i * 0.1 + rnd.uniform(-0.01, 0.03))
+                y = 0.25 - j * 0.12
+                z = 1.55 + i * 0.04
+                hue = rnd.choice([0.5, 0.8, 0.92, 0.33])
+                m.box((x, y, z), (0.095, 0.11, 0.01), hsv(hue, 0.6, rnd.uniform(0.5, 1.0)), M_GLOW if rnd.random() < 0.3 else M_MATTE)
+        m.tube([(s * 0.03, 0.42, 1.58), (s * 0.15, 0.6, 1.75)], 0.008, "#3a3446")
+    return m
+
+
+@prop("enemies")
+def thorn_beetle():
+    """Charger: a big beetle with a thorny horn that rams you (roll sideways!)."""
+    m = Model("Enemy_ThornBeetle")
+    shell = lambda p, n: hsv(0.95 + 0.06 * n.x, 0.65, 0.25 + 0.45 * max(0.0, n.z))
+    m.blob((0, -0.1, 0.5), (0.55, 0.75, 0.4), shell, M_SHINY, seg=14, rings=8)
+    m.blob((0, 0.6, 0.45), (0.35, 0.25, 0.25), shell, M_SHINY)
+    m.tube([(0, 0.75, 0.5), (0, 1.05, 0.75), (0, 1.15, 1.05), (0, 1.05, 1.2)], [0.1, 0.08, 0.05, 0.01], "#2a1418", M_SHINY)
+    for k in range(4):
+        z = 0.6 + k * 0.15
+        m.cyl((0.0, 0.95 + 0.04 * k, z), 0.025, 0.12, "#5a7a2a", sides=4, top=0.0, rot=(-70, 0, 0))
+    _eyes(m, (0, 0.82, 0.5), 0.18, 0.05)
+    for s in (1, -1):
+        for y in (0.4, 0.0, -0.4):
+            m.tube([(s * 0.4, y, 0.35), (s * 0.75, y + 0.05, 0.4), (s * 0.85, y + 0.1, 0.0)], [0.06, 0.05, 0.03], "#1a0e10", M_SHINY)
+    rnd = random.Random(103)
+    for k in range(8):   # thorns growing out of the shell
+        x, y = rnd.uniform(-0.4, 0.4), rnd.uniform(-0.6, 0.3)
+        m.cyl((x, y, 0.82), 0.03, 0.15, "#5a7a2a", sides=4, top=0.0)
+    return m
+
+
+@prop("enemies")
+def bat_vampire_spawn():
+    """Nighttime swarm enemy: a fluffy bat with red eyes and tiny fangs."""
+    m = Model("Enemy_NightBat")
+    m.blob((0, 0, 1.6), (0.18, 0.16, 0.2), shade("#2a2030"))
+    m.blob((0, 0.12, 1.72), (0.13, 0.11, 0.12), shade("#2a2030"))
+    for s in (1, -1):
+        m.cyl((s * 0.07, 0.12, 1.8), 0.04, 0.12, shade("#2a2030"), sides=4, top=0.0)
+        m.blob((s * 0.05, 0.22, 1.74), (0.025, 0.012, 0.025), "#ff3050", M_GLOW)
+        m.cyl((s * 0.02, 0.23, 1.66), 0.008, 0.04, "#fff", sides=4, top=0.0, rot=(180, 0, 0))
+        wing = [(0, 0), (0.3, 0.15), (0.55, 0.05), (0.5, -0.1), (0.38, -0.05), (0.28, -0.15), (0.15, -0.05)]
+        f = m.plate([(s * x, y) for x, y in wing], 0, 0.01, "#3a2a40")
+        m.rotate_last(f, (0, 0, 0), (90, 0, 0))
+        m.move(f, (s * 0.12, 0.0, 1.65))
+    m.blob((0, 0.24, 1.69), (0.02, 0.01, 0.015), PINK)   # little nose
+    return m
+
+
+@prop("enemies")
+def rot_slug():
+    """Slow, leaves a slippery trail; weak but spits goo."""
+    m = Model("Enemy_RotSlug")
+    m.tube([(0, -0.7, 0.08), (0, -0.3, 0.15), (0, 0.1, 0.2), (0, 0.4, 0.35), (0, 0.55, 0.5)],
+           [0.12, 0.22, 0.24, 0.18, 0.13], lambda p, n: hsv(0.2 + 0.05 * math.sin(p.y * 20), 0.55, 0.35 + 0.3 * max(0, n.z)), sides=10)
+    for s in (1, -1):
+        m.tube([(s * 0.05, 0.55, 0.6), (s * 0.12, 0.65, 0.85)], 0.025, hsv(0.2, 0.5, 0.45))
+        m.blob((s * 0.12, 0.66, 0.88), (0.05, 0.05, 0.05), "#e8ff6a", M_GLOW)
+    rnd = random.Random(104)
+    for k in range(7):
+        m.blob((rnd.uniform(-0.15, 0.15), rnd.uniform(-0.5, 0.3), 0.32 + rnd.uniform(0, 0.08)), (0.05, 0.05, 0.03), hsv(0.3, 0.6, 0.6), M_GLOW)
+    m.box((0, -1.2, 0.005), (0.3, 1.2, 0.01), (0.6, 0.8, 0.3), M_SHINY)   # slime trail
+    return m
+
+
+@prop("enemies")
+def mushroom_knight():
+    """Mini-boss of the mushroom woods: armored shroom with a stem sword and cap shield."""
+    m = Model("Enemy_MushroomKnight")
+    m.cyl((0, 0, 0), 0.3, 1.2, shade(CREAM), sides=10, top=0.25)
+    m.blob((0, 0, 1.4), (0.75, 0.75, 0.35), shade("#a02838"), seg=14, rings=7)
+    for k in range(7):
+        a = k * 0.9
+        m.blob((math.cos(a) * 0.5, math.sin(a) * 0.5, 1.55), (0.08, 0.08, 0.04), CREAM)
+    m.box((0, -0.26, 0.9), (0.35, 0.06, 0.12), shade("#5a5a66"), M_SHINY)          # visor
+    _eyes(m, (0, -0.3, 0.9), 0.08, 0.035, "#ffd84a")
+    m.box((0, -0.15, 0.55), (0.62, 0.25, 0.5), shade("#7a7a88"), M_SHINY, bevel=0.03)   # breastplate
+    for s in (1, -1):
+        m.blob((s * 0.38, 0, 0.75), (0.15, 0.15, 0.12), shade("#7a7a88"), M_SHINY)
+        m.cyl((s * 0.15, 0, -0.0), 0.1, 0.25, shade("#5a5a66"), sides=8)
+    m.tube([(0.55, -0.2, 0.6), (0.6, -0.4, 1.6)], [0.05, 0.03], shade(CREAM))       # stem sword
+    m.box((0.55, -0.22, 0.65), (0.25, 0.06, 0.06), shade(GOLD), M_SHINY)
+    m.cyl((-0.65, -0.1, 0.4), 0.38, 0.06, shade("#7a4f8f"), rot=(80, 0, 20), sides=12)   # cap shield
+    return m
+
+
+@prop("enemies")
+def static_wisp():
+    """A little floating ghost of old TV static that zaps you. Hovers near CRTs."""
+    m = Model("Enemy_StaticWisp")
+    rnd = random.Random(105)
+    for k in range(40):
+        a = rnd.uniform(0, 2 * math.pi)
+        r = rnd.uniform(0, 0.3) * (1.2 - rnd.random() * 0.4)
+        z = 1.2 + rnd.uniform(-0.25, 0.35) - r * 0.4
+        g = rnd.uniform(0.4, 1.0)
+        m.box((math.cos(a) * r, math.sin(a) * r, z), (0.06, 0.06, 0.06), (g, g, g * 1.05), M_GLOW if g > 0.85 else M_MATTE)
+    for k in range(6):   # wispy tail
+        m.box((rnd.uniform(-0.05, 0.05), rnd.uniform(-0.05, 0.05), 0.9 - k * 0.08), (0.05 - k * 0.006,) * 3, (0.7, 0.7, 0.75))
+    _eyes(m, (0, -0.28, 1.35), 0.09, 0.04, "#7affd8")
+    m.box((0, -0.3, 1.22), (0.12, 0.02, 0.025), "#1a1a1a")
+    return m
+
+
+@prop("enemies")
+def ivy_serpent():
+    """Lurks in the trees: a snake made of tangled ivy with a flower mouth."""
+    m = Model("Enemy_IvySerpent")
+    pts = [(math.sin(t * 2.2) * 0.45, -1.2 + t * 1.6, 0.15 + 0.6 * max(0, t - 0.6) ** 1.5 + 0.05 * math.sin(t * 7)) for t in [i / 16 for i in range(17)]]
+    m.tube(pts, [0.06 + 0.1 * math.sin(math.pi * i / 16) for i in range(17)], lambda p, n: hsv(0.3, 0.6, 0.3 + 0.25 * max(0, n.z)), sides=8)
+    rnd = random.Random(106)
+    leaf = [(0, 0), (0.06, 0.07), (0, 0.16), (-0.06, 0.07)]
+    for i in range(1, 16, 1):
+        x, y, z = pts[i]
+        f = m.plate(leaf, 0, 0.008, hsv(rnd.choice([0.28, 0.32]), 0.6, 0.55))
+        m.rotate_last(f, (0, 0, 0), (rnd.uniform(-50, 50), rnd.uniform(-50, 50), rnd.uniform(0, 360)))
+        m.move(f, (x, y, z + 0.1))
+    hx, hy, hz = pts[-1]
+    for k in range(6):
+        a = k * math.pi / 3
+        f = m.plate([(0, 0), (0.08, 0.1), (0, 0.2), (-0.08, 0.1)], 0, 0.01, hsv(0.9, 0.55, 0.9))
+        m.rotate_last(f, (0, 0, 0), (-60, 0, math.degrees(a)))
+        m.move(f, (hx, hy + 0.1, hz))
+    m.blob((hx, hy + 0.12, hz), (0.05, 0.05, 0.05), "#ffd84a", M_GLOW)
+    return m
+
+
+@prop("enemies")
+def cursed_plush():
+    """Silly-creepy: an abandoned plush bear that waddles at you with button eyes."""
+    m = Model("Enemy_CursedPlush")
+    fur = shade("#c8a8b8")
+    m.blob((0, 0, 0.45), (0.3, 0.25, 0.35), fur)
+    m.blob((0, 0, 0.95), (0.28, 0.25, 0.25), fur)
+    for s in (1, -1):
+        m.blob((s * 0.2, 0, 1.17), (0.08, 0.05, 0.08), fur)
+        m.blob((s * 0.32, -0.05, 0.55), (0.1, 0.1, 0.18), fur, rot=(0, s * 30, 0))
+        m.blob((s * 0.15, -0.05, 0.1), (0.1, 0.12, 0.1), fur)
+    m.cyl((0.09, -0.24, 1.0), 0.05, 0.02, "#1a1a1a", rot=(90, 0, 0), sides=6)
+    m.cyl((-0.09, -0.24, 1.0), 0.04, 0.02, "#e0304a", M_GLOW, rot=(90, 0, 0), sides=6)
+    m.tube([(-0.1, -0.24, 0.87), (0, -0.25, 0.84), (0.1, -0.24, 0.87)], 0.008, "#1a1a1a")
+    for k in range(4):   # stitches
+        m.box((0.0, -0.24, 0.62 - k * 0.07), (0.06, 0.01, 0.008), "#1a1a1a")
+    m.tube([(-0.08, 0, 1.2), (-0.12, 0.05, 1.35)], 0.015, "#e8d8a0")   # stuffing poking out
+    return m
+
+
 # ================================================================ build
 
 def main():

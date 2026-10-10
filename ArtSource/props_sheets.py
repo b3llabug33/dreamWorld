@@ -11,7 +11,7 @@ FONT = os.path.join(ROOT, "Assets", "Fonts", "VT323-Regular.ttf")
 
 
 def label(name):
-    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name.replace("Prop_", "")).lower()
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name.replace("Prop_", "").replace("Enemy_", "")).lower()
 
 
 def main():

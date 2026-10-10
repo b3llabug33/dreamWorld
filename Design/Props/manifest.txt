@@ -91,3 +91,12 @@ bugs	Prop_AntHill
 bugs	Prop_Spiderweb
 bugs	Prop_Caterpillar
 bugs	Prop_SnailShellPlanter
+enemies	Enemy_MossGolem
+enemies	Enemy_GlitchMoth
+enemies	Enemy_ThornBeetle
+enemies	Enemy_NightBat
+enemies	Enemy_RotSlug
+enemies	Enemy_MushroomKnight
+enemies	Enemy_StaticWisp
+enemies	Enemy_IvySerpent
+enemies	Enemy_CursedPlush
