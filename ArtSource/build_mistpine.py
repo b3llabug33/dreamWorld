@@ -40,6 +40,7 @@ WOLFCAMP = Vector((58.0, -28.0, 0.0))    # Wolfpups' campfire on the far bank
 QUARRY = Vector((30.0, -60.0, 0.0))      # the Boulder Brute's quarry
 ENTRANCE = Vector((HALF, 0.0, 0.0))
 BRIDGE = []                              # filled in when the bridge is built
+TREES = []                               # [x, y, ground z, trunk radius] for game colliders
 
 # the main dirt path: entrance -> past the baseball turnoff -> house; branches to meadow, river, quarry
 PATH = [ENTRANCE, Vector((60, 2, 0)), Vector((35, 8, 0)), Vector((10, 12, 0)), Vector((-12, 10, 0)), HOUSE + Vector((12, 0, 0))]
@@ -213,14 +214,19 @@ def build_forest():
         m = chunks.get(key) or chunks.setdefault(key, Model(f"Mist_Forest_{key[0]}_{key[1]}"))
         roll = rnd.random()
         h = rnd.uniform(16, 26)
+        TREES.append([round(p.x, 2), round(p.y, 2), round(height(p.x, p.y), 2), 0.0])
         if roll < 0.5:
             fir(m, p.x, p.y, h, rnd)
+            TREES[-1][3] = round(0.45 * h / 18, 2)
         elif roll < 0.62:
             mossy_maple(m, p.x, p.y, rnd.uniform(9, 13), rnd)
+            TREES[-1][3] = 0.5
         elif roll < 0.82:
             cedar(m, p.x, p.y, h * 0.8, rnd)
+            TREES[-1][3] = round(0.6 * h * 0.8 / 18, 2)
         else:
             spruce_small(m, p.x, p.y, rnd.uniform(3, 7), rnd)
+            TREES[-1][3] = 0.25
         placed += 1
         if placed >= 900:
             break
@@ -578,6 +584,19 @@ def main():
     misc, bush_spots, lamps = build_landmark_misc()
     built.append(misc)
     objs = [b.finish() for b in built] + place_house()
+    # open surfaces (terrain, water, meadow patch): make every face point up, or the game can't stand on them
+    for o in objs:
+        if o.name in ("Mist_Ground", "Mist_River", "Mist_Meadow", "Mist_Baseball"):
+            bm = bmesh.new()
+            bm.from_mesh(o.data)
+            bm.normal_update()
+            down = [f for f in bm.faces if f.normal.z < -0.2 and (o.name != "Mist_Meadow" or f.calc_area() > 1.0)]
+            if o.name == "Mist_Ground" or o.name == "Mist_River":
+                down = [f for f in bm.faces if f.normal.z < 0]
+            bmesh.ops.reverse_faces(bm, faces=down)
+            bm.to_mesh(o.data)
+            bm.free()
+            print("flipped", o.name, len(down))
     dressing, cabin, cave = dress()
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(HERE, "Mistpine.blend"))
 
@@ -616,7 +635,7 @@ def main():
     }
     os.makedirs(os.path.dirname(LAYOUT), exist_ok=True)
     with open(LAYOUT, "w") as f:
-        json.dump({"spots": spots, "dressing": dressing, "zones": zones, "lamps": lamps, "size": HALF * 2}, f, indent=1)
+        json.dump({"spots": spots, "trees": TREES, "path": [[round(v.x, 2), round(v.y, 2)] for v in PATH], "branches": [[[round(v.x, 2), round(v.y, 2)] for v in br] for br in BRANCHES], "dressing": dressing, "zones": zones, "lamps": lamps, "size": HALF * 2}, f, indent=1)
 
     print("MISTPINE OK  (previews: ArtSource/render_mistpine.py)")
 

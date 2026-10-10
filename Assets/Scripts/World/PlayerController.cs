@@ -348,10 +348,18 @@ namespace DreamWorld.World
 
         void Move(Vector3 horizontal)
         {
+            var before = transform.position;
             controller.Move(horizontal * Time.deltaTime);
             var flat = new Vector3(transform.position.x, 0, transform.position.z);
-            if (flat.magnitude > areaRadius)   // soft boundary: slide back inside the area
-                controller.Move(-flat.normalized * (flat.magnitude - areaRadius));
+            // the walkable world: the circle around town, plus extra areas (the trail out to Mistpine Hollow and
+            // the hollow itself, see PlayArea). Stepping outside all of them is undone.
+            if (flat.magnitude > areaRadius && !PlayArea.AnyContains(transform.position))
+            {
+                if (new Vector3(before.x, 0, before.z).magnitude <= areaRadius || PlayArea.AnyContains(before))
+                    controller.Move(new Vector3(before.x - transform.position.x, 0, before.z - transform.position.z));
+                else   // already outside (old saves, warps): slide back toward town like before
+                    controller.Move(-flat.normalized * (flat.magnitude - areaRadius));
+            }
             if (motion != null) motion.stridePhase += horizontal.magnitude * Time.deltaTime / strideLength * Mathf.PI * 2f;
         }
 

@@ -140,4 +140,4 @@ def place(name, pos, yaw_deg=0.0, height=None, season="summer", tint=(1.0, 1.0, 
     o.scale = (h, h, h)
     (collection or bpy.context.scene.collection).objects.link(o)
     return {"model": name, "pos": [round(pos[0], 2), round(pos[1], 2), round(pos[2], 2)], "yaw": round(yaw_deg, 1),
-            "height": round(h, 2), "season": season}
+            "height": round(h, 2), "season": season, "tint": [round(c, 3) for c in tint]}

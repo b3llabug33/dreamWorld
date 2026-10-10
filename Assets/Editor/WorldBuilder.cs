@@ -62,19 +62,25 @@ namespace DreamWorld.EditorTools
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
             ground.transform.SetParent(root);
-            ground.transform.localScale = new Vector3(24, 1, 24);
+            // x -84..120 (Mistpine Hollow's own terrain takes over west of -84), z -114..126
+            ground.transform.position = new Vector3(18, 0, 6);
+            ground.transform.localScale = new Vector3(20.4f, 1, 24);
             ground.GetComponent<Renderer>().sharedMaterial = TiledMaterial("Grass", 120);
 
             // the town square, its buildings + townsfolk, the paths, the plots and the woods (WorldBuilder.Town.cs)
             BuildTown(root, rng, out var homeContents);
             BuildNewBuildings(root);   // bakery, greenhouse arcade, server cafe, watchtower (WorldBuilder.Assets.cs)
+            BuildMistpineTrail(root);  // the trail west to Mistpine Hollow (WorldBuilder.Mistpine.cs), before anything is scattered
 
             // hills on the horizon
             for (int i = 0; i < 16; i++)
             {
                 float a = i * Mathf.PI * 2 / 16 + (float)rng.NextDouble() * 0.2f;
                 float r = 86 + (float)rng.NextDouble() * 10;
-                Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r + 6), rng.Next(360), 1.2f + (float)rng.NextDouble() * 0.6f, collider: false);
+                int hillYaw = rng.Next(360);
+                float hillScale = 1.2f + (float)rng.NextDouble() * 0.6f;
+                if (a > 2.0f && a < 4.3f) continue;   // west: the way to Mistpine Hollow
+                Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r + 6), hillYaw, hillScale, collider: false);
             }
 
             // monsters out in the wilds (solo for now)
@@ -99,6 +105,8 @@ namespace DreamWorld.EditorTools
             BuildModelAssets(root, homeContents);
             // the third-party nature packs: trees, shrubs, grass, rocks, mushrooms, owls (WorldBuilder.Nature.cs)
             NatureDressing(root, rng);
+            // Mistpine Hollow, the foggy woods west of town (WorldBuilder.Mistpine.cs)
+            BuildMistpine(root, rng);
 
             // player + camera
             var player = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));
@@ -142,6 +150,8 @@ namespace DreamWorld.EditorTools
             nmGo.AddComponent<Tugboat>();
             var nmSo = new SerializedObject(nm);
             nmSo.FindProperty("_dontDestroyOnLoad").boolValue = false;   // lives and dies with this scene
+            // FishNet's list of networked prefabs (it errors on Awake without one; DefaultPrefabObjects fills itself in)
+            nmSo.FindProperty("_spawnablePrefabs").objectReferenceValue = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/DefaultPrefabObjects.asset");
             nmSo.ApplyModifiedPropertiesWithoutUndo();
             var spawner = nmGo.AddComponent<PlayerSpawner>();
             spawner.SetPlayerPrefab(netPrefab.GetComponent<NetworkObject>());
