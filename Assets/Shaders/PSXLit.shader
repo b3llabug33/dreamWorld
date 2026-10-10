@@ -3,6 +3,8 @@
 //  - Affine texture mapping: textures warp slightly on big polygons, like the PS1 (no perspective correction).
 //  - Per-vertex (Gouraud) lighting from the main directional light + ambient.
 //  - Optional glow (emission map x color): screens, RGB fans and LEDs stay bright in the dark.
+//  - Optional vertex colors (the code-built props/enemies are colored per vertex, no textures);
+//    _VertexGlow makes the vertex color shine on its own, and the blend/zwrite settings allow glass.
 // _Color is kept as the tint so CharacterAppearance's MaterialPropertyBlock still works.
 Shader "DreamWorld/PSX Lit"
 {
@@ -17,6 +19,11 @@ Shader "DreamWorld/PSX Lit"
         _Softness ("Soft Shading", Range(0,1)) = 0
         _EmissionMap ("Glow Map", 2D) = "white" {}
         [HDR] _EmissionColor ("Glow Color (black = off)", Color) = (0,0,0,1)
+        [Toggle] _VertexColor ("Use Vertex Colors", Float) = 0
+        _VertexGlow ("Vertex Color Glow", Range(0,2)) = 0
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
+        [Toggle] _ZWrite ("ZWrite", Float) = 1
     }
     SubShader
     {
@@ -25,6 +32,8 @@ Shader "DreamWorld/PSX Lit"
         Pass
         {
             Tags { "LightMode"="ForwardBase" }
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -43,6 +52,7 @@ Shader "DreamWorld/PSX Lit"
             float _Softness;
             sampler2D _EmissionMap;
             fixed4 _EmissionColor;
+            float _VertexColor, _VertexGlow;
             // Set globally by PSXCamera: xy = low-res render size. Falls back to 320x240.
             float4 _PSXResolution;
 
@@ -51,6 +61,7 @@ Shader "DreamWorld/PSX Lit"
                 float4 vertex : POSITION;
                 float3 normal : NORMAL;
                 float2 uv : TEXCOORD0;
+                fixed4 color : COLOR;
             };
 
             struct v2f
@@ -59,6 +70,7 @@ Shader "DreamWorld/PSX Lit"
                 float3 uvw : TEXCOORD0;     // uv * w and w, for the affine trick
                 float2 uvPersp : TEXCOORD1; // normal perspective-correct uv
                 fixed3 light : COLOR0;
+                fixed4 vcol : COLOR1;
                 UNITY_FOG_COORDS(2)
             };
 
@@ -95,6 +107,7 @@ Shader "DreamWorld/PSX Lit"
                 // closer to flat anime coloring, without losing the PS1 vertex lighting entirely.
                 lit = lerp(lit, max(lit, 1), _Softness);
                 o.light = lerp(lit, 1, _Unlit);
+                o.vcol = lerp(fixed4(1, 1, 1, 1), v.color, _VertexColor);
 
                 UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
@@ -104,11 +117,12 @@ Shader "DreamWorld/PSX Lit"
             {
                 float2 affineUV = i.uvw.xy / i.uvw.z;
                 float2 uv = lerp(i.uvPersp, affineUV, _AffineStrength);
-                fixed4 col = tex2D(_MainTex, uv) * _Color;
+                fixed4 col = tex2D(_MainTex, uv) * _Color * i.vcol;
                 // Pixels below the cutoff are skipped entirely: used by the face decal's transparent texels.
                 clip(col.a - _Cutoff);
                 col.rgb *= i.light;
                 col.rgb += tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb;
+                col.rgb += i.vcol.rgb * _VertexGlow;
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }

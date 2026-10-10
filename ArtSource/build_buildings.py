@@ -271,7 +271,8 @@ def moss_server_cafe():
     b.prism((1.3, d / 2 + 0.13, 2.6), 0.16, 0.05, CRT_GREEN, M_GLOW, sides=10, rot=(90, 0, 0))
     for k in range(4):
         b.box((-1.5 + k * 0.18, d / 2 + 0.03, 1.3), (0.08, 0.05, 1.3), rgb("#a99d7c"))
-    b.box((0, d / 2 + 0.05, 0.35), (w, 0.1, 0.4), rgb("#a99d7c"))                       # plinth stripe
+    for sx in (1, -1):                                                                   # plinth stripe (not across the door)
+        b.box((sx * (w / 4 + 0.35), d / 2 + 0.05, 0.35), (w / 2 - 0.7, 0.1, 0.4), rgb("#a99d7c"))
     b.door((0, d / 2 - 0.15, fz))
     # side windows are CRT screens set into the case
     for sx in (1, -1):
@@ -425,8 +426,8 @@ def greenhouse_arcade():
     b.box((0, -d / 2 + 0.1, 0.4), (w, 0.2, 0.6), jitter(RED, 0.08, 1))
     for sx in (1, -1):
         b.box((sx * (w / 2 - 0.1), 0, 0.4), (0.2, d, 0.6), jitter(RED, 0.08, 2))
-    for sx in (1, -1):
-        b.box((sx * (w / 2 - 1.7), d / 2 - 0.1, 0.4), (2.6, 0.2, 0.6), jitter(RED, 0.08, 3))
+    for sx in (1, -1):   # the front knee wall, leaving the doorway open
+        b.box((sx * (w / 2 - 1.25), d / 2 - 0.1, 0.4), (2.5, 0.2, 0.6), jitter(RED, 0.08, 3))
     for x in range(-3, 4):
         b.box((x * 0.98, -d / 2 + 0.1, 0.7 + h / 2), (0.08, 0.1, h), frame)
     for k in range(8):
@@ -435,7 +436,7 @@ def greenhouse_arcade():
             b.box((sx * (w / 2 - 0.1), y, 0.7 + h / 2), (0.1, 0.08, h), frame)
     for sx in (1, -1):
         b.box((sx * (w / 2 - 0.1), 0, 0.7 + h / 2), (0.04, d, h), glass, M_GLASS)
-        b.box((sx * (w / 2 - 1.7), d / 2 - 0.1, 0.7 + h / 2), (2.6, 0.04, h), glass, M_GLASS)
+        b.box((sx * (w / 2 - 1.25), d / 2 - 0.1, 0.7 + h / 2), (2.5, 0.04, h), glass, M_GLASS)
     b.box((0, -d / 2 + 0.1, 0.7 + h / 2), (w, 0.04, h), glass, M_GLASS)
     b.box((0, d / 2 - 0.1, 0.1 + h + 0.3), (0.9, 0.12, 0.1), frame)                    # door header
     for sx in (1, -1):
@@ -569,7 +570,11 @@ def mushroom_bakery():
     roof.prism((1.6, -0.8, 4.6), 0.3, 1.4, jitter(STONE_DK, 0.1, 9), sides=6)
     for k in range(3):
         roof.blob((1.6 + k * 0.2, -0.8, 5.5 + k * 0.45), (0.3 + k * 0.08,) * 3, rgb("#d9d3dd"), seg=7, rings=5)
-    return b.finish(), roof.finish()
+    body, cap = b.finish(), roof.finish()
+    for v in cap.data.vertices:   # flatten the cap's underside at the gills, so it doesn't hang down into the room
+        if v.co.z < 2.72:
+            v.co.z = 2.72
+    return body, cap
 
 
 # ---------------------------------------------------------------- 7. circuit grove shrine
