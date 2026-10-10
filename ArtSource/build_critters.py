@@ -63,10 +63,18 @@ class Critter:
         self.col = self.bm.loops.layers.float_color.new("Col")
 
     def paint(self, faces, color, mat):
+        two = callable(color) and color.__code__.co_argcount >= 2
+        if two:
+            self.bm.normal_update()
         for f in faces:
             f.material_index = mat
             for loop in f.loops:
-                c = color(loop.vert.co) if callable(color) else color
+                if not callable(color):
+                    c = color
+                elif two:
+                    c = color(loop.vert.co, loop.vert.normal)
+                else:
+                    c = color(loop.vert.co)
                 loop[self.col] = (*c, 1.0)
 
     def blob(self, center, radii, color, mat=M_MATTE, rot=(0, 0, 0), seg=10, rings=7):
@@ -117,6 +125,52 @@ class Critter:
                 f = k + Vector((sx * foot[0] * spread, foot[1], foot[2]))
                 self.tube([hip, k, f], [thick, thick * 0.8, thick * 0.45], color, mat)
 
+    def spike(self, base, tip, radius, color, mat=M_MATTE):
+        """A little cone: leg spines, mandible teeth, claws."""
+        return self.tube([base, tip], [radius, radius * 0.08], color, mat, sides=4)
+
+    def jointed_leg(self, points, radii, color, mat=M_MATTE, foot=(0, 0.05, -0.01), foot_segments=4,
+                    spines=(), claw=0.022):
+        """A real insect leg: coxa-femur-tibia as one bent tube, then a chain of little foot segments
+        (tarsi) ending in two claws. spines: (segment index, count, length, side vector)."""
+        pts = [Vector(q) for q in points]
+        self.tube(pts, radii, color, mat, sides=6)
+        for seg_i, count, length, side in spines:
+            a, b = pts[seg_i], pts[seg_i + 1]
+            for k in range(count):
+                t = (k + 1) / (count + 1)
+                base = a.lerp(b, t)
+                r = radii[seg_i] + (radii[seg_i + 1] - radii[seg_i]) * t
+                out = Vector(side).normalized()
+                self.spike(base + out * r * 0.8, base + out * (r + length) + (b - a).normalized() * length * 0.5,
+                           r * 0.35, color, mat)
+        step = Vector(foot) / foot_segments
+        q = pts[-1]
+        r0 = radii[-1]
+        for k in range(foot_segments):
+            centre = q + step * (k + 0.5)
+            size = r0 * (1.1 - 0.12 * k)
+            self.blob(centre, (size, step.length * 0.6, size * 0.8), color, mat, seg=6, rings=4,
+                      rot=(0, 0, math.degrees(math.atan2(-step.x, step.y))))
+        end = q + step * foot_segments
+        side = Vector((step.y, -step.x, 0)).normalized() if step.length > 0 else Vector((1, 0, 0))
+        for sgn in (1, -1):
+            self.spike(end, end + step.normalized() * claw + side * sgn * claw * 0.6 + Vector((0, 0, -claw * 0.7)),
+                       r0 * 0.4, color, mat)
+
+    def segmented(self, start, end, radii_w, radii_h, segments, color, mat=M_MATTE, sides=10, droop=0.0):
+        """A body made of overlapping rings (insect abdomen): each segment bulges and pinches."""
+        a, b = Vector(start), Vector(end)
+        for k in range(segments):
+            t0, t1 = k / segments, (k + 1) / segments
+            c = a.lerp(b, (t0 + t1) / 2) + Vector((0, 0, -droop * ((t0 + t1) / 2) ** 2))
+            w = radii_w[0] + (radii_w[1] - radii_w[0]) * (t0 + t1) / 2
+            h = radii_h[0] + (radii_h[1] - radii_h[0]) * (t0 + t1) / 2
+            length = (b - a).length / segments * 0.62
+            d = (b - a).normalized()
+            pitch = math.degrees(math.atan2(d.z, math.hypot(d.x, d.y)))
+            self.blob(c, (w, length * 1.05, h), color, mat, rot=(pitch, 0, 0), seg=sides, rings=6)
+
     def finish(self, location=(0, 0, 0)):
         me = bpy.data.meshes.new(self.name)
         bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
@@ -136,57 +190,157 @@ class Critter:
 
 
 def rainbow_stag_beetle():
-    """Like Orion: a metallic shell that shifts green -> gold -> red -> purple toward the head."""
+    """Phalacrognathus muelleri (male), like Orion. Metallic shell that runs green -> gold -> copper ->
+    red -> violet toward the head, with an iridescent shift across the curve of every plate."""
     c = Critter("Critter_RainbowStagBeetle")
 
-    def shell(p):
-        t = min(1.0, max(0.0, (p.y + 0.5) / 1.1))
-        hue = (0.36 - 0.52 * t) % 1.0
-        seam = abs(p.x) < 0.018 and p.y < 0.12
-        r, g, b = colorsys.hsv_to_rgb(hue, 0.9, 0.55 if seam else 0.95)
-        return (r, g, b)
+    def irid(base_shift=0.0, sat=0.9, dark_seam=False):
+        def color(p, n):
+            t = min(1.0, max(0.0, (p.y + 0.5) / 1.15))
+            hue = (0.34 - 0.5 * t + base_shift + 0.07 * n.x * (1 if p.x >= 0 else -1) - 0.05 * n.z) % 1.0
+            val = 0.55 + 0.4 * max(0.0, n.z) + 0.1 * abs(n.x)
+            if dark_seam and abs(p.x) < 0.012:
+                val *= 0.55
+            r, g, b = colorsys.hsv_to_rgb(hue, sat, min(1.0, val))
+            return (r, g, b)
+        return color
 
-    def leg_color(p):
-        r, g, b = colorsys.hsv_to_rgb((0.36 - 0.52 * min(1.0, max(0.0, (p.y + 0.5) / 1.1))) % 1.0, 0.7, 0.45)
-        return (r, g, b)
+    shell = irid(dark_seam=True)
+    plate = irid(0.0, 0.85)
+    leg = irid(-0.05, 0.75)
+    underside = rgb("#2a1b33")
 
-    c.blob((0, -0.12, 0.17), (0.25, 0.36, 0.14), shell, M_SHINY, seg=14, rings=8)      # wing covers
-    c.blob((0, 0.25, 0.18), (0.24, 0.13, 0.1), shell, M_SHINY, seg=12)                  # wide pronotum, snug to the shell
-    c.blob((0, 0.39, 0.16), (0.19, 0.09, 0.075), shell, M_SHINY)                        # broad flat head
+    # wing covers (elytra): two halves with a seam, rounded at the back, a little flattened on top
+    c.blob((0, -0.14, 0.16), (0.245, 0.37, 0.13), shell, M_SHINY, seg=18, rings=10)        # one domed shell
+    c.tube([(0, 0.2, 0.25), (0, -0.2, 0.29), (0, -0.46, 0.18)], 0.008, irid(0.02, 0.9, False), M_SHINY)   # the seam
+    c.blob((0, -0.12, 0.09), (0.23, 0.36, 0.07), underside, seg=12, rings=6)              # belly
+    # scutellum: the little triangle between the wing covers and the pronotum
+    c.blob((0, 0.17, 0.235), (0.04, 0.035, 0.012), plate, M_SHINY, seg=6, rings=4)
+    # pronotum: broad, rounded at the sides, with a thin raised rim
+    c.blob((0, 0.27, 0.19), (0.235, 0.12, 0.095), plate, M_SHINY, seg=16, rings=8)
+    c.tube([(-0.2, 0.22, 0.17), (-0.235, 0.28, 0.18), (-0.21, 0.35, 0.17)], 0.01, plate, M_SHINY)
+    c.tube([(0.2, 0.22, 0.17), (0.235, 0.28, 0.18), (0.21, 0.35, 0.17)], 0.01, plate, M_SHINY)
+    # head: wide and flat, cheeks flaring behind the eyes, a ridge (canthus) over each eye
+    c.blob((0, 0.44, 0.17), (0.225, 0.11, 0.072), plate, M_SHINY, seg=14, rings=8)
     for sx in (1, -1):
-        # big pincer mandibles: out, forward, curling up and in until the tips nearly touch
-        c.tube([(sx * 0.1, 0.44, 0.16), (sx * 0.2, 0.55, 0.2), (sx * 0.19, 0.67, 0.27), (sx * 0.1, 0.75, 0.33),
-                (sx * 0.025, 0.76, 0.35)], [0.045, 0.04, 0.032, 0.022, 0.01], shell, M_SHINY, sides=6)
-        c.tube([(sx * 0.19, 0.6, 0.23), (sx * 0.12, 0.62, 0.26)], [0.018, 0.006], shell, M_SHINY)   # inner tooth
-        c.blob((sx * 0.17, 0.42, 0.18), (0.035, 0.035, 0.035), (0.04, 0.02, 0.05))                # eyes
-        c.tube([(sx * 0.15, 0.45, 0.19), (sx * 0.25, 0.52, 0.24), (sx * 0.29, 0.56, 0.25)], 0.012, leg_color)
-        c.blob((sx * 0.3, 0.57, 0.25), (0.025, 0.035, 0.02), leg_color)                            # antenna club
-    c.legs([(0.22, 0.15, 0.1, (0.17, 0.08, 0.03), (0.1, 0.1, -0.13)),
-            (0.0, 0.18, 0.1, (0.19, 0.0, 0.04), (0.11, -0.02, -0.14)),
-            (-0.2, 0.18, 0.1, (0.17, -0.08, 0.04), (0.1, -0.13, -0.14))], leg_color, M_SHINY, thick=0.034)
+        c.blob((sx * 0.17, 0.41, 0.16), (0.06, 0.07, 0.055), plate, M_SHINY)          # cheek flare
+        c.blob((sx * 0.185, 0.47, 0.175), (0.038, 0.04, 0.036), (0.06, 0.04, 0.07), M_SHINY)   # eye
+        c.tube([(sx * 0.13, 0.5, 0.2), (sx * 0.2, 0.48, 0.21), (sx * 0.22, 0.44, 0.2)], 0.012, plate, M_SHINY)  # canthus
+        # mandibles: long, sweeping forward and out, then curling up and in; a row of inner teeth
+        mand = [(sx * 0.07, 0.5, 0.165), (sx * 0.15, 0.6, 0.18), (sx * 0.18, 0.72, 0.21), (sx * 0.15, 0.84, 0.27),
+                (sx * 0.08, 0.92, 0.36), (sx * 0.03, 0.93, 0.42)]
+        c.tube(mand, [0.05, 0.045, 0.038, 0.03, 0.02, 0.008], irid(0.04, 0.9), M_SHINY, sides=7)
+        for (y, z, size) in ((0.66, 0.2, 0.03), (0.76, 0.23, 0.028), (0.85, 0.28, 0.022)):
+            x = sx * (0.14 if y < 0.7 else 0.13 if y < 0.8 else 0.1)
+            c.spike((x, y, z), (x - sx * size * 1.6, y + size * 0.4, z + size * 0.3), 0.014, irid(0.04, 0.9), M_SHINY)
+        # elbowed antenna: long first segment, then bead segments, then a 3-leaf club
+        base = Vector((sx * 0.16, 0.5, 0.19))
+        elbow = base + Vector((sx * 0.1, 0.08, 0.05))
+        c.tube([base, elbow], [0.012, 0.01], leg, M_SHINY)
+        tip = elbow
+        for k in range(4):
+            nxt = tip + Vector((sx * 0.025, 0.022, 0.005))
+            c.blob(tip.lerp(nxt, 0.5), (0.01, 0.014, 0.01), leg, M_SHINY, seg=6, rings=4)
+            tip = nxt
+        for k in range(3):   # lamellae: the fanned club
+            c.blob(tip + Vector((sx * (0.012 + k * 0.016), 0.012, 0)), (0.008, 0.026, 0.02), leg, M_SHINY,
+                   seg=6, rings=4, rot=(0, 0, sx * 25))
+
+    # legs: front ones dig (toothed tibia), middle/hind ones have small spines; each ends in tarsi + claws
+    for sx in (1, -1):
+        c.jointed_leg([(sx * 0.13, 0.25, 0.11), (sx * 0.24, 0.32, 0.13), (sx * 0.33, 0.4, 0.06), (sx * 0.36, 0.5, 0.0)],
+                      [0.03, 0.032, 0.024, 0.016], leg, M_SHINY, foot=(sx * 0.02, 0.1, -0.005),
+                      spines=[(2, 4, 0.03, (sx * 1, 0.3, 0))])
+        c.jointed_leg([(sx * 0.15, 0.02, 0.1), (sx * 0.29, 0.05, 0.14), (sx * 0.4, 0.0, 0.05), (sx * 0.45, -0.04, 0.0)],
+                      [0.03, 0.03, 0.022, 0.015], leg, M_SHINY, foot=(sx * 0.06, -0.08, -0.005),
+                      spines=[(2, 2, 0.018, (sx * 1, -0.2, 0))])
+        c.jointed_leg([(sx * 0.15, -0.16, 0.1), (sx * 0.29, -0.2, 0.14), (sx * 0.38, -0.32, 0.05), (sx * 0.42, -0.4, 0.0)],
+                      [0.03, 0.03, 0.022, 0.015], leg, M_SHINY, foot=(sx * 0.04, -0.1, -0.005),
+                      spines=[(2, 2, 0.018, (sx * 1, -0.2, 0))])
     return c.finish()
 
 
-def praying_mantis(name="Critter_Mantis", body="#7bc96f", light="#b6e6a0", eye="#d9f2a8", orchid=False):
+def praying_mantis(name="Critter_Mantis", body="#6fbf5e", light="#a9df8f", eye="#a9d85a", edge="#8a6a3f"):
+    """Chinese mantis (Tenodera sinensis) style: triangular head with corner eyes, long neck (prothorax),
+    spiny folded grabbing forelegs, leathery wing covers with a brown leading edge over a segmented
+    abdomen, long thin walking legs with feet, and cerci at the tail."""
     c = Critter(name)
-    body, light, eye = rgb(body), rgb(light), rgb(eye)
-    c.blob((0, -0.36, 0.24), (0.1, 0.32, 0.09), body, rot=(-6, 0, 0))                   # abdomen
-    c.blob((0, -0.3, 0.32), (0.12, 0.34, 0.025), light, rot=(-6, 0, 0))                 # folded wings
-    c.tube([(0, -0.04, 0.24), (0, 0.18, 0.38), (0, 0.34, 0.54)], [0.06, 0.045, 0.04], body)   # long neck-thorax
-    c.blob((0, 0.38, 0.6), (0.1, 0.055, 0.075), body, rot=(20, 0, 0))                   # triangle-ish head
+    body, light, eye, edge = rgb(body), rgb(light), rgb(eye), rgb(edge)
+    dark = (0.08, 0.1, 0.06)
+
+    def shaded(col):
+        def color(p, n):
+            k = 0.78 + 0.28 * max(0.0, n.z)
+            return tuple(min(1.0, ch * k) for ch in col)
+        return color
+
+    b = shaded(body)
+    # abdomen: 7 segments, widest in the middle, drooping slightly toward the tip
+    c.segmented((0, -0.08, 0.27), (0, -0.66, 0.2), (0.07, 0.05), (0.06, 0.045), 7, b, droop=0.02)
+    c.segmented((0, -0.08, 0.27), (0, -0.38, 0.26), (0.09, 0.085), (0.075, 0.07), 3, b)
+    for sx in (1, -1):   # cerci: two little tail feelers
+        c.tube([(sx * 0.02, -0.68, 0.19), (sx * 0.05, -0.76, 0.21)], [0.008, 0.003], b)
+    # wing covers (tegmina): long and narrow, folded flat over the back, brown along the outer edge
     for sx in (1, -1):
-        c.blob((sx * 0.1, 0.39, 0.64), (0.045, 0.045, 0.05), eye)                       # big eyes
-        c.blob((sx * 0.115, 0.42, 0.65), (0.015, 0.015, 0.018), (0.1, 0.1, 0.12))       # pupils
-        c.tube([(sx * 0.03, 0.42, 0.67), (sx * 0.12, 0.6, 0.82), (sx * 0.22, 0.66, 0.86)], 0.006, body)
-        # folded grabbing forelegs
-        fore = [(sx * 0.05, 0.3, 0.5), (sx * 0.1, 0.42, 0.38), (sx * 0.08, 0.52, 0.52), (sx * 0.06, 0.46, 0.4)]
-        c.tube(fore, [0.03, 0.028, 0.02, 0.012], body)
-        if orchid:   # orchid mantis: petal-shaped flaps on the legs
-            c.blob((sx * 0.2, -0.05, 0.3), (0.12, 0.07, 0.015), light, rot=(0, sx * 20, sx * 30))
-            c.blob((sx * 0.2, -0.3, 0.3), (0.13, 0.08, 0.015), light, rot=(0, sx * 20, -sx * 30))
-            c.blob((sx * 0.13, 0.45, 0.45), (0.05, 0.08, 0.012), light, rot=(30, 0, 0))
-    c.legs([(0.02, 0.05, 0.22, (0.25, 0.1, 0.12), (0.14, 0.08, -0.34)),
-            (-0.12, 0.06, 0.22, (0.26, -0.15, 0.1), (0.16, -0.22, -0.32))], body, thick=0.02)
+        def wing(p, n, sx=sx):
+            outer = abs(p.x) > 0.055
+            return edge if outer else (light if n.z > 0.5 else body)
+        c.blob((sx * 0.045, -0.3, 0.335), (0.06, 0.32, 0.018), wing, rot=(-4, 0, sx * 2), seg=10, rings=6)
+    # thorax that the legs hang from
+    c.blob((0, -0.02, 0.27), (0.065, 0.11, 0.06), b)
+    # long neck (prothorax), rising toward the head, with a bump where the forelegs attach
+    c.tube([(0, 0.06, 0.29), (0, 0.2, 0.37), (0, 0.32, 0.47), (0, 0.38, 0.53)], [0.045, 0.035, 0.032, 0.038], b, sides=7)
+    c.blob((0, 0.33, 0.48), (0.05, 0.05, 0.04), b)
+    # head: wide triangle, eyes on the top corners, mouth at the bottom point
+    c.blob((0, 0.42, 0.6), (0.09, 0.045, 0.06), b, rot=(25, 0, 0), seg=10, rings=6)
+    c.blob((0, 0.45, 0.55), (0.03, 0.03, 0.035), shaded(light))          # mouth parts
+    for sx in (1, -1):
+        c.blob((sx * 0.085, 0.41, 0.64), (0.042, 0.04, 0.05), eye)       # compound eyes
+        c.blob((sx * 0.1, 0.435, 0.645), (0.012, 0.01, 0.014), dark)    # pseudopupil
+        c.blob((sx * 0.012, 0.44, 0.66), (0.007, 0.007, 0.007), light)  # simple eyes (ocelli)
+        c.tube([(sx * 0.02, 0.44, 0.67), (sx * 0.07, 0.56, 0.8), (sx * 0.15, 0.68, 0.88), (sx * 0.24, 0.74, 0.9)],
+               [0.006, 0.005, 0.004, 0.002], b)                          # long thin antennae
+        # raptorial foreleg: long coxa down-forward, thick spiny femur up, spiny tibia folded back down
+        cox0, cox1 = Vector((sx * 0.04, 0.33, 0.47)), Vector((sx * 0.07, 0.43, 0.33))
+        fem1 = Vector((sx * 0.07, 0.56, 0.45))
+        tib1 = Vector((sx * 0.065, 0.47, 0.38))
+        c.tube([cox0, cox1], [0.028, 0.024], b, sides=6)
+        c.blob(cox0.lerp(cox1, 0.55) + Vector((-sx * 0.02, 0, 0)), (0.012, 0.016, 0.014), dark)   # coxa eyespot
+        c.tube([cox1, cox1.lerp(fem1, 0.4) + Vector((0, 0.0, 0.0)), fem1], [0.024, 0.032, 0.02], b, sides=6)
+        c.tube([fem1, tib1, tib1 + Vector((0, -0.03, -0.03))], [0.018, 0.014, 0.008], b, sides=5)
+        for k in range(5):      # spines along the inside of the femur
+            t = 0.25 + k * 0.14
+            base = cox1.lerp(fem1, t)
+            c.spike(base + Vector((-sx * 0.012, -0.012, -0.012)), base + Vector((-sx * 0.02, -0.04, -0.03)), 0.006, light)
+        for k in range(3):      # and the tibia
+            base = fem1.lerp(tib1, 0.3 + k * 0.25)
+            c.spike(base, base + Vector((-sx * 0.012, 0.02, 0.022)), 0.005, light)
+        # walking legs: long and thin, knees up high, with feet
+        c.jointed_leg([(sx * 0.05, 0.02, 0.25), (sx * 0.24, 0.1, 0.36), (sx * 0.36, 0.16, 0.04)],
+                      [0.016, 0.013, 0.009], b, foot=(sx * 0.03, 0.06, -0.01), foot_segments=4, claw=0.014)
+        c.jointed_leg([(sx * 0.05, -0.06, 0.25), (sx * 0.26, -0.18, 0.36), (sx * 0.4, -0.38, 0.04)],
+                      [0.016, 0.013, 0.009], b, foot=(sx * 0.03, -0.07, -0.01), foot_segments=4, claw=0.014)
+    return c.finish()
+
+
+def orchid_mantis():
+    """Hymenopus coronatus: pink-white, with petal-shaped lobes on the walking legs."""
+    c = Critter("Critter_OrchidMantis")
+    body, petal, eye = rgb("#f7cde0"), rgb("#fff1f7"), rgb("#ffd3ea")
+    c.blob((0, -0.32, 0.24), (0.12, 0.26, 0.09), body, rot=(-6, 0, 0))
+    c.blob((0, -0.28, 0.31), (0.13, 0.26, 0.025), petal, rot=(-6, 0, 0))
+    c.tube([(0, -0.04, 0.24), (0, 0.18, 0.38), (0, 0.34, 0.54)], [0.05, 0.04, 0.035], body)
+    c.blob((0, 0.38, 0.6), (0.09, 0.05, 0.065), body, rot=(20, 0, 0))
+    for sx in (1, -1):
+        c.blob((sx * 0.085, 0.39, 0.64), (0.04, 0.04, 0.045), eye)
+        c.tube([(sx * 0.05, 0.3, 0.5), (sx * 0.1, 0.42, 0.38), (sx * 0.08, 0.52, 0.52), (sx * 0.06, 0.46, 0.4)],
+               [0.026, 0.024, 0.018, 0.011], body)
+        c.blob((sx * 0.2, -0.05, 0.3), (0.13, 0.08, 0.016), petal, rot=(0, sx * 20, sx * 30))
+        c.blob((sx * 0.21, -0.3, 0.3), (0.14, 0.09, 0.016), petal, rot=(0, sx * 20, -sx * 30))
+        c.jointed_leg([(sx * 0.05, 0.02, 0.22), (sx * 0.24, 0.1, 0.33), (sx * 0.36, 0.16, 0.0)],
+                      [0.016, 0.013, 0.009], body, foot=(sx * 0.03, 0.05, -0.005), claw=0.012)
+        c.jointed_leg([(sx * 0.05, -0.1, 0.22), (sx * 0.26, -0.2, 0.33), (sx * 0.4, -0.4, 0.0)],
+                      [0.016, 0.013, 0.009], body, foot=(sx * 0.03, -0.06, -0.005), claw=0.012)
     return c.finish()
 
 
@@ -285,8 +439,7 @@ def mushroom_snail():
     return c.finish()
 
 
-CRITTERS = [rainbow_stag_beetle, lambda: praying_mantis(),
-            lambda: praying_mantis("Critter_OrchidMantis", "#f7c6dc", "#fff0f6", "#ffd9ec", orchid=True),
+CRITTERS = [rainbow_stag_beetle, praying_mantis, orchid_mantis,
             ladybug, bumblebee, luna_moth, firefly, mushroom_snail]
 
 objs = [make() for make in CRITTERS]
@@ -323,7 +476,10 @@ for obj in objs:
     for o in objs:
         o.hide_render = o is not obj
     center = obj.location + Vector((0, 0, 0.25))
-    for label, yaw, pitch, scale in (("q", 35, 25, 1.9), ("side", 90, 8, 1.9)):
+    views = [("q", 35, 25, 1.9), ("side", 90, 8, 1.9)]
+    if obj.name in ("Critter_RainbowStagBeetle", "Critter_Mantis"):   # the detailed ones get a closer look
+        views += [("top", 0, 89, 1.7), ("front", 0, 18, 1.2), ("close", 140, 30, 1.0)]
+    for label, yaw, pitch, scale in views:
         a, p = math.radians(yaw), math.radians(pitch)
         cam.location = center + Vector((math.sin(a) * math.cos(p), math.cos(a) * math.cos(p), math.sin(p))) * 5
         cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
