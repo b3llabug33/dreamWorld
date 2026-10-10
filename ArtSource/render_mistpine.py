@@ -49,6 +49,9 @@ nt.links.new(pw.outputs[0], mix.inputs[0])
 nt.links.new(rl.outputs["Image"], mix.inputs[1])
 nt.links.new(mix.outputs[0], comp.inputs[0])
 
+import json
+LAY = json.load(open(os.path.join(os.path.dirname(HERE), "Assets", "Models", "Mistpine", "mistpine_layout.json")))
+BR = Vector(LAY["spots"]["bridge"])
 H = Vector((-30, 10, 0))
 M = Vector((-45, -45, 0))
 shots = {
@@ -58,6 +61,8 @@ shots = {
     "meadow": ((M.x + 13, M.y + 9, 2.5), (M.x, M.y, 1), 1),
     "wolfcamp": ((38, -22, 2.5), (58, -28, 1), 1),
     "quarry": ((40, -40, 9), (30, -60, -1), 1),
+    "bridge": ((BR.x + 4, BR.y - 11, BR.z + 1.5), (BR.x, BR.y, BR.z - 0.3), 0.6),
+    "wolfcamp_logs": ((58 - 6, -28 - 6, 2.0), (58, -28, 0.3), 0.6),
     "baseball": ((10, 28, 3), (10, 45, 1), 1),
 }
 for name, (pos, look, fogk) in shots.items():

@@ -38,6 +38,7 @@ RIVER_X = 45.0                           # river runs north-south at about this 
 WOLFCAMP = Vector((58.0, -28.0, 0.0))    # Wolfpups' campfire on the far bank
 QUARRY = Vector((30.0, -60.0, 0.0))      # the Boulder Brute's quarry
 ENTRANCE = Vector((HALF, 0.0, 0.0))
+BRIDGE = []                              # filled in when the bridge is built
 
 # the main dirt path: entrance -> past the baseball turnoff -> house; branches to meadow, river, quarry
 PATH = [ENTRANCE, Vector((60, 2, 0)), Vector((35, 8, 0)), Vector((10, 12, 0)), Vector((-12, 10, 0)), HOUSE + Vector((12, 0, 0))]
@@ -238,12 +239,37 @@ def fern(m, x, y, s):
                [0.06 * s, 0.05 * s, 0.01], shade(hsv(0.27, 0.55, 0.34)), sides=3)
 
 
+def slab(m, a, b, side, width, thick, color):
+    """A flat plank from a to b (top surface exactly through both points), `width` across `side`."""
+    a, b = Vector(a), Vector(b)
+    w = side.normalized() * width / 2
+    top = [a - w, a + w, b + w, b - w]
+    vt = [m.bm.verts.new(p) for p in top]
+    vb = [m.bm.verts.new(p - Vector((0, 0, thick))) for p in top]
+    f = [m.bm.faces.new(vt), m.bm.faces.new(vb[::-1])]
+    for i in range(4):
+        j = (i + 1) % 4
+        f.append(m.bm.faces.new((vb[i], vb[j], vt[j], vt[i])))
+    m.paint(f, color, M_MATTE)
+
+
+def ground_log(m, a, b, r, color, sink=0.35):
+    """A log lying on the ground from a to b: each end sits on the terrain there (sunk a little so it never floats)."""
+    pa = Vector((a[0], a[1], height(a[0], a[1]) + r * (1 - sink)))
+    pb = Vector((b[0], b[1], height(b[0], b[1]) + r * (1 - sink)))
+    mid = (pa + pb) / 2
+    mid.z = min(mid.z, height(mid.x, mid.y) + r * (1 - sink))   # sag onto bumps instead of bridging over dips
+    m.tube([pa, mid, pb], [r, r * 1.02, r * 0.95], color, sides=8)
+    return pa, mid, pb
+
+
 def mossy_log(m, x, y, L, yaw):
-    z = height(x, y) + 0.3
-    f = m.cyl((x, y, z), 0.45, L, lambda p, n: hsv(0.25, 0.5, 0.3) if n.z > 0.3 else hsv(0.06, 0.35, 0.25), sides=8, rot=(0, 90, yaw))
-    for k in range(3):
-        m.blob((x + math.cos(math.radians(yaw)) * (k - 1) * L * 0.3, y + math.sin(math.radians(yaw)) * (k - 1) * L * 0.3, z + 0.45),
-               (0.15, 0.15, 0.08), hsv(0.08, 0.55, 0.7))
+    d = Vector((math.cos(math.radians(yaw)), math.sin(math.radians(yaw)), 0)) * L / 2
+    pa, mid, pb = ground_log(m, (x - d.x, y - d.y), (x + d.x, y + d.y), 0.45,
+                             lambda p, n: hsv(0.25, 0.5, 0.3) if n.z > 0.3 else hsv(0.06, 0.35, 0.25))
+    for t in (0.25, 0.5, 0.75):   # shelf mushrooms sitting on top of the log
+        q = (pa.lerp(mid, t * 2) if t <= 0.5 else mid.lerp(pb, t * 2 - 1))
+        m.blob((q.x, q.y, q.z + 0.4), (0.15, 0.15, 0.06), hsv(0.08, 0.55, 0.7))
 
 
 def wet_rock(m, x, y, s):
@@ -328,7 +354,7 @@ def build_baseball():
     m.cyl((c.x, c.y, z), 1.8, 0.25, hsv(0.08, 0.3, 0.35), sides=12)                 # pitcher's mound
     for k in range(3):   # a few bats leaning on a log
         m.cyl((c.x - 11 + k * 0.3, c.y - 10, z), 0.05, 1.0, shade("#c8a070"), sides=6, top=0.07, rot=(15, 0, 0))
-    m.cyl((c.x - 11.5, c.y - 10.5, z + 0.3), 0.3, 3.0, shade("#5a4030"), sides=7, rot=(0, 90, 10))
+    ground_log(m, (c.x - 13, c.y - 10.8), (c.x - 10, c.y - 10.3), 0.3, shade("#5a4030"), sink=0.2)
     return m
 
 
@@ -361,7 +387,9 @@ def build_wolfcamp():
     m.cyl((c.x, c.y, z), 0.5, 1.2, "#ff8a3a", M_GLOW, sides=6, top=0.0)
     m.cyl((c.x + 0.1, c.y, z), 0.3, 1.5, "#ffd84a", M_GLOW, sides=6, top=0.0)
     for a in (0.6, 2.5, 4.2):   # logs to sit on
-        m.cyl((c.x + math.cos(a) * 3, c.y + math.sin(a) * 3, z + 0.3), 0.3, 2.6, shade("#5a4030"), sides=7, rot=(0, 90, math.degrees(a) + 90))
+        cx, cy = c.x + math.cos(a) * 3, c.y + math.sin(a) * 3
+        tx, ty = -math.sin(a) * 1.3, math.cos(a) * 1.3
+        ground_log(m, (cx - tx, cy - ty), (cx + tx, cy + ty), 0.3, shade("#5a4030"), sink=0.2)
     for k in range(6):   # a pile of snacks (they're always eating)
         m.blob((c.x + 2 + rnd.uniform(-0.4, 0.4), c.y - 2 + rnd.uniform(-0.4, 0.4), z + 0.15), (0.12, 0.12, 0.1),
                rnd.choice(["#d8343f", "#f0a030", "#c98a4a"]))
@@ -407,18 +435,46 @@ def build_landmark_misc():
             break
     if bridge:
         d = (b - a).normalized()
+        d.z = 0
+        d.normalize()
         yaw = math.degrees(math.atan2(d.y, d.x))
-        zb = 0.35
+        side = Vector((-d.y, d.x, 0))
         wood = lambda p, n: hsv(0.07, 0.4, 0.3 + 0.05 * math.sin(p.x * 9 + p.y * 9))
-        m.box((bridge.x, bridge.y, zb), (17, 3.2, 0.25), wood, rot=(0, 0, yaw))
-        for s_ in (-1, 1):
-            off = Vector((-d.y, d.x, 0)) * 1.5 * s_
-            for k in range(-4, 5):
-                q = bridge + d * k * 2 + off
+        # walk out from the river to where each bank rises, and rest the deck on the banks
+        ends = []
+        for sgn in (-1, 1):                           # where the river channel ends on each side
+            t = 2.0
+            while t < 14 and abs((bridge + d * t * sgn).x - river_center_x((bridge + d * t * sgn).y)) < 7.2:
+                t += 0.25
+            ends.append(t + 0.5)
+        zbank = [height(*(bridge + d * ends[i] * (1 if i else -1)).xy) for i in (0, 1)]
+        zb = max(zbank) + 0.1                         # deck top just above the higher bank
+        p0, p1 = bridge - d * ends[0], bridge + d * ends[1]
+        span = (p1 - p0).length
+        mid = (p0 + p1) / 2
+        m.box((mid.x, mid.y, zb - 0.12), (span, 3.2, 0.25), wood, rot=(0, 0, yaw))
+        for sgn, pe, ze in ((-1, p0, zbank[0]), (1, p1, zbank[1])):
+            # stone footing under the deck end, then a short ramp down to the ground beyond it
+            m.box((pe.x, pe.y, (ze - 0.3 + zb - 0.24) / 2), (1.6, 3.6, zb - 0.24 - ze + 0.3), hsv(0.58, 0.05, 0.33), rot=(0, 0, yaw))
+            pg = pe + d * sgn * 3.0
+            slab(m, (pe.x, pe.y, zb), (pg.x, pg.y, height(pg.x, pg.y) + 0.02), side, 3.2, 0.25, wood)   # ramp onto the path
+        n = int(span // 2.5)
+        for k in range(1, n):                         # pilings down into the riverbed
+            q = p0 + (p1 - p0) * (k / n)
+            zg = height(q.x, q.y)
+            if zg < zb - 0.3:
+                for s_ in (-1, 1):
+                    pq = q + side * 1.4 * s_
+                    m.box((pq.x, pq.y, (zg - 0.3 + zb) / 2), (0.3, 0.3, zb - zg + 0.3), shade("#3e2c22"))
+        for s_ in (-1, 1):                            # railings sitting on the deck
+            off = side * 1.5 * s_
+            for k in range(n + 1):
+                q = p0 + (p1 - p0) * (k / n) + off
                 m.box((q.x, q.y, zb + 0.5), (0.15, 0.15, 1.0), shade("#4a3426"))
-            m.box((bridge.x + off.x, bridge.y + off.y, zb + 1.0), (17, 0.12, 0.12), wood, rot=(0, 0, yaw))
-            # moss on the rails
-            m.box((bridge.x + off.x, bridge.y + off.y, zb + 1.07), (6, 0.16, 0.05), hsv(0.25, 0.6, 0.35), rot=(0, 0, yaw))
+            m.box((mid.x + off.x, mid.y + off.y, zb + 1.0), (span, 0.12, 0.12), wood, rot=(0, 0, yaw))
+            m.box((mid.x + off.x, mid.y + off.y, zb + 1.07), (span * 0.35, 0.16, 0.05), hsv(0.25, 0.6, 0.35), rot=(0, 0, yaw))
+        BRIDGE[:] = [round(mid.x, 2), round(mid.y, 2), round(zb, 2)]
+        print("bridge", round(span, 1), "m, deck", round(zb, 2), "banks", [round(z, 2) for z in zbank])
     return m, spots, lamps
 
 
@@ -471,6 +527,7 @@ def main():
         "Jakeob": [WOLFCAMP.x - 1.5, WOLFCAMP.y + 2.5, hz(WOLFCAMP)],
         "boulder_brute": [QUARRY.x, QUARRY.y, hz(QUARRY) - 2.5],
     }
+    spots["bridge"] = BRIDGE
     for i, (x, y, z) in enumerate(bush_spots):
         spots[f"wolf_bush_{i + 1}"] = [round(x, 2), round(y, 2), round(z, 2)]
     zones = {   # boxes: center, size (safe = the path and the house clearing; the rest is the wilds)
