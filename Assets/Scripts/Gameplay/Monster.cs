@@ -16,9 +16,24 @@ namespace DreamWorld.Gameplay
     //   Zapper   (static wisp)    floats at range, flickers, then fires a fast zap
     //   Lunger   (ivy serpent)    hides in the ground until you're close, rears up, then lunges
     //   Knight   (mushroom knight) mini-boss: two telegraphed slashes, then a jumping slam
+    // On top of its kind, any monster can have special moves (mix and match per prefab):
+    //   Enrage   below 40% health it turns red and gets faster and meaner
+    //   Quake    glows and rises up, then two shockwaves roll out (jump or roll through them)
+    //   Volley   a fan of five shots
+    //   Blink    flickers out and reappears behind you, then strikes
+    //   Frenzy   follows an attack with a quick second one
+    //   Summon   once, when it's hurt, calls two little copies of itself
+    // Elites are bigger, tougher versions with a golden shimmer and two or three specials.
     public class Monster : MonoBehaviour, IDamageable
     {
         public enum Kind { Hopper, Waddler, Slammer, Charger, Flyer, Spitter, Zapper, Lunger, Knight }
+
+        [Flags] public enum Special { None = 0, Enrage = 1, Quake = 2, Volley = 4, Blink = 8, Frenzy = 16, Summon = 32 }
+        public Special specials;
+        [Tooltip("Seconds between special moves (Quake, Volley, Blink).")]
+        public float specialCooldown = 7f;
+        public bool elite;
+        [NonSerialized] public bool minion;   // a little summoned copy: no drops, goes away for good when beaten
 
         public Kind kind = Kind.Hopper;
         public string displayName = "shroomling";
@@ -63,8 +78,12 @@ namespace DreamWorld.Gameplay
         public MonsterSpawner Spawner { get; set; }
         public bool WindingUp => state == State.Windup;
 
-        enum State { Wander, Chase, Windup, Attack, Recover, Dead, Hidden }
+        enum State { Wander, Chase, Windup, Attack, Recover, Dead, Hidden, SpecialWindup, SpecialAct }
         State state;
+        Special move;                 // the special being done right now
+        float nextSpecial;
+        bool enraged, summoned, frenzied;
+        float minionUntil;
         float stateTime, attackLength, strafeSign = 1f;
         Vector3 home, wanderTarget, lungeDir, swoopFrom, swoopTo;
         bool attackHit;
@@ -93,10 +112,26 @@ namespace DreamWorld.Gameplay
             home = transform.position;
             wanderTarget = home;
             comboStep = 0;
+            enraged = summoned = frenzied = false;
+            nextSpecial = Time.time + UnityEngine.Random.Range(2f, specialCooldown);
             ResetBody();
             Enter(kind == Kind.Lunger ? State.Hidden : State.Wander);
-            Tint(Color.white);
+            Tint(BaseTint);
         }
+
+        bool Has(Special s) => (specials & s) != 0;
+
+        // the color it rests at: elites shimmer gold, enraged monsters pulse red
+        Color BaseTint
+        {
+            get
+            {
+                if (enraged) return Color.Lerp(new Color(1.25f, 0.55f, 0.55f), new Color(1.5f, 0.7f, 0.6f), Mathf.PingPong(Time.time * 2f, 1f));
+                if (elite) return Color.Lerp(new Color(1.12f, 1.02f, 0.78f), new Color(1.3f, 1.15f, 0.8f), Mathf.PingPong(Time.time * 0.8f, 1f));
+                return Color.white;
+            }
+        }
+        float Rage => enraged ? 1.35f : 1f;   // speed boost when enraged
 
         void ResetBody()
         {
@@ -143,14 +178,23 @@ namespace DreamWorld.Gameplay
                 case State.Chase:
                     if (!canChase || dist > sightRange * 1.5f) { Enter(State.Wander); wanderTarget = home; break; }
                     Face(player.transform.position);
+                    if (TrySpecial(dist)) break;
                     if (WantsToAttack(dist)) { BeginWindup(player); break; }
                     Approach(player.transform.position, dist);
                     Idle(1f);
                     break;
                 case State.Windup:
                     if (player != null && kind != Kind.Charger) Face(player.transform.position, 6f);
-                    Tell(Mathf.Clamp01(stateTime / windupSeconds));
-                    if (stateTime >= windupSeconds) BeginAttack(player);
+                    Tell(Mathf.Clamp01(stateTime / WindupTime));
+                    if (stateTime >= WindupTime) BeginAttack(player);
+                    break;
+                case State.SpecialWindup:
+                    if (player != null) Face(player.transform.position, 5f);
+                    SpecialTell(Mathf.Clamp01(stateTime / SpecialWindupTime));
+                    if (stateTime >= SpecialWindupTime) { ResetBody(); Enter(State.SpecialAct); SpecialStart(player); }
+                    break;
+                case State.SpecialAct:
+                    if (SpecialAct(player, stateTime)) { ResetBody(); Enter(State.Recover); attackHit = false; }
                     break;
                 case State.Attack:
                     Attack(player, Mathf.Clamp01(stateTime / attackLength));
@@ -161,6 +205,9 @@ namespace DreamWorld.Gameplay
                     if (stateTime > RecoverTime)
                     {
                         if (kind == Kind.Knight && comboStep < 2 && canChase && dist < attackRange + 2f) { comboStep++; BeginWindup(player); break; }
+                        // frenzy: a quick second attack right after the first (once)
+                        if (Has(Special.Frenzy) && !frenzied && canChase && dist < attackRange + 1.5f) { frenzied = true; BeginWindup(player); break; }
+                        frenzied = false;
                         comboStep = 0;
                         Enter(canChase ? State.Chase : State.Wander);
                     }
@@ -170,16 +217,20 @@ namespace DreamWorld.Gameplay
                     if (Flies) body.localPosition = Vector3.Lerp(body.localPosition, new Vector3(bodyBasePos.x, 0.2f, bodyBasePos.z), Time.deltaTime * 8f);
                     if (stateTime > 0.6f)
                     {
-                        if (Spawner != null) Spawner.Despawned(this);
+                        if (minion) Destroy(gameObject);
+                        else if (Spawner != null) Spawner.Despawned(this);
                         else gameObject.SetActive(false);
                     }
                     break;
             }
-            if (state != State.Windup && state != State.Dead && Time.time - LastHitTime > 0.12f) Tint(Color.white);
+            // little summoned copies fade away after a while
+            if (minion && state != State.Dead && Time.time > minionUntil) { Health = 0f; Enter(State.Dead); }
+            if (state != State.Windup && state != State.SpecialWindup && state != State.Dead && Time.time - LastHitTime > 0.12f) Tint(BaseTint);
         }
 
         // knight slashes chain quickly; the slam leaves it open for longer
-        float RecoverTime => kind == Kind.Knight ? (comboStep < 2 ? 0.25f : recoverSeconds) : recoverSeconds;
+        float RecoverTime => (kind == Kind.Knight ? (comboStep < 2 ? 0.25f : recoverSeconds) : frenzied ? 0.2f : recoverSeconds) / (enraged ? 1.6f : 1f);
+        float WindupTime => (frenzied ? Mathf.Min(windupSeconds, 0.35f) : windupSeconds) * (enraged ? 0.75f : 1f);
 
         bool WantsToAttack(float dist)
         {
@@ -214,7 +265,7 @@ namespace DreamWorld.Gameplay
                 Face(target);
                 return;
             }
-            Step(target, moveSpeed);
+            Step(target, moveSpeed * Rage);
         }
 
         // ---------- attacks ----------
@@ -522,13 +573,185 @@ namespace DreamWorld.Gameplay
             }
         }
 
+        // ---------- special moves ----------
+
+        static readonly Special[] pickable = new Special[3];
+        bool quakeSecond;
+
+        // Maybe start a special instead of a normal attack (each has its own range; one every specialCooldown).
+        // What it's doing right now ("Chase", "SpecialWindup"...), for debugging.
+        public string StateName => state == State.SpecialWindup || state == State.SpecialAct ? $"{state} {move}" : state.ToString();
+
+        // Starts a special right away (tests, and scripted fights later). False if it can't now.
+        public bool ForceSpecial(Special m)
+        {
+            if (!Alive || minion || state == State.SpecialWindup || state == State.SpecialAct) return false;
+            BeginSpecial(m);
+            return true;
+        }
+
+        bool TrySpecial(float dist)
+        {
+            if (specials == Special.None || minion || Time.time < nextSpecial || stateTime < 0.5f) return false;
+            if (Has(Special.Summon) && !summoned && Health < maxHealth * 0.6f) { BeginSpecial(Special.Summon); return true; }
+            int n = 0;
+            if (Has(Special.Quake) && dist < 6f) pickable[n++] = Special.Quake;
+            if (Has(Special.Volley) && dist > 3f && dist < 13f) pickable[n++] = Special.Volley;
+            if (Has(Special.Blink) && dist > 2.5f && dist < 12f) pickable[n++] = Special.Blink;
+            if (n == 0) return false;
+            BeginSpecial(pickable[UnityEngine.Random.Range(0, n)]);
+            return true;
+        }
+
+        void BeginSpecial(Special m)
+        {
+            move = m;
+            nextSpecial = Time.time + specialCooldown * (enraged ? 0.7f : 1f) * UnityEngine.Random.Range(0.85f, 1.2f);
+            attackHit = false;
+            quakeSecond = false;
+            if (m == Special.Summon) summoned = true;
+            Enter(State.SpecialWindup);
+            if (m == Special.Quake)   // the warning: a ring growing out to where the second wave will reach
+                SpellFx.Ring(transform.position + Vector3.up * 0.12f, new Color(1f, 0.45f, 0.35f), 5.5f, SpecialWindupTime);
+        }
+
+        float SpecialWindupTime =>
+            (move == Special.Quake ? 1.1f : move == Special.Volley ? 0.8f : move == Special.Blink ? 0.6f : 1.0f) * (enraged ? 0.8f : 1f);
+
+        // Every special has its own clear tell.
+        void SpecialTell(float k)
+        {
+            bool flash = Mathf.PingPong(stateTime * 8f, 1f) > 0.5f;
+            switch (move)
+            {
+                case Special.Quake:     // glows gold and rises up
+                    Tint(flash ? new Color(1.6f, 1.4f, 0.7f) : tellColor);
+                    body.localPosition = bodyBasePos + Vector3.up * 0.5f * Smooth(k);
+                    body.localScale = bodyBaseScale * (1f + 0.15f * k);
+                    break;
+                case Special.Volley:    // swells and flashes
+                    Tint(Color.Lerp(Color.white, tellColor, flash ? 1f : 0.3f));
+                    body.localScale = Vector3.Scale(bodyBaseScale, new Vector3(1f + 0.2f * k, 1f + 0.2f * k, 1f));
+                    break;
+                case Special.Blink:     // flickers and shrinks away
+                    Tint(flash ? new Color(0.6f, 0.4f, 1.6f) : new Color(2f, 2f, 2f));
+                    body.localScale = bodyBaseScale * (1f - 0.7f * k);
+                    break;
+                case Special.Summon:    // spins, glowing purple
+                    Tint(flash ? new Color(1.3f, 0.7f, 1.6f) : Color.white);
+                    body.localRotation = bodyBaseRot * Quaternion.Euler(0, stateTime * 720f, 0);
+                    break;
+            }
+        }
+
+        void SpecialStart(PlayerStats player)
+        {
+            Vector3 target = player != null ? player.transform.position : transform.position + transform.forward * 3f;
+            lungeDir = Flat(target - transform.position).normalized;
+            if (lungeDir.sqrMagnitude < 0.01f) lungeDir = transform.forward;
+            Tint(BaseTint);
+            switch (move)
+            {
+                case Special.Quake:
+                    Slam(player, transform.position, 3f, new Color(1f, 0.75f, 0.45f, 0.85f));
+                    break;
+                case Special.Volley:
+                {
+                    Vector3 mouth = body.position + transform.forward * 0.6f + Vector3.up * 0.3f;
+                    Vector3 aim = (target + Vector3.up * 0.9f - mouth).normalized;
+                    foreach (var a in new[] { -24f, -12f, 0f, 12f, 24f })
+                        Projectile.Fire(gameObject, mouth, Quaternion.AngleAxis(a, Vector3.up) * aim, Mathf.Max(projectileSpeed, 9f), damage * 0.6f, tellColor, 0.24f);
+                    break;
+                }
+                case Special.Blink:
+                {
+                    if (player == null) break;
+                    Vector3 behind = player.transform.position - Flat(player.transform.forward).normalized * 1.8f;
+                    if (ZoneMap.IsSafe(behind)) break;   // never pops into a safe zone
+                    Shockwave.Spawn(transform.position, 1.2f, new Color(0.6f, 0.4f, 1f, 0.8f));
+                    transform.position = new Vector3(behind.x, transform.position.y, behind.z);
+                    lungeDir = Flat(player.transform.position - transform.position).normalized;
+                    if (lungeDir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(lungeDir);
+                    Shockwave.Spawn(transform.position, 1.2f, new Color(0.6f, 0.4f, 1f, 0.8f));
+                    break;
+                }
+                case Special.Summon:
+                    for (int i = 0; i < 2; i++)
+                    {
+                        Vector3 pos = transform.position + transform.right * (i == 0 ? -1.8f : 1.8f);
+                        if (ZoneMap.IsSafe(pos)) continue;
+                        var m = Instantiate(this, pos, transform.rotation, transform.parent);
+                        m.MakeMinion(this);
+                        Shockwave.Spawn(pos, 1f, new Color(1f, 0.6f, 1f, 0.8f));
+                    }
+                    break;
+            }
+        }
+
+        // Plays out the special; true when it's over.
+        bool SpecialAct(PlayerStats player, float t)
+        {
+            switch (move)
+            {
+                case Special.Quake:
+                    if (t >= 0.45f && !quakeSecond)
+                    {
+                        quakeSecond = true;
+                        attackHit = false;
+                        Slam(player, transform.position, 5.5f, new Color(1f, 0.6f, 0.4f, 0.7f), 0.8f);
+                    }
+                    return t > 0.75f;
+                case Special.Volley:
+                    body.localRotation = bodyBaseRot * Quaternion.Euler(Mathf.Sin(Mathf.Clamp01(t / 0.35f) * Mathf.PI) * 12f, 0, 0);
+                    return t > 0.35f;
+                case Special.Blink:
+                    if (t < 0.4f) Move(lungeDir * 6f * (1f - t / 0.4f));
+                    if (!attackHit && player != null && player.Alive && t > 0.12f && t < 0.42f
+                        && (player.transform.position + Vector3.up * 0.8f - (transform.position + Vector3.up * 0.6f + transform.forward * 0.8f)).magnitude < 1.6f)
+                    {
+                        attackHit = true;
+                        player.TakeDamage(damage * 1.2f, gameObject);
+                    }
+                    return t > 0.5f;
+                default:
+                    return t > 0.3f;
+            }
+        }
+
+        // Turns a fresh copy into a little summoned helper of `parent`.
+        void MakeMinion(Monster parent)
+        {
+            minion = true;
+            elite = false;
+            specials = Special.None;
+            Spawner = null;
+            displayName = "little " + parent.displayName.Replace("elite ", "");
+            maxHealth = Mathf.Max(8f, parent.maxHealth * 0.22f);
+            Health = maxHealth;
+            damage = parent.damage * 0.45f;
+            xpReward = Mathf.Max(1, parent.xpReward / 6);
+            coinReward = Vector2Int.zero;
+            drops = new Drop[0];
+            transform.localScale = parent.transform.localScale * 0.6f;
+            barHeight = parent.barHeight * 0.6f;
+            home = transform.position;
+            minionUntil = Time.time + 40f;
+            Tint(Color.white);
+            Enter(State.Chase);
+        }
+
         // ---------- getting hit ----------
 
         public bool TakeDamage(float amount, GameObject source)
         {
             if (!Alive) return false;
-            Health -= amount;
+            Health -= enraged ? amount * 0.9f : amount;
             LastHitTime = Time.time;
+            if (Has(Special.Enrage) && !enraged && Health > 0f && Health < maxHealth * 0.4f)
+            {
+                enraged = true;
+                Shockwave.Spawn(transform.position, 1.6f, new Color(1f, 0.4f, 0.4f, 0.8f));
+            }
             Tint(new Color(2f, 2f, 2f));   // white hit flash
             if (source != null && kind != Kind.Knight && kind != Kind.Slammer)   // a little knockback (not the big ones)
             {
@@ -540,7 +763,8 @@ namespace DreamWorld.Gameplay
                 Health = 0f;
                 Enter(State.Dead);
                 var killer = source != null ? source.GetComponent<PlayerStats>() : null;
-                if (killer != null)
+                if (killer != null && minion) killer.AddXp(xpReward);   // little copies: a bit of XP, nothing else
+                else if (killer != null)
                 {
                     killer.AddXp(xpReward);
                     killer.AddCoins(UnityEngine.Random.Range(coinReward.x, coinReward.y + 1));
@@ -556,7 +780,7 @@ namespace DreamWorld.Gameplay
                 }
                 Killed?.Invoke(this, killer);
             }
-            else if (amount >= 20f && state == State.Windup && !poise) { ResetBody(); Enter(State.Recover); }   // heavy hits interrupt the tell
+            else if (amount >= 20f && (state == State.Windup || state == State.SpecialWindup) && !poise) { ResetBody(); Enter(State.Recover); }   // heavy hits interrupt the tell
             else if (state == State.Wander || state == State.Hidden) Enter(State.Chase);
             return true;
         }

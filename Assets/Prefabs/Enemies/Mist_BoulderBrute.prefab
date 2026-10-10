@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 5819377631183776215}
   - component: {fileID: 275881999598845451}
   - component: {fileID: 4647228540448288426}
-  - component: {fileID: 5262993891071868097}
   m_Layer: 0
   m_Name: Mist_BoulderBrute
   m_TagString: Untagged
@@ -86,6 +85,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a504ea75aa6a37e49bf758ffb41756ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.Gameplay.Monster
+  specials: 35
+  specialCooldown: 6
+  elite: 0
   kind: 2
   displayName: boulder brute
   maxHealth: 420
@@ -117,21 +119,6 @@ MonoBehaviour:
   poise: 1
   barHeight: 4.5
   body: {fileID: 866027016248781398}
---- !u!114 &5262993891071868097
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 603294827809426556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
-  probeUp: 3
-  probeDown: 8
-  smoothing: 14
 --- !u!1 &3558644844808402600
 GameObject:
   m_ObjectHideFlags: 0

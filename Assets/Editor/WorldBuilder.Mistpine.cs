@@ -202,7 +202,7 @@ namespace DreamWorld.EditorTools
                 go.transform.localScale = Vector3.one * scale;
                 var m = go.GetComponent<Monster>();
                 tweak(m);
-                go.AddComponent<GroundFollow>();
+                if (go.GetComponent<GroundFollow>() == null) go.AddComponent<GroundFollow>();
                 var prefab = PrefabUtility.SaveAsPrefabAsset(go, $"{EnemyDir}/Mist_{name.Replace(" ", "")}.prefab");
                 Object.DestroyImmediate(go);
                 return prefab;
@@ -214,6 +214,8 @@ namespace DreamWorld.EditorTools
                 m.moveSpeed = 1.1f; m.poise = true; m.sightRange = 12f; m.leashRange = 20f;
                 m.barHeight *= 1.8f;
                 m.drops = new[] { D("golem_moss", 2, 4), D("dream_shard", 2, 3), D("glow_jelly", 1, 2) };
+                // the big fight: shockwaves, gets angry when hurt, calls two little brutes
+                m.specials = Monster.Special.Quake | Monster.Special.Enrage | Monster.Special.Summon; m.specialCooldown = 6f;
             }, 1.8f);
             var golem = Variant("MossGolem", "Mist Golem", m => { m.displayName = "mist golem"; }, 1.15f);
             var ivy = Variant("IvySerpent", "Fern Serpent", m => { m.displayName = "fern serpent"; });

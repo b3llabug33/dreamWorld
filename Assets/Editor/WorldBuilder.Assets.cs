@@ -518,6 +518,26 @@ namespace DreamWorld.EditorTools
             return prefab.GetComponent<Monster>();
         }
 
+        // A copy of an enemy prefab as its elite version: scaled up, golden, then tweaked (stats, specials, drops).
+        static Monster Variant(Monster src, string prefabName, string name, float scale, Action<Monster> tweak)
+        {
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(src.gameObject);
+            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            go.name = prefabName;
+            go.transform.localScale = Vector3.one * scale;
+            var m = go.GetComponent<Monster>();
+            m.displayName = name;
+            m.elite = true;
+            m.poise = true;
+            m.barHeight *= scale;
+            m.sightRange += 2f;
+            AddLight(m.body, new Vector3(0, 0.8f, 0), new Color(1f, 0.82f, 0.45f), 4.5f, 1.1f);   // a warm golden glow
+            tweak(m);
+            var prefab = PrefabUtility.SaveAsPrefabAsset(go, $"{EnemyDir}/{prefabName}.prefab");
+            Object.DestroyImmediate(go);
+            return prefab.GetComponent<Monster>();
+        }
+
         static void Enemies(Transform root, Random rng)
         {
             var golem = Enemy("MossGolem", Monster.Kind.Slammer, "moss golem", 140, 22, 70, new Vector2Int(14, 24), 1.2f, 2.8f, 1.0f, 1.6f,
@@ -541,7 +561,43 @@ namespace DreamWorld.EditorTools
                               new Color(1f, 0.4f, 0.6f), new[] { D("plush_stuffing", 1, 2), D("snack", chance: 0.15f) });
             var knight = Enemy("MushroomKnight", Monster.Kind.Knight, "mushroom knight", 320, 16, 300, new Vector2Int(80, 120), 2.2f, 2.4f, 0.55f, 1.8f,
                                new Color(1f, 0.85f, 0.3f), new[] { D("knight_cap"), D("dream_shard", 2, 3), D("glow_jelly", 1, 2) },
-                               extra: m => { m.poise = true; m.sightRange = 11f; m.leashRange = 18f; });
+                               extra: m =>
+                               {
+                                   m.poise = true; m.sightRange = 11f; m.leashRange = 18f;
+                                   m.specials = Monster.Special.Quake | Monster.Special.Enrage; m.specialCooldown = 8f;
+                               });
+
+            // elites: bigger, tougher, golden, with special moves (Monster.cs). One of each far out in the woods.
+            var eliteGolem = Variant(golem, "Elite_MossGolem", "elite moss golem", 1.3f, m =>
+            {
+                m.maxHealth = 320; m.damage = 28; m.xpReward = 190; m.coinReward = new Vector2Int(40, 60);
+                m.specials = Monster.Special.Quake | Monster.Special.Enrage; m.specialCooldown = 7f;
+                m.drops = new[] { D("golem_moss", 2, 3), D("dream_shard", 1, 2), D("dream_crystal", chance: 0.35f) };
+            });
+            var eliteBeetle = Variant(beetle, "Elite_ThornBeetle", "elite thorn beetle", 1.25f, m =>
+            {
+                m.maxHealth = 190; m.damage = 20; m.xpReward = 120; m.coinReward = new Vector2Int(25, 40); m.moveSpeed = 2.4f;
+                m.specials = Monster.Special.Frenzy | Monster.Special.Enrage;
+                m.drops = new[] { D("thorn", 2, 4), D("glow_jelly", chance: 0.3f) };
+            });
+            var eliteWisp = Variant(wisp, "Elite_StaticWisp", "elite static wisp", 1.25f, m =>
+            {
+                m.maxHealth = 95; m.damage = 11; m.xpReward = 110; m.coinReward = new Vector2Int(25, 40);
+                m.specials = Monster.Special.Volley | Monster.Special.Blink; m.specialCooldown = 5f;
+                m.drops = new[] { D("static_spark", 2, 3), D("dream_shard", 1, 2) };
+            });
+            var elitePlush = Variant(plush, "Elite_CursedPlush", "elite cursed plush", 1.3f, m =>
+            {
+                m.maxHealth = 120; m.damage = 13; m.xpReward = 100; m.coinReward = new Vector2Int(20, 35);
+                m.specials = Monster.Special.Summon | Monster.Special.Frenzy;
+                m.drops = new[] { D("plush_stuffing", 2, 4), D("snack", 1, 2), D("thread", 2, 4) };
+            });
+            var eliteBat = Variant(bat, "Elite_NightBat", "elite night bat", 1.3f, m =>
+            {
+                m.maxHealth = 70; m.damage = 12; m.xpReward = 80; m.coinReward = new Vector2Int(15, 30);
+                m.specials = Monster.Special.Blink | Monster.Special.Frenzy; m.specialCooldown = 6f;
+                m.drops = new[] { D("bat_wing", 2, 3), D("dream_shard", chance: 0.25f) };
+            });
 
             var spots = new List<Vector3>();
             void Spawns(Monster prefab, string label, int count, float a0, float a1, float minR = 36, float maxR = 70, float respawn = 40f)
@@ -571,6 +627,11 @@ namespace DreamWorld.EditorTools
             Spawns(slug, "rot slugs", 3, 230, 300);
             Spawns(golem, "moss golems", 1, 35, 70, 45, 72, 60f);
             Spawns(golem, "moss golems south", 1, 300, 340, 45, 72, 60f);
+            Spawns(eliteGolem, "elite moss golem", 1, 20, 60, 62, 78, 150f);
+            Spawns(eliteBeetle, "elite thorn beetle", 1, 240, 290, 60, 78, 120f);
+            Spawns(eliteWisp, "elite static wisp", 1, 160, 220, 60, 78, 120f);
+            Spawns(elitePlush, "elite cursed plush", 1, 200, 240, 55, 75, 120f);
+            Spawns(eliteBat, "elite night bat", 1, 90, 140, 60, 78, 120f);
 
             // the mushroom knight: one, in its own clearing in the south west woods, ringed by glowcaps
             var k = new GameObject("Spawner_mushroom knight").AddComponent<MonsterSpawner>();

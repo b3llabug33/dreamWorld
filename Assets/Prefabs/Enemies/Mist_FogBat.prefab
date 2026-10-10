@@ -135,7 +135,6 @@ GameObject:
   - component: {fileID: 2706911048923040034}
   - component: {fileID: 5236998383864394790}
   - component: {fileID: 8015643248793346226}
-  - component: {fileID: 694468554575185198}
   m_Layer: 0
   m_Name: Mist_FogBat
   m_TagString: Untagged
@@ -209,6 +208,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a504ea75aa6a37e49bf758ffb41756ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.Gameplay.Monster
+  specials: 0
+  specialCooldown: 7
+  elite: 0
   kind: 4
   displayName: fog bat
   maxHealth: 25
@@ -232,21 +234,6 @@ MonoBehaviour:
   poise: 0
   barHeight: 2.4699998
   body: {fileID: 7194045138815504552}
---- !u!114 &694468554575185198
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3590995793747550142}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
-  probeUp: 3
-  probeDown: 8
-  smoothing: 14
 --- !u!1 &7153832672844976610
 GameObject:
   m_ObjectHideFlags: 0

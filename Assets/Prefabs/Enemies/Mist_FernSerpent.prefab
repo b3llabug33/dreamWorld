@@ -135,7 +135,6 @@ GameObject:
   - component: {fileID: 478394900867519458}
   - component: {fileID: 4570030621100476591}
   - component: {fileID: 381061426247692601}
-  - component: {fileID: 2033801829438538860}
   m_Layer: 0
   m_Name: Mist_FernSerpent
   m_TagString: Untagged
@@ -209,6 +208,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a504ea75aa6a37e49bf758ffb41756ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.Gameplay.Monster
+  specials: 0
+  specialCooldown: 7
+  elite: 0
   kind: 7
   displayName: fern serpent
   maxHealth: 45
@@ -232,21 +234,6 @@ MonoBehaviour:
   poise: 0
   barHeight: 0.8777158
   body: {fileID: 8171774854428592156}
---- !u!114 &2033801829438538860
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7477478247147556504}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f083a6a9597161e4c9c59873a3a44de6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.World.GroundFollow
-  probeUp: 3
-  probeDown: 8
-  smoothing: 14
 --- !u!1 &8876630322006949304
 GameObject:
   m_ObjectHideFlags: 0

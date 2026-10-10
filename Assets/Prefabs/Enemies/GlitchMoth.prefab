@@ -85,6 +85,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a504ea75aa6a37e49bf758ffb41756ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.Gameplay.Monster
+  specials: 0
+  specialCooldown: 7
+  elite: 0
   kind: 4
   displayName: glitch moth
   maxHealth: 30
