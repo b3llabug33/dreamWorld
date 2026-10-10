@@ -55,6 +55,8 @@ namespace DreamWorld.CharacterCreation
         RectTransform optionsRoot, colorHeader, pickerRoot;
         Slider shapeSize, shapeX, shapeY, hueSlider, satSlider, valSlider;
         Text shapeHeader, shapeSizeLabel, shapeXLabel, shapeYLabel, resetLabel;
+        GameObject bodyRows;
+        Text bodySexLabel, bodyTypeLabel;
         Texture2D hueTex, satTex, valTex;
         bool syncingSliders, syncingPicker, pickerDriving;
         NetMode chosenMode;
@@ -282,9 +284,18 @@ namespace DreamWorld.CharacterCreation
             shapeXLabel = rect.Find("spacing").GetComponent<Text>();
             shapeYLabel = rect.Find("height").GetComponent<Text>();
             shapeSizeLabel = rect.Find("size").GetComponent<Text>();
+            // body tab: "body < woman >" and "type < curvy >" choosers where the spacing/height sliders usually are
+            bodyRows = new GameObject("BodyRows", typeof(RectTransform));
+            bodyRows.transform.SetParent(rect, false);
+            Place((RectTransform)bodyRows.transform, new Vector2(0.5f, 1), Vector2.zero, new Vector2(400, 200), new Vector2(0.5f, 1));
+            bodySexLabel = ChooserRow((RectTransform)bodyRows.transform, "body", -104, d =>
+                appearance.SetBody(1 - appearance.bodySex, appearance.bodyType, appearance.bodyHeight));
+            bodyTypeLabel = ChooserRow((RectTransform)bodyRows.transform, "type", -146, d =>
+                appearance.SetBody(appearance.bodySex, (appearance.bodyType + d + 4) % 4, appearance.bodyHeight));
+            bodyRows.SetActive(false);
             var reset = MakeButton(rect, "ResetShape", () =>
             {
-                if (currentCategory == OutfitCategory.Skin) appearance.SetBody(0f);
+                if (currentCategory == OutfitCategory.Skin) appearance.SetBody(appearance.bodySex, 1, 1f);
                 else if (currentCategory == OutfitCategory.Eyes) appearance.ResetEyes();
                 else appearance.ResetPlacement(currentCategory);
                 SyncSliders();
@@ -292,6 +303,22 @@ namespace DreamWorld.CharacterCreation
             Place((RectTransform)reset.transform, new Vector2(0.5f, 1), new Vector2(0, -192), new Vector2(220, 42));
             resetLabel = MakeText((RectTransform)reset.transform, "L", "reset", bodyFont, 30, textColor, TextAnchor.MiddleCenter);
             Stretch(resetLabel.rectTransform, 0);
+        }
+
+        // A "label   <  value  >" row; returns the value text. onStep gets -1 / +1.
+        Text ChooserRow(RectTransform parent, string label, float y, System.Action<int> onStep)
+        {
+            var text = MakeText(parent, label, label, bodyFont, 32, textColor, TextAnchor.MiddleLeft);
+            Place(text.rectTransform, new Vector2(0.5f, 1), new Vector2(-130, y), new Vector2(120, 40));
+            var left = MakeButton(parent, label + "Left", () => { onStep(-1); SyncSliders(); });
+            Place((RectTransform)left.transform, new Vector2(0.5f, 1), new Vector2(-30, y), new Vector2(44, 40));
+            Stretch(MakeText((RectTransform)left.transform, "L", "<", bodyFont, 32, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            var right = MakeButton(parent, label + "Right", () => { onStep(+1); SyncSliders(); });
+            Place((RectTransform)right.transform, new Vector2(0.5f, 1), new Vector2(150, y), new Vector2(44, 40));
+            Stretch(MakeText((RectTransform)right.transform, "L", ">", bodyFont, 32, textColor, TextAnchor.MiddleCenter).rectTransform, 0);
+            var value = MakeText(parent, label + "Value", "", bodyFont, 32, accentColor, TextAnchor.MiddleCenter);
+            Place(value.rectTransform, new Vector2(0.5f, 1), new Vector2(60, y), new Vector2(140, 40));
+            return value;
         }
 
         // Is the current style of a slot a mirrored pair? (set on its material by DreamerSetup)
@@ -306,15 +333,16 @@ namespace DreamWorld.CharacterCreation
         void ConfigureShape(OutfitSlot slot)
         {
             syncingSliders = true;
-            bool body = slot.category == OutfitCategory.Skin;   // skin tab: one "build" slider, soft -> broad
+            bool body = slot.category == OutfitCategory.Skin;   // skin tab: woman/man body, a type, and height
             foreach (var go in new[] { shapeX.gameObject, shapeY.gameObject, shapeXLabel.gameObject, shapeYLabel.gameObject })
                 go.SetActive(!body);
-            shapeSizeLabel.text = body ? "build" : "size";
+            bodyRows.SetActive(body);
+            shapeSizeLabel.text = body ? "height" : "size";
             if (body)
             {
                 shapeHeader.text = "== BODY ==";
-                SetRange(shapeSize, 0f, 1f);
-                resetLabel.text = "reset build";
+                SetRange(shapeSize, 0.9f, 1.1f);
+                resetLabel.text = "reset body";
             }
             else if (slot.category == OutfitCategory.Eyes)
             {
@@ -457,7 +485,7 @@ namespace DreamWorld.CharacterCreation
         void OnShapeSlider()
         {
             if (syncingSliders) return;
-            if (currentCategory == OutfitCategory.Skin) appearance.SetBody(shapeSize.value);
+            if (currentCategory == OutfitCategory.Skin) appearance.SetBody(appearance.bodySex, appearance.bodyType, shapeSize.value);
             else if (currentCategory == OutfitCategory.Eyes) appearance.SetEyes(shapeSize.value, shapeX.value, shapeY.value);
             else appearance.SetPlacement(currentCategory, shapeX.value, shapeY.value, shapeSize.value);
         }
@@ -468,7 +496,12 @@ namespace DreamWorld.CharacterCreation
             if (slot == null) return;
             if (slot.category == OutfitCategory.Eyes || slot.category == OutfitCategory.Skin || slot.movable) ConfigureShape(slot);
             syncingSliders = true;
-            if (slot.category == OutfitCategory.Skin) shapeSize.value = appearance.bodyShape;
+            if (slot.category == OutfitCategory.Skin)
+            {
+                shapeSize.value = appearance.bodyHeight;
+                bodySexLabel.text = appearance.bodySex == 1 ? "man" : "woman";
+                bodyTypeLabel.text = appearance.BodyTypeName;
+            }
             else if (slot.category == OutfitCategory.Eyes)
             {
                 shapeSize.value = appearance.eyeScale;

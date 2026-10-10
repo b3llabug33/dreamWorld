@@ -171,8 +171,15 @@ namespace DreamWorld.CharacterCreation
         [Range(-0.06f, 0.06f)] public float eyeSpacing = 0f;
         [Range(-0.05f, 0.06f)] public float eyeHeight = 0f;
 
-        [Header("Build (0 = soft, 1 = broad/masculine)")]
-        [Range(0f, 1f)] public float bodyShape = 0f;
+        [Header("Body")]
+        public int bodySex;                          // 0 = woman's body, 1 = man's body
+        public int bodyType = 1;                     // index into BodyTypes(bodySex): slim / average / curvy|muscle / plus
+        [Range(0.9f, 1.1f)] public float bodyHeight = 1f;
+
+        static readonly string[] WomanTypes = { "slim", "average", "curvy", "plus" };
+        static readonly string[] ManTypes = { "slim", "average", "muscle", "plus" };
+        public static string[] BodyTypes(int sex) => sex == 1 ? ManTypes : WomanTypes;
+        public string BodyTypeName => BodyTypes(bodySex)[Mathf.Clamp(bodyType, 0, 3)];
 
         // Fired after any style/color change so the UI can refresh its labels.
         public event Action Changed;
@@ -211,26 +218,43 @@ namespace DreamWorld.CharacterCreation
             Changed?.Invoke();
         }
 
-        // The build slider: every body, clothing and hair mesh has a "Masc" blend shape made from the same
-        // reshaping (ArtSource/build_dreamer.py), so outfits stay fitted at any mix.
-        public void SetBody(float shape)
+        // Body type: a woman's or man's body, a type (slim / average / curvy or muscle / plus) and a height.
+        // Every body, clothing and hair mesh carries the same blend shapes (Masc, Slim, Curvy, Plus, Muscle; see
+        // ArtSource/build_dreamer.py + body_shapes.py), so every outfit stays fitted on every body.
+        public void SetBody(int sex, int type, float height)
         {
-            bodyShape = Mathf.Clamp01(shape);
+            bodySex = Mathf.Clamp(sex, 0, 1);
+            bodyType = Mathf.Clamp(type, 0, 3);
+            bodyHeight = Mathf.Clamp(height, 0.9f, 1.1f);
             ApplyBody();
             Changed?.Invoke();
         }
 
+        static readonly string[] ShapeNames = { "Masc", "Slim", "Curvy", "Plus", "Muscle" };
+
         void ApplyBody()
         {
-            // a broad build also stands a little taller (the model root under this object, never this object itself)
+            string type = BodyTypeName;
+            var weights = new float[ShapeNames.Length];
+            weights[0] = bodySex == 1 ? 100f : 0f;
+            if (type == "slim") weights[1] = 100f;
+            else if (type == "curvy") weights[2] = 100f;
+            else if (type == "plus") weights[3] = 100f;
+            else if (type == "muscle") weights[4] = 100f;
+            // a man's body stands a little taller; height is on the model root under this object (never this object)
             var any = GetComponentInChildren<SkinnedMeshRenderer>(true);
             var model = any != null && any.rootBone != null ? any.rootBone.parent : null;
-            if (model != null && model != transform) model.localScale = Vector3.one * (1f + 0.04f * bodyShape);
+            if (model != null && model != transform)
+                model.localScale = Vector3.one * (bodyHeight * (bodySex == 1 ? 1.04f : 1f));
             foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 var mesh = smr.sharedMesh;
-                int index = mesh != null ? mesh.GetBlendShapeIndex("Masc") : -1;
-                if (index >= 0) smr.SetBlendShapeWeight(index, bodyShape * 100f);
+                if (mesh == null) continue;
+                for (int i = 0; i < ShapeNames.Length; i++)
+                {
+                    int index = mesh.GetBlendShapeIndex(ShapeNames[i]);
+                    if (index >= 0) smr.SetBlendShapeWeight(index, weights[i]);
+                }
             }
         }
 

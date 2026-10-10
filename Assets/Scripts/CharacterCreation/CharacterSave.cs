@@ -19,7 +19,9 @@ namespace DreamWorld.CharacterCreation
         public string[] customColors;   // per slot: "" or a hex color (full-spectrum hair/eyes)
         public string[] placements;     // per slot: "" or "x,y,size" for movable face pieces
         public float eyeScale = 1f, eyeSpacing, eyeHeight;
-        public float bodyShape;          // 0 = soft build, 1 = broad (older saves: 0)
+        public float bodyShape;          // the first build slider (older saves): > 0.5 = a man's body
+        public int bodySex, bodyType = 1;   // woman/man, slim/average/curvy|muscle/plus
+        public float bodyHeight = 1f;
 
         public static string SavedJson => PlayerPrefs.GetString(Key, "");
 
@@ -37,7 +39,9 @@ namespace DreamWorld.CharacterCreation
                 eyeScale = appearance.eyeScale,
                 eyeSpacing = appearance.eyeSpacing,
                 eyeHeight = appearance.eyeHeight,
-                bodyShape = appearance.bodyShape,
+                bodySex = appearance.bodySex,
+                bodyType = appearance.bodyType,
+                bodyHeight = appearance.bodyHeight,
             };
             for (int i = 0; i < n; i++)
             {
@@ -82,7 +86,10 @@ namespace DreamWorld.CharacterCreation
             appearance.eyeScale = data.eyeScale > 0 ? data.eyeScale : 1f;   // older saves have no eye values
             appearance.eyeSpacing = data.eyeSpacing;
             appearance.eyeHeight = data.eyeHeight;
-            appearance.bodyShape = Mathf.Clamp01(data.bodyShape);
+            bool newBody = json.Contains("\"bodySex\"");   // saves from before body types only had the build slider
+            appearance.bodySex = newBody ? Mathf.Clamp(data.bodySex, 0, 1) : (data.bodyShape > 0.5f ? 1 : 0);
+            appearance.bodyType = newBody ? Mathf.Clamp(data.bodyType, 0, 3) : 1;
+            appearance.bodyHeight = data.bodyHeight > 0.5f ? Mathf.Clamp(data.bodyHeight, 0.9f, 1.1f) : 1f;
 
             for (int i = 0; i < data.categories.Length; i++)
             {
