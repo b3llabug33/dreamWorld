@@ -1415,7 +1415,8 @@ def top_button_up():
 def top_oversized():
     """Grunge: boxy oversized band tee with a pixel skull print and loose short sleeves."""
     m = material("Jersey")
-    parts = [part("osLow", "Spine", lambda bm: loft(bm, [((0, 0.005, 0.80), 0.145, 0.105), ((0, 0, 0.99), 0.138, 0.10),
+    # roomy at the hem so even baggy pants on a curvy/plus body stay underneath it
+    parts = [part("osLow", "Spine", lambda bm: loft(bm, [((0, 0.005, 0.79), 0.172, 0.13), ((0, 0.003, 0.88), 0.16, 0.118), ((0, 0, 0.99), 0.146, 0.106),
                                                          ((0, 0, 1.15), 0.135, 0.10)], 12, cap_start=False), m),
              part("osUp", "Chest", lambda bm: loft(bm, [((0, 0, 1.15), 0.135, 0.10), ((0, 0, 1.27), 0.13, 0.088),
                                                         ((0, 0, 1.32), 0.075, 0.055)], 12), m),
@@ -1524,8 +1525,11 @@ def bottom_legs(name, texture, knee_z=None, rise="high"):
     parts = pants_top(m, rise, G, leg_r=0.054 + G + (0.004 if knee_z else 0))
     for side, sx in sides():
         if knee_z is None:
+            # the thigh starts up inside the hip piece and a little roomier, so curvy/plus/men's thighs
+            # (bigger blend-shape pushes than the jeans get) can't poke through where the legs meet
             parts += [part(f"u{side}", f"UpperLeg.{side}", lambda bm, sx=sx: loft(
-                          bm, [((0.064 * sx, 0, 0.80), 0.054 + G, 0.054 + G), ((0.065 * sx, 0, 0.45), 0.040 + G, 0.040 + G)], 8), m),
+                          bm, [((0.064 * sx, 0, 0.84), 0.058 + G, 0.058 + G), ((0.064 * sx, 0, 0.72), 0.056 + G, 0.056 + G),
+                               ((0.065 * sx, 0, 0.45), 0.041 + G, 0.041 + G)], 8), m),
                       part(f"l{side}", f"LowerLeg.{side}", lambda bm, sx=sx: loft(
                           bm, [((0.07 * sx, 0, 0.45), 0.043 + G, 0.043 + G), ((0.07 * sx, 0, 0.11), 0.042 + G, 0.042 + G)], 8), m)]
         else:

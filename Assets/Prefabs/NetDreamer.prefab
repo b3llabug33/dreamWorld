@@ -4766,8 +4766,8 @@ SkinnedMeshRenderer:
   - 0
   m_RootBone: {fileID: 1355023590329992444}
   m_AABB:
-    m_Center: {x: 0, y: -0.21350008, z: 0.00897488}
-    m_Extent: {x: 0.1819593, y: 0.47649986, z: 0.14160083}
+    m_Center: {x: 0.00013104081, y: -0.21350008, z: 0.00897488}
+    m_Extent: {x: 0.18559247, y: 0.47649986, z: 0.14160083}
   m_DirtyAABB: 0
 --- !u!114 &544915590402495283
 MonoBehaviour:
@@ -6643,8 +6643,8 @@ SkinnedMeshRenderer:
   - 0
   m_RootBone: {fileID: 1355023590329992444}
   m_AABB:
-    m_Center: {x: 0, y: -0.24850008, z: 0.010583475}
-    m_Extent: {x: 0.1819593, y: 0.44149986, z: 0.14320943}
+    m_Center: {x: 0.00013104081, y: -0.24850008, z: 0.010583475}
+    m_Extent: {x: 0.18559247, y: 0.44149986, z: 0.14320943}
   m_DirtyAABB: 0
 --- !u!114 &8613024000871786455
 MonoBehaviour:
@@ -15637,38 +15637,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 01
---- !u!1 &4204772025351291931
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5897875244559331708}
-  m_Layer: 0
-  m_Name: Dreamer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5897875244559331708
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4204772025351291931}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1355023590329992444}
-  m_Father: {fileID: 154230858626139142}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4218873629860548894
 GameObject:
   m_ObjectHideFlags: 0
@@ -26102,6 +26070,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DreamWorld.CharacterCreation.TintMask
   tintSubmesh: 01
+--- !u!1 &6972126630642033723
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7134771377462251795}
+  m_Layer: 0
+  m_Name: Dreamer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7134771377462251795
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6972126630642033723}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1355023590329992444}
+  m_Father: {fileID: 154230858626139142}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6987857716180815148
 GameObject:
   m_ObjectHideFlags: 0
@@ -29154,7 +29154,7 @@ Transform:
   - {fileID: 9035339008186847360}
   - {fileID: 2563354612448759324}
   - {fileID: 2044554903310849876}
-  m_Father: {fileID: 5897875244559331708}
+  m_Father: {fileID: 7134771377462251795}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7634288304170757954
 GameObject:
@@ -33393,8 +33393,8 @@ SkinnedMeshRenderer:
   - 0
   m_RootBone: {fileID: 1355023590329992444}
   m_AABB:
-    m_Center: {x: 0, y: 0.2793803, z: 0.014676556}
-    m_Extent: {x: 0.3217674, y: 0.27938035, z: 0.15999167}
+    m_Center: {x: 0, y: 0.2743803, z: 0.0024711937}
+    m_Extent: {x: 0.3217674, y: 0.28438035, z: 0.18267713}
   m_DirtyAABB: 0
 --- !u!114 &2957092522062752735
 MonoBehaviour:
@@ -33994,7 +33994,7 @@ Transform:
   - {fileID: 1548342962718860185}
   - {fileID: 3987847850217140828}
   - {fileID: 828345081664710672}
-  - {fileID: 5897875244559331708}
+  - {fileID: 7134771377462251795}
   - {fileID: 1184981552338111450}
   - {fileID: 8869934712251545236}
   - {fileID: 5436803660005572963}

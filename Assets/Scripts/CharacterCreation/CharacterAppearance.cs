@@ -354,6 +354,19 @@ namespace DreamWorld.CharacterCreation
             Changed?.Invoke();
         }
 
+        // Dresses cover the bottom (the bottom choice is kept, just hidden), so pants never show through a dress.
+        static readonly string[] Dresses = { "SlipDress" };
+
+        void DressCoversBottom()
+        {
+            var top = GetSlot(OutfitCategory.Top);
+            var bottom = GetSlot(OutfitCategory.Bottom);
+            var worn = bottom != null ? bottom.CurrentStyle : null;
+            if (worn == null) return;
+            bool dress = top != null && System.Array.IndexOf(Dresses, top.CurrentBase) >= 0;
+            worn.SetActive(!dress);
+        }
+
         void Apply(OutfitSlot slot)
         {
             slot.styleIndex = Mathf.Clamp(slot.styleIndex, 0, Mathf.Max(0, slot.StyleCount - 1));
@@ -362,6 +375,7 @@ namespace DreamWorld.CharacterCreation
             var current = slot.CurrentStyle;
             foreach (var style in slot.styles)
                 style.SetActive(style == current);
+            if (slot.category == OutfitCategory.Top || slot.category == OutfitCategory.Bottom) DressCoversBottom();
             if (current == null) return;
 
             bool eyes = slot.category == OutfitCategory.Eyes;
