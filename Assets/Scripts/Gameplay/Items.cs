@@ -71,6 +71,13 @@ namespace DreamWorld.Gameplay
             Drop("ivy_leaf", "ivy leaf", 5, "a leaf from an ivy serpent. still wiggles a bit");
             Drop("plush_stuffing", "plush stuffing", 6, "fluffy stuffing from a cursed plush. it whispers");
             Drop("bat_wing", "bat wing", 6, "a little leathery wing. it's fine, it grows back");
+            // quest items (the Mullens questline)
+            Add(new ItemDef { id = "moody_map", name = "moody map", kind = ItemKind.Material, maxStack = 1,
+                              description = "Count Snackula's old map of the fog woods. drawn during his moody phase" });
+            Add(new ItemDef { id = "fog_cloak", name = "fog cloak", kind = ItemKind.Material, maxStack = 1, sellPrice = 40,
+                              description = "a gray cloak that smells like rain. the Wolfpups can't smell you as well in it" });
+            Weapon("glimmer_blade", "glimmer blade", "BeetleHornSword", 30, 1.05f, 1.1f, 2.4f, 0,
+                   "a gift from the Mullens. it sparkles in the sun. obviously", 0.9f);
             Add(new ItemDef { id = "knight_cap", name = "knight's cap", kind = ItemKind.Material, maxStack = 5, sellPrice = 120,
                               description = "the shiny cap of the mushroom knight. proof you beat it" });
         }

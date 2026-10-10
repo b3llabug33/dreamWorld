@@ -357,10 +357,11 @@ namespace DreamWorld.Gameplay
 
         void UpdatePrompt()
         {
-            var near = !stats.Dead && !AnyPanel && !InventoryUI.IsOpen ? Interactable.Nearest(stats.transform.position) : null;
+            bool talking = Quests.DialogueUI.IsOpen;   // a conversation owns the keyboard (E, Esc, 1-6) while it's open
+            var near = !stats.Dead && !AnyPanel && !InventoryUI.IsOpen && !talking ? Interactable.Nearest(stats.transform.position) : null;
             promptLabel.text = near != null ? $"[E] {near.Prompt(stats)}" : "";
             // E: use whatever's nearby, otherwise open/close the bag
-            if (Input.GetKeyDown(KeyCode.E) && !stats.Dead && !AnyPanel)
+            if (Input.GetKeyDown(KeyCode.E) && !stats.Dead && !AnyPanel && !talking)
             {
                 if (InventoryUI.IsOpen) InventoryUI.Instance.Toggle();
                 else if (near != null) near.Interact(stats);
@@ -370,12 +371,12 @@ namespace DreamWorld.Gameplay
 
         void UpdatePanels()
         {
-            if (Input.GetKeyDown(KeyCode.Escape) && !InventoryUI.IsOpen)
+            if (Input.GetKeyDown(KeyCode.Escape) && !InventoryUI.IsOpen && !Quests.DialogueUI.IsOpen)
             {
                 if (AnyPanel) { CloseAll(); SetPanel(pausePanel, false); }
                 else SetPanel(pausePanel, true);
             }
-            if (Input.GetKeyDown(KeyCode.L) && !stats.Dead && !InventoryUI.IsOpen) SetPanel(levelPanel, !levelPanel.gameObject.activeSelf);
+            if (Input.GetKeyDown(KeyCode.L) && !stats.Dead && !InventoryUI.IsOpen && !Quests.DialogueUI.IsOpen) SetPanel(levelPanel, !levelPanel.gameObject.activeSelf);
 
             if (levelPanel.gameObject.activeSelf)
             {

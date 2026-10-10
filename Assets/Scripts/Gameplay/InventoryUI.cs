@@ -378,7 +378,7 @@ namespace DreamWorld.Gameplay
             if (stats == null || stats.Bag == null) { hotbarRoot.gameObject.SetActive(false); return; }
             hotbarRoot.gameObject.SetActive(!stats.Dead);
 
-            bool otherMenu = GameHUD.Instance != null && GameHUD.Instance.MenuOpen;
+            bool otherMenu = (GameHUD.Instance != null && GameHUD.Instance.MenuOpen) || Quests.DialogueUI.IsOpen;   // 1-6 pick dialogue choices
             if (!otherMenu && !stats.Dead && (Input.GetKeyDown(KeyCode.I) || Input.GetKeyDown(KeyCode.Tab))) Toggle();
             if (IsOpen && Input.GetKeyDown(KeyCode.Escape)) Open(false, Side.None);
             // walked away from the shop or computer: close it

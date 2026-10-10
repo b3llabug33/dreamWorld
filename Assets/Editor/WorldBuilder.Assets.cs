@@ -326,11 +326,11 @@ namespace DreamWorld.EditorTools
             var t = new GameObject("TownProps").transform;
             t.SetParent(root);
             Put(t, "NoticeBoard", Spread(3.6f, -11.5f), Toward(Spread(3.6f, -11.5f), Spread(0, -11.5f)));
-            var board = new GameObject("Sign_notice board").AddComponent<BuildingSign>();
+            // the notice board is the bounty board: press E for bounties (Quests/Bounties.cs)
+            var board = new GameObject("BountyBoard").AddComponent<DreamWorld.Quests.BountyBoard>();
             board.transform.SetParent(t);
             board.transform.position = Spread(2.6f, -11.5f);
-            board.title = "notice board";
-            board.message = "NEW: the weapon shop is open (south east). beware the mushroom knight in the south west woods!";
+            board.range = 2.4f;
             Put(t, "CrookedSignpost", Spread(-3.4f, -19), Toward(Spread(-3.4f, -19), Spread(0, -19)), 1f, "none");
             Put(t, "MarketStall", Spread(12, 14), Toward(Spread(12, 14), Plaza));
             Put(t, "FruitCrate", Spread(11, 12.6f), 20);

@@ -132,6 +132,15 @@ namespace DreamWorld.EditorTools
             welcome.range = 2.6f;
 
             MistpineFolks(mist, S);
+            // the three bushes to spy on the Wolfpups from (the Mullens questline, Quests/QuestBook.cs)
+            for (int i = 1; i <= 3; i++)
+            {
+                var spot = new GameObject("QuestSpot_wolf_bush_" + i).AddComponent<DreamWorld.Quests.QuestSpot>();
+                spot.transform.SetParent(mist);
+                spot.transform.position = S("wolf_bush_" + i);
+                spot.id = "wolf_bush_" + i;
+                spot.radius = 2.6f;
+            }
             MistpineMonsters(mist, rng, S);
         }
 

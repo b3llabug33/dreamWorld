@@ -51,6 +51,10 @@ namespace DreamWorld.EditorTools
                 for (int k = 0; k < 4; k++)
                     Place(plaza, "Flowers", p + Quaternion.Euler(0, a + 45 + k * 90, 0) * Vector3.forward * 1.15f + Vector3.up * 0.55f, k * 90, 0.7f, collider: false);
             }
+            // where Orion hangs out: on the south side, where you walk in from the respawn point
+            var orionSpot = new GameObject("OrionSpot").transform;
+            orionSpot.SetParent(plaza);
+            orionSpot.position = Plaza + new Vector3(2.2f, 0.03f, -11f);
             // a ring of lamps on the border
             for (int i = 0; i < 12; i++)
             {

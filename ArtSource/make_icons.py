@@ -422,6 +422,66 @@ ICONS.update({
     ],
 })
 
+ICONS.update({
+    # Count Snackula's moody map: a curled parchment with a red X
+    "moody_map": [
+        "................",
+        "................",
+        "..kkkkkkkkkkkk..",
+        ".kSsssssssssssk.",
+        ".kSskkssssssssk.",
+        ".kSssskssssRssk.",
+        ".kSsssskssRsRsk.",
+        ".kSssssskssRssk.",
+        ".kSsskssskRsRsk.",
+        ".kSsssksssssssk.",
+        ".kSssssksssssSk.",
+        ".kSsssssksssSSk.",
+        "..kkkkkkkkkkkk..",
+        "................",
+        "................",
+        "................",
+    ],
+    # the fog cloak: a gray-blue cloak with a clasp
+    "fog_cloak": [
+        "................",
+        "......kkkk......",
+        ".....kEEEEk.....",
+        "....kEeeeeEk....",
+        "....kEeyyeEk....",
+        "...kEeeeeeeEk...",
+        "...kEeeeeeeEk...",
+        "..kEeeeeeeeeEk..",
+        "..kEeeeeeeeeEk..",
+        ".kEeeeEeeEeeeEk.",
+        ".kEeeEeeeeEeeEk.",
+        "kEeeEeeeeeeEeeEk",
+        "kEEEEEEEEEEEEEEk",
+        ".kkkkkkkkkkkkkk.",
+        "................",
+        "................",
+    ],
+    # the glimmer blade: a sparkly silver sword
+    "glimmer_blade": [
+        "..............y.",
+        "...........kky.y",
+        "..........kwek.y",
+        ".........kwek...",
+        "........kwek....",
+        ".......kwek.....",
+        "..y...kwek......",
+        ".y.y.kwek.......",
+        "..ykkwek........",
+        "...kwek.........",
+        "..kkekk.........",
+        ".kLlk.kk........",
+        "kLlk............",
+        "kLk.............",
+        ".k..............",
+        "................",
+    ],
+})
+
 
 def main():
     os.makedirs(OUT, exist_ok=True)
