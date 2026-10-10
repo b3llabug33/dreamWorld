@@ -23,6 +23,7 @@ from mathutils import Vector, noise
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import packs  # noqa: E402
 from lowpoly import M_GLASS, M_GLOW, M_MATTE, M_SHINY, Model, hsv, rgb, setup_render, shade  # noqa: E402
 
 ROOT = os.path.dirname(HERE)
@@ -478,6 +479,82 @@ def build_landmark_misc():
     return m, spots, lamps
 
 
+def dress():
+    """Third-party pack models (see packs.py) for texture and life. Returns layout records for Unity."""
+    col = bpy.data.collections.new("Mist_PackDressing")
+    bpy.context.scene.collection.children.link(col)
+    out = []
+    drnd = random.Random(77)
+
+    def put(name, x, y, yaw=None, h=None, season="summer", tint=(1.0, 1.0, 1.0), dz=0.0):
+        z = height(x, y) + dz
+        out.append(packs.place(name, (x, y, z), drnd.uniform(0, 360) if yaw is None else yaw,
+                               h, season, tint, col))
+        return z
+
+    def spot(test, tries=200):
+        for _ in range(tries):
+            p = Vector((drnd.uniform(-HALF + 3, HALF - 3), drnd.uniform(-HALF + 3, HALF - 3), 0))
+            if test(p):
+                return p
+        return None
+
+    def off_path(p, d=2.6):
+        return (path_distance(p) > d and abs(p.x - river_center_x(p.y)) > 6.5
+                and (Vector((p.x, p.y, 0)) - HOUSE).length > 12 and (Vector((p.x, p.y, 0)) - QUARRY).length > 17)
+
+    moody = (0.72, 0.82, 0.74)                                   # cool, damp tint so the packs sit in the fog palette
+    for k in range(70):                                          # mossy rocks
+        p = spot(lambda p: off_path(p, 3))
+        if p: put(drnd.choice(["AC_Rock1", "AC_Rock2"]), p.x, p.y, h=drnd.uniform(0.7, 2.0), tint=moody, dz=-0.15)
+    for k in range(140):                                         # scraggly understory
+        p = spot(lambda p: off_path(p))
+        if p: put(drnd.choice(["AC_Bush1", "AC_Bush2", "AC_Bush1", "AC_Bush3"]), p.x, p.y, h=drnd.uniform(0.9, 2.2), tint=moody)
+    for k in range(260):                                         # grass clumps, thicker near paths and clearings
+        p = spot(lambda p: path_distance(p) > 1.9 and abs(p.x - river_center_x(p.y)) > 6)
+        if p: put(drnd.choice(["AC_Grass1", "AC_Grass2", "RN_Grass1", "RN_Grass4", "RN_Grass6", "RN_GrassBush"]), p.x, p.y,
+                  h=drnd.uniform(0.35, 0.7), season=drnd.choice(["summer", "fall"]), tint=moody)
+    for k in range(36):                                          # alders (the birch model) along the riverbanks
+        y = drnd.uniform(-HALF + 4, HALF - 4)
+        x = river_center_x(y) + drnd.choice((-1, 1)) * drnd.uniform(8.5, 15)
+        if path_distance(Vector((x, y, 0))) > 4 and (Vector((x, y, 0)) - QUARRY).length > 22:
+            put(drnd.choice(["AC_Birch1", "AC_Birch2"]), x, y, h=drnd.uniform(8, 12), tint=(0.85, 0.9, 0.85))
+    for k in range(14):                                          # gnarled dead trees around the quarry + on the ridge
+        if k < 9:
+            a = drnd.uniform(0, 2 * math.pi)
+            x, y = QUARRY.x + math.cos(a) * drnd.uniform(19, 26), QUARRY.y + math.sin(a) * drnd.uniform(19, 26)
+        else:
+            x, y = drnd.uniform(-75, -50), drnd.uniform(-75, -50)
+        if abs(x) < HALF - 2 and abs(y) < HALF - 2 and path_distance(Vector((x, y, 0))) > 4:
+            put(f"AC_DeadTree{drnd.randint(1, 5)}", x, y, h=drnd.uniform(6, 11), tint=(0.8, 0.8, 0.85), dz=-0.2)
+    for k in range(45):                                          # mushrooms in the damp
+        p = spot(lambda p: off_path(p, 2.2))
+        if p: put(f"AC_Mushroom{drnd.randint(1, 3)}", p.x, p.y, h=drnd.uniform(0.25, 0.5))
+    for k in range(8):                                           # frogs at the water's edge
+        y = drnd.uniform(-HALF + 5, HALF - 5)
+        x = river_center_x(y) + drnd.choice((-1, 1)) * 6.8
+        put("AC_Frog", x, y, h=0.14)
+    for (x, y) in ((22, 14.5), (-8, 15), (-44, -32), (5, 33), (60, -14)):   # owls perched on rocks by the paths
+        z = put("AC_Rock2", x, y, h=1.4, tint=moody, dz=-0.2)
+        out.append(packs.place("AC_Owl", (x, y, z + 1.15), drnd.uniform(0, 360), 0.45, "summer", (1, 1, 1), col))
+    # Jakeob's cabin by the Wolfpup campfire, door toward the fire
+    cab = WOLFCAMP + Vector((9.0, 5.0, 0))
+    put("AC_Cabin", cab.x, cab.y, yaw=math.degrees(math.atan2(WOLFCAMP.y - cab.y, WOLFCAMP.x - cab.x)) - 90, dz=-0.1)
+    # the Boulder Brute's cave in the quarry wall, opening toward the pit
+    cave = QUARRY + Vector((0, -13.0, 0))
+    put("AC_CaveMouth", cave.x, cave.y, yaw=0, h=9.0, tint=(0.85, 0.88, 0.9), dz=-2.0)
+    # a tidy garden around the Mullen house: clipped shrubs and two ornamental trees
+    for k in range(12):
+        a = k * 2 * math.pi / 12 + 0.2
+        x, y = HOUSE.x + math.cos(a) * 15, HOUSE.y + math.sin(a) * 15
+        if path_distance(Vector((x, y, 0))) > 3:
+            put(drnd.choice(["RN_Bush5", "RN_Bush4", "RN_Bush7"]), x, y, h=drnd.uniform(1.0, 1.6), tint=(0.8, 0.9, 0.85))
+    for dx, dy in ((-10, 11), (10, -12)):
+        put("RN_Tree8", HOUSE.x + dx, HOUSE.y + dy, h=7.5, tint=(0.8, 0.9, 0.85))
+    print("dressing", len(out))
+    return out, cab, cave
+
+
 def place_house():
     path = os.path.join(HERE, "MullenHouse.blend")
     names = ["Bld_MullenHouse", "Bld_MullenHouse_Roof"]
@@ -501,6 +578,7 @@ def main():
     misc, bush_spots, lamps = build_landmark_misc()
     built.append(misc)
     objs = [b.finish() for b in built] + place_house()
+    dressing, cabin, cave = dress()
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(HERE, "Mistpine.blend"))
 
     # layout for the game (Blender Z-up -> the game converts to Unity Y-up: (x, z, y))
@@ -528,6 +606,8 @@ def main():
         "boulder_brute": [QUARRY.x, QUARRY.y, hz(QUARRY) - 2.5],
     }
     spots["bridge"] = BRIDGE
+    spots["jakeob_cabin"] = [cabin.x, cabin.y, hz(cabin)]
+    spots["brute_cave"] = [cave.x, cave.y, hz(cave)]
     for i, (x, y, z) in enumerate(bush_spots):
         spots[f"wolf_bush_{i + 1}"] = [round(x, 2), round(y, 2), round(z, 2)]
     zones = {   # boxes: center, size (safe = the path and the house clearing; the rest is the wilds)
@@ -536,7 +616,7 @@ def main():
     }
     os.makedirs(os.path.dirname(LAYOUT), exist_ok=True)
     with open(LAYOUT, "w") as f:
-        json.dump({"spots": spots, "zones": zones, "lamps": lamps, "size": HALF * 2}, f, indent=1)
+        json.dump({"spots": spots, "dressing": dressing, "zones": zones, "lamps": lamps, "size": HALF * 2}, f, indent=1)
 
     print("MISTPINE OK  (previews: ArtSource/render_mistpine.py)")
 

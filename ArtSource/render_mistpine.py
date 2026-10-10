@@ -63,9 +63,27 @@ shots = {
     "quarry": ((40, -40, 9), (30, -60, -1), 1),
     "bridge": ((BR.x + 4, BR.y - 11, BR.z + 1.5), (BR.x, BR.y, BR.z - 0.3), 0.6),
     "wolfcamp_logs": ((58 - 6, -28 - 6, 2.0), (58, -28, 0.3), 0.6),
+    "cabin": ((LAY["spots"]["jakeob_cabin"][0] - 16, LAY["spots"]["jakeob_cabin"][1] - 9, 3.5), tuple(LAY["spots"]["jakeob_cabin"][:2]) + (2,), 0.6),
+    "cave": ((30, -44, 5), (30, -72, 1), 0.6),
+    "forest_floor": ((-33, -12, 1.7), (-42, -30, 0.6), 1),
     "baseball": ((10, 28, 3), (10, 45, 1), 1),
 }
+deps = bpy.context.evaluated_depsgraph_get()
+
+
+def gz(x, y):
+    """Ground height under (x, y): ray down onto the terrain mesh."""
+    ground = bpy.data.objects["Mist_Ground"]
+    inv = ground.matrix_world.inverted()
+    hit, loc, n, i = ground.ray_cast(inv @ Vector((x, y, 300)), Vector((0, 0, -1)))
+    return (ground.matrix_world @ loc).z if hit else 0.0
+
+
+shots["cave"] = ((30, -50, 3), (30, -73, 3), 0.6)
 for name, (pos, look, fogk) in shots.items():
+    if name != "overview":   # shot heights are above the ground there
+        pos = (pos[0], pos[1], gz(pos[0], pos[1]) + pos[2])
+        look = (look[0], look[1], gz(look[0], look[1]) + look[2])
     pw.inputs[1].default_value = 0.85 * fogk
     cam.location = Vector(pos)
     cam.rotation_euler = (Vector(look) - Vector(pos)).to_track_quat("-Z", "Y").to_euler()

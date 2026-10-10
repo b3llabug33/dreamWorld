@@ -24,6 +24,7 @@ Shader "DreamWorld/PSX Lit"
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
         [Toggle] _ZWrite ("ZWrite", Float) = 1
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull (Off = two-sided foliage)", Float) = 2
     }
     SubShader
     {
@@ -34,6 +35,7 @@ Shader "DreamWorld/PSX Lit"
             Tags { "LightMode"="ForwardBase" }
             Blend [_SrcBlend] [_DstBlend]
             ZWrite [_ZWrite]
+            Cull [_Cull]
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag

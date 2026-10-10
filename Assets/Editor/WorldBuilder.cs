@@ -97,6 +97,8 @@ namespace DreamWorld.EditorTools
 
             // weapon shop, enemies, props, furniture and critters (WorldBuilder.Assets.cs)
             BuildModelAssets(root, homeContents);
+            // the third-party nature packs: trees, shrubs, grass, rocks, mushrooms, owls (WorldBuilder.Nature.cs)
+            NatureDressing(root, rng);
 
             // player + camera
             var player = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefab));
