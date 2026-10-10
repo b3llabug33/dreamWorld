@@ -37,10 +37,11 @@ namespace DreamWorld.EditorTools
         static void BuildMistpineTrail(Transform root)
         {
             Trail(root, "mistpine trail", MistTrail, 2.6f, lanternEvery: 8f);
-            var corridor = new GameObject("PlayArea_mistpine trail").AddComponent<PlayArea>();
+            // the whole west side between town and the hollow is walkable (not just the trail)
+            var corridor = new GameObject("PlayArea_west woods").AddComponent<PlayArea>();
             corridor.transform.SetParent(root);
-            corridor.transform.position = new Vector3(-80, 0, 7);
-            corridor.transform.localScale = new Vector3(22, 1, 16);
+            corridor.transform.position = new Vector3(-73, 0, 6);
+            corridor.transform.localScale = new Vector3(30, 1, 156);
             var sign = new GameObject("Sign_mistpine").AddComponent<BuildingSign>();
             sign.transform.SetParent(root);
             sign.transform.position = new Vector3(-58, 0, 16.5f);

@@ -598,7 +598,13 @@ namespace DreamWorld.EditorTools
                 float a = (float)(rng.NextDouble() * Math.PI * 2), r = 30 + (float)rng.NextDouble() * 42;
                 var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r + 6);
                 if (!Free(p, 2f)) continue;
-                Place(woods, rng.NextDouble() < 0.5 ? "Tree_Pine" : "Tree_Round", p, rng.Next(360), 0.9f + (float)rng.NextDouble() * 0.8f, collider: true);
+                // textured pack trees (WorldBuilder.Nature.cs): tall cone trees or round leafy ones, a few birches
+                bool cone = rng.NextDouble() < 0.5;
+                int yaw = rng.Next(360);
+                float size = 0.9f + (float)rng.NextDouble() * 0.8f;
+                string kind = cone ? (yaw % 2 == 0 ? "RN_Tree7" : "RN_Tree8")
+                                   : new[] { "RN_Tree1", "RN_Tree2", "RN_Tree4", "RN_Tree5", "RN_Tree6", "AC_Birch1", "RN_Tree3" }[yaw % 7];
+                PutNature(woods, kind, p, yaw, 6.2f * size, yaw % 5 == 0 ? "fall" : "summer", NatureDusk);
                 trees++;
             }
             int giants = 0;
@@ -617,8 +623,11 @@ namespace DreamWorld.EditorTools
                 float a = (float)(rng.NextDouble() * Math.PI * 2), r = 26 + (float)rng.NextDouble() * 40;
                 var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r + 6);
                 if (!Free(p, 0.5f)) continue;
-                string kind = n % 4 == 0 ? "Bush" : n % 4 == 1 ? "Flowers" : n % 4 == 2 ? "Mushroom_Cluster" : (n % 8 == 3 ? "Rock_A" : "Rock_B");
-                Place(woods, kind, p, rng.Next(360), 0.8f + (float)rng.NextDouble() * 0.8f, collider: kind.StartsWith("Rock"));
+                int yaw = rng.Next(360);
+                float size = 0.8f + (float)rng.NextDouble() * 0.8f;
+                if (n % 4 == 0) PutNature(woods, new[] { "RN_Bush2", "RN_Bush3", "RN_Bush6" }[yaw % 3], p, yaw, 1.1f * size, "summer", NatureDusk);
+                else if (n % 4 == 3) PutNature(woods, n % 8 == 3 ? "AC_Rock1" : "AC_Rock2", p, yaw, 1.1f * size, "summer", NatureDusk);
+                else Place(woods, n % 4 == 1 ? "Flowers" : "Mushroom_Cluster", p, yaw, size, collider: false);
                 n++;
             }
             // flowers inside town too

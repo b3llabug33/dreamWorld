@@ -91,6 +91,9 @@ def height(x, y):
     qd = (Vector((x, y, 0)) - QUARRY).length
     if qd < 16:
         h -= 3.0 * (1 - (qd / 16) ** 2)                          # quarry pit
+    edge = (HALF - x) / 12.0                                     # the east edge meets the town's flat ground (y = 0)
+    if edge < 1.0:
+        h *= max(0.0, edge) ** 2
     return h
 
 

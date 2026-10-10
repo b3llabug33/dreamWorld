@@ -80,7 +80,8 @@ namespace DreamWorld.EditorTools
                 int hillYaw = rng.Next(360);
                 float hillScale = 1.2f + (float)rng.NextDouble() * 0.6f;
                 if (a > 2.0f && a < 4.3f) continue;   // west: the way to Mistpine Hollow
-                Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r + 6), hillYaw, hillScale, collider: false);
+                var hill = Place(root, "Hill", new Vector3(Mathf.Cos(a) * r, -0.8f, Mathf.Sin(a) * r + 6), hillYaw, hillScale, collider: false);
+                foreach (var hr in hill.GetComponentsInChildren<Renderer>()) hr.sharedMaterial = HillMaterial();   // grassy, not flat-shaded
             }
 
             // monsters out in the wilds (solo for now)
@@ -680,6 +681,23 @@ namespace DreamWorld.EditorTools
             mat.SetFloat("_Softness", 0.1f);
             // a touch of PS1 texture warp; more than this makes big faces bend with the camera
             mat.SetFloat("_AffineStrength", texture == "Paving" ? 0f : 0.12f);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        // The far hills: the ground's grass texture, a little darker and bluer so they sit back in the dusk.
+        static Material HillMaterial()
+        {
+            var path = $"{MatDir}/PSX_W_Hill.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(TiledMaterial("Grass", 120));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.mainTextureScale = new Vector2(10, 10);
+            mat.color = new Color(0.72f, 0.74f, 0.9f);
+            mat.SetFloat("_Softness", 0.25f);
             EditorUtility.SetDirty(mat);
             return mat;
         }

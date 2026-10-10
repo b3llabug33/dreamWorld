@@ -426,8 +426,8 @@ def greenhouse_arcade():
     b.box((0, -d / 2 + 0.1, 0.4), (w, 0.2, 0.6), jitter(RED, 0.08, 1))
     for sx in (1, -1):
         b.box((sx * (w / 2 - 0.1), 0, 0.4), (0.2, d, 0.6), jitter(RED, 0.08, 2))
-    for sx in (1, -1):   # the front knee wall, leaving the doorway open
-        b.box((sx * (w / 2 - 1.25), d / 2 - 0.1, 0.4), (2.5, 0.2, 0.6), jitter(RED, 0.08, 3))
+    for sx in (1, -1):   # the front knee wall, leaving a 1.4 m doorway open
+        b.box((sx * (w / 2 - 1.15), d / 2 - 0.1, 0.4), (2.3, 0.2, 0.6), jitter(RED, 0.08, 3))
     for x in range(-3, 4):
         b.box((x * 0.98, -d / 2 + 0.1, 0.7 + h / 2), (0.08, 0.1, h), frame)
     for k in range(8):
@@ -436,11 +436,21 @@ def greenhouse_arcade():
             b.box((sx * (w / 2 - 0.1), y, 0.7 + h / 2), (0.1, 0.08, h), frame)
     for sx in (1, -1):
         b.box((sx * (w / 2 - 0.1), 0, 0.7 + h / 2), (0.04, d, h), glass, M_GLASS)
-        b.box((sx * (w / 2 - 1.25), d / 2 - 0.1, 0.7 + h / 2), (2.5, 0.04, h), glass, M_GLASS)
+        b.box((sx * (w / 2 - 1.15), d / 2 - 0.1, 0.7 + h / 2), (2.3, 0.04, h), glass, M_GLASS)
     b.box((0, -d / 2 + 0.1, 0.7 + h / 2), (w, 0.04, h), glass, M_GLASS)
-    b.box((0, d / 2 - 0.1, 0.1 + h + 0.3), (0.9, 0.12, 0.1), frame)                    # door header
+    b.box((0, d / 2 - 0.1, 0.1 + h + 0.3), (1.5, 0.12, 0.1), frame)                    # door header
     for sx in (1, -1):
-        b.box((sx * 0.45, d / 2 - 0.1, 0.1 + (h + 0.6) / 2), (0.1, 0.12, h + 0.6), frame)
+        b.box((sx * 0.72, d / 2 - 0.1, 0.1 + (h + 0.6) / 2), (0.1, 0.12, h + 0.6), frame)
+    # the door itself: a framed glass door hinged on the left post, swung open outward so the way in is clear
+    hinge = Vector((-0.67, d / 2 - 0.1, 0.1))
+    a = math.radians(105)
+    leaf_c = hinge + Vector((math.cos(a) * 0.65, math.sin(a) * 0.65, 1.15))
+    b.box(leaf_c, (1.3, 0.05, 2.25), glass, M_GLASS, rot=(0, 0, 105))
+    for dz in (-1.1, 1.1):
+        b.box(leaf_c + Vector((0, 0, dz)), (1.3, 0.08, 0.08), frame, rot=(0, 0, 105))
+    for t in (-0.62, 0.62):
+        b.box(leaf_c + Vector((math.cos(a) * t, math.sin(a) * t, 0)), (0.08, 0.08, 2.25), frame, rot=(0, 0, 105))
+    b.box(leaf_c + Vector((math.cos(a) * 0.5, math.sin(a) * 0.5 + 0.06, 0)), (0.05, 0.08, 0.2), BLACK, rot=(0, 0, 105))   # handle
     # the back wall: a stack of CRT TVs all showing the same glowing sky
     for row in range(3):
         for col in range(6):
@@ -448,7 +458,8 @@ def greenhouse_arcade():
             screen = [CRT_GREEN, rgb("#9ad7ff"), rgb("#ff9ad0")][(row + col) % 3]
             b.crt((x + (row % 2) * 0.12, -d / 2 + 0.75, 0.55 + row * 0.75), 0.7, case=rgb("#6c6c70"), screen=screen)
     # plants everywhere: big potted palms, hanging ferns, a planter bed down the middle
-    for (x, y, s) in ((-2.3, 2.4, 1.6), (2.3, 2.4, 1.4), (-2.4, -0.4, 1.8), (2.4, 0.3, 1.5), (0.0, 1.4, 1.1)):
+    # potted plants along the side walls (the middle and the doorway stay clear to walk in)
+    for (x, y, s) in ((-2.45, 2.0, 0.9), (2.45, 2.0, 0.8), (-2.45, -0.6, 1.0), (2.45, 0.2, 0.9), (-2.45, 0.7, 0.7)):
         b.plant((x, y, 0.1), s, leaf=MOSS if x < 0 else MOSS_LT)
     for (x, y) in ((-1.2, -0.6), (1.2, 0.6)):
         b.tube([(x, y, 0.1 + h + 0.7), (x, y, 0.1 + h - 0.2)], 0.015, BLACK)

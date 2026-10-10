@@ -237,6 +237,9 @@ namespace DreamWorld.EditorTools
             return go;
         }
 
+        // a touch of blue so pack models match Mushroom Hollow's evening light
+        static readonly Color NatureDusk = new Color(0.86f, 0.9f, 1f);
+
         // ---------------------------------------------------------------- Mushroom Hollow dressing
 
         // Leafy trees, shrubs and grass around town, a wilder mix (birches, mossy rocks, mushrooms, crystals,
@@ -276,7 +279,7 @@ namespace DreamWorld.EditorTools
                 }
             }
             string Seasonal() => rng.NextDouble() < 0.7 ? "summer" : "fall";
-            var dusk = new Color(0.86f, 0.9f, 1f);   // a touch of blue so they match the hollow's evening light
+            var dusk = NatureDusk;
 
             // around town: leafy trees and round shrubs at the edges of the square and along the paths
             Scatter(10, 15, 27, 1.5f, 1.2f, () => Pick("RN_Tree1", "RN_Tree2", "RN_Tree3", "RN_Tree5"), 6f, 8f, Seasonal, dusk);
@@ -284,7 +287,8 @@ namespace DreamWorld.EditorTools
             // the woods: leafy + cone trees, birches, mossy rocks, scraggly bushes
             Scatter(46, 27, 78, 1.5f, 1.4f, () => Pick("RN_Tree1", "RN_Tree4", "RN_Tree6", "RN_Tree7", "RN_Tree8", "AC_Birch1", "AC_Birch2"), 7f, 11f, Seasonal, dusk);
             Scatter(30, 26, 76, 1f, 0.8f, () => Pick("AC_Rock1", "AC_Rock2"), 0.7f, 1.9f, null, dusk);
-            Scatter(50, 26, 78, 0.8f, 0.5f, () => Pick("AC_Bush1", "AC_Bush2", "AC_Bush3", "RN_Bush1", "RN_Bush7", "RN_Bush8"), 0.9f, 2f, Seasonal, dusk);
+            // (only the full 3D shrubs: the Aberrant bushes are crossed flat cards that look like sheets turned the wrong way)
+            Scatter(50, 26, 78, 0.8f, 0.5f, () => Pick("RN_Bush1", "RN_Bush2", "RN_Bush3", "RN_Bush6", "RN_Bush7", "RN_Bush8"), 0.9f, 1.8f, Seasonal, dusk);
             // little things: mushrooms (it is Mushroom Hollow), crystals, owls on rocks, frogs
             Scatter(45, 24, 76, 0.6f, 0f, () => Pick("AC_Mushroom1", "AC_Mushroom2", "AC_Mushroom3"), 0.25f, 0.55f);
             Scatter(10, 30, 74, 1f, 0.6f, () => Pick("AC_Crystal1", "AC_Crystal2"), 0.8f, 1.5f, null, new Color(0.9f, 0.85f, 1f));
@@ -298,8 +302,10 @@ namespace DreamWorld.EditorTools
                 Physics.SyncTransforms();
             }
             // grass everywhere it isn't paved: many small clumps, no colliders
-            Scatter(380, 4, 80, 0.4f, 0f, () => Pick("RN_Grass1", "RN_Grass2", "RN_Grass4", "RN_Grass5", "RN_Grass6", "RN_Grass8", "RN_GrassBush", "AC_Grass1"),
+            Scatter(380, 4, 80, 0.4f, 0f, () => Pick("RN_Grass1", "RN_Grass2", "RN_Grass4", "RN_Grass5", "RN_Grass6", "RN_Grass8", "RN_GrassBush"),
                     0.35f, 0.7f, Seasonal, dusk);
+            // dense grass patches so the ground isn't one flat sheet
+            Scatter(170, 8, 80, 0.6f, 0f, () => "RN_GrassPatch", 0.35f, 0.55f, Seasonal, dusk);
             // spooky dead trees around the mushroom knight's clearing (south-west woods)
             for (int i = 0; i < 7; i++)
             {
