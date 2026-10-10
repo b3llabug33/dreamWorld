@@ -73,17 +73,17 @@ namespace DreamWorld.Gathering
                 {
                     var cat = ui.Label(list, r.category, 24, TerminalUI.Dim, TextAnchor.MiddleLeft);
                     TerminalUI.Place(cat.rectTransform, new Vector2(0, 1), new Vector2(6, y - 12), new Vector2(400, 24), new Vector2(0, 0.5f));
-                    y -= 28;
+                    y -= 26;
                     lastCategory = r.category;
                 }
                 var rr = r;
-                var b = ui.Button(list, r.name, 26, () => Pick(rr));
-                TerminalUI.Place((RectTransform)b.transform, new Vector2(0, 1), new Vector2(0, y), new Vector2(420, 36), new Vector2(0, 1));
+                var b = ui.Button(list, r.name, 24, () => Pick(rr));
+                TerminalUI.Place((RectTransform)b.transform, new Vector2(0, 1), new Vector2(0, y), new Vector2(420, 33), new Vector2(0, 1));
                 var label = b.GetComponentInChildren<Text>();
                 label.alignment = TextAnchor.MiddleLeft;
                 ((RectTransform)label.transform).offsetMin = new Vector2(16, 0);
                 rows.Add((b, label, r));
-                y -= 40;
+                y -= 36;
             }
 
             detail = new GameObject("Detail", typeof(RectTransform)).GetComponent<RectTransform>();

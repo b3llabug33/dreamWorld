@@ -102,3 +102,7 @@ enemies	Enemy_MushroomKnight
 enemies	Enemy_StaticWisp
 enemies	Enemy_IvySerpent
 enemies	Enemy_CursedPlush
+weapons	Prop_GlimmerBlade
+weapons	Prop_SilverSword
+weapons	Prop_CrystalDagger
+weapons	Prop_Moonbow

@@ -1619,6 +1619,60 @@ def cursed_plush():
 
 # ================================================================ build
 
+# ---- more weapons: the Mullens' glimmer blade, crafted silver sword + crystal dagger, the moonbow
+@prop("weapons")
+def glimmer_blade():
+    m = Model("Prop_GlimmerBlade")
+    blade = [(0, 0), (0.045, 0.08), (0.04, 0.78), (0.0, 0.95), (-0.04, 0.78), (-0.045, 0.08)]
+    m.plate(blade, -0.008, 0.016, lambda p, n: mix("#f4f0ff", "#c9b8ff", min(1.0, p.y)), M_SHINY)
+    for y, x in ((0.25, 0.012), (0.48, -0.01), (0.7, 0.008)):     # sparkles in the blade
+        m.box((x, y, 0.012), (0.02, 0.02, 0.006), "#fff8d0", M_GLOW, rot=(0, 0, 45))
+    m.tube([(-0.14, 0.01, 0), (-0.06, -0.02, 0), (0.06, -0.02, 0), (0.14, 0.01, 0)], [0.012, 0.022, 0.022, 0.012], GOLD, M_SHINY)
+    m.blob((0, -0.02, 0.0), (0.03, 0.03, 0.03), "#ff7eb6", M_SHINY)   # a pink gem in the guard
+    m.tube([(0, -0.04, 0), (0, -0.21, 0)], 0.021, shade("#3a2a4a"))
+    m.blob((0, -0.23, 0), (0.032, 0.032, 0.032), GOLD, M_SHINY)
+    return m
+
+
+@prop("weapons")
+def silver_sword():
+    m = Model("Prop_SilverSword")
+    blade = [(0, 0), (0.05, 0.06), (0.048, 0.74), (0.0, 0.88), (-0.048, 0.74), (-0.05, 0.06)]
+    m.plate(blade, -0.01, 0.02, lambda p, n: hsv(0.62, 0.06, 0.78 + 0.18 * abs(n.z)), M_SHINY)
+    m.box((0, 0.4, 0.011), (0.012, 0.6, 0.004), "#9aa0b8", M_SHINY)   # fuller down the middle
+    m.box((0, -0.02, 0), (0.26, 0.045, 0.045), "#b8bccc", M_SHINY, bevel=0.008)
+    m.tube([(0, -0.04, 0), (0, -0.22, 0)], 0.022, WOOD_NEUTRAL)       # tinted handle
+    for k in range(3):
+        m.torus((0, -0.08 - k * 0.05, 0), 0.025, 0.006, CREAM, rot=(90, 0, 0), seg=8)
+    m.blob((0, -0.24, 0), (0.03, 0.03, 0.03), "#b8bccc", M_SHINY)
+    return m
+
+
+@prop("weapons")
+def crystal_dagger():
+    m = Model("Prop_CrystalDagger")
+    blade = [(0, 0), (0.035, 0.05), (0.03, 0.32), (0.0, 0.44), (-0.03, 0.32), (-0.035, 0.05)]
+    m.plate(blade, -0.012, 0.024, hsv(0.79, 0.55, 1.0), M_GLOW)
+    m.tube([(-0.07, 0, 0), (0, -0.015, 0), (0.07, 0, 0)], [0.01, 0.016, 0.01], "#b8bccc", M_SHINY)
+    m.tube([(0, -0.02, 0), (0, -0.14, 0)], 0.018, shade("#2e2440"))
+    m.blob((0, -0.15, 0), (0.024, 0.024, 0.024), hsv(0.79, 0.55, 1.0), M_GLOW)
+    return m
+
+
+@prop("weapons")
+def moonbow():
+    m = Model("Prop_Moonbow")
+    pts = [(0.0, 0, 0.0), (0.09, 0, 0.18), (0.12, 0, 0.45), (0.09, 0, 0.72), (0.0, 0, 0.9)]
+    m.tube(pts, [0.012, 0.02, 0.026, 0.02, 0.012], LILAC, sides=6)
+    m.tube([(0.115, 0, 0.38), (0.115, 0, 0.52)], 0.03, shade(PLUM_DK))           # grip wrap
+    m.tube([(0.0, 0, 0.0), (0.0, 0, 0.9)], 0.004, "#f4f0ff")                      # the string
+    m.blob((0.15, 0, 0.45), (0.035, 0.012, 0.035), "#fff2b0", M_GLOW)            # a little moon
+    m.blob((0.165, 0, 0.455), (0.026, 0.014, 0.03), shade(PLUM_DK))             # its shadow (a crescent)
+    for z in (0.0, 0.9):
+        m.blob((0.0, 0, z), (0.02, 0.02, 0.02), GOLD, M_SHINY)
+    return m
+
+
 def main():
     wanted = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     bpy.ops.wm.read_factory_settings(use_empty=True)

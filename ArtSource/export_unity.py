@@ -28,6 +28,10 @@ WEAPONS = {
     "Prop_PetalShield": ((0, 0, 0.0), Matrix.Identity(4)),                                   # face +Z (Unity +Y)
     "Prop_WoodClub": ((0, 0, 0.12), Matrix.Identity(4)),
     "Prop_WoodStaff": ((0, 0, 0.6), Matrix.Identity(4)),
+    "Prop_GlimmerBlade": ((0, -0.13, 0.0), Matrix.Rotation(math.radians(90), 4, "X")),
+    "Prop_SilverSword": ((0, -0.13, 0.0), Matrix.Rotation(math.radians(90), 4, "X")),
+    "Prop_CrystalDagger": ((0, -0.08, 0.0), Matrix.Rotation(math.radians(90), 4, "X")),
+    "Prop_Moonbow": ((0.115, 0, 0.45), Matrix.Identity(4)),
 }
 
 PROPS = """Prop_StoneFountain Prop_MarketStall Prop_NoticeBoard Prop_CrookedSignpost Prop_BugHotel Prop_PicketFence

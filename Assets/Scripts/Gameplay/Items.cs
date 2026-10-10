@@ -89,8 +89,17 @@ namespace DreamWorld.Gameplay
                               description = "Count Snackula's old map of the fog woods. drawn during his moody phase" });
             Add(new ItemDef { id = "fog_cloak", name = "fog cloak", kind = ItemKind.Material, maxStack = 1, sellPrice = 40,
                               description = "a gray cloak that smells like rain. the Wolfpups can't smell you as well in it" });
-            Weapon("glimmer_blade", "glimmer blade", "BeetleHornSword", 30, 1.05f, 1.1f, 2.4f, 0,
+            Weapon("glimmer_blade", "glimmer blade", "GlimmerBlade", 30, 1.05f, 1.1f, 2.4f, 0,
                    "a gift from the Mullens. it sparkles in the sun. obviously", 0.9f);
+            // more weapons: the moonbow at the weapon shop, a silver sword and crystal dagger you craft
+            Weapon("moonbow", "moonbow", "Moonbow", 14, 1f, 1f, 2f, 140,
+                   "a lilac bow with a little moon on it. shoots moonlight arrows; heavy shots fire three", 1f, ranged: true);
+            Weapon("silver_sword", "silver sword", "SilverSword", 24, 1f, 1.05f, 2.3f, 0,
+                   "a bright silver blade on a wooden handle. made at a workbench", 0.85f);
+            all["silver_sword"].sellPrice = 30;
+            Weapon("crystal_dagger", "crystal dagger", "CrystalDagger", 13, 1.35f, 0.75f, 2f, 0,
+                   "a glowing dream crystal dagger. short, but very fast", 0.9f);
+            all["crystal_dagger"].sellPrice = 40;
             Gathering();
             Add(new ItemDef { id = "knight_cap", name = "knight's cap", kind = ItemKind.Material, maxStack = 5, sellPrice = 120,
                               description = "the shiny cap of the mushroom knight. proof you beat it" });

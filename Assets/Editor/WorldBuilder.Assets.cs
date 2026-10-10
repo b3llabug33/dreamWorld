@@ -282,7 +282,7 @@ namespace DreamWorld.EditorTools
         }
 
         static readonly string[] WeaponStock =
-            { "beetle_horn_sword", "umbrella_sword", "frying_pan", "mushroom_mace", "keyboard_hammer", "crystal_staff", "mantis_scythe", "slingshot", "petal_shield" };
+            { "beetle_horn_sword", "umbrella_sword", "frying_pan", "mushroom_mace", "keyboard_hammer", "crystal_staff", "mantis_scythe", "slingshot", "moonbow", "petal_shield" };
 
         // The empty shop for rent becomes the weapon shop.
         static void WeaponShop(Transform root)

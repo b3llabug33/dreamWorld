@@ -52,6 +52,10 @@ namespace DreamWorld.Gathering
             new Recipe { id = "wood_staff", name = "wooden staff", category = "weapons", kind = ItemKind.Weapon, usesWood = true, woodCount = 4,
                          needs = new[] { ("dream_crystal", 1) }, sell = 30, model = "WoodStaff", damage = 12, speed = 1f, reach = 1.3f, heavy = 2.1f,
                          modelScale = 0.8f, description = "a long staff with a little dream crystal. great reach" },
+            new Recipe { id = "silver_sword", name = "silver sword", category = "weapons", kind = ItemKind.Weapon, output = "silver_sword", woodCount = 2,
+                         needs = new[] { ("silver_ore", 3), ("thread", 1) }, description = "a bright silver blade (any wood for the handle)" },
+            new Recipe { id = "crystal_dagger", name = "crystal dagger", category = "weapons", kind = ItemKind.Weapon, output = "crystal_dagger", woodCount = 0,
+                         needs = new[] { ("dream_crystal", 2), ("silver_ore", 1) }, description = "a fast glowing dagger" },
 
             new Recipe { id = "berry_tart", name = "berry tart", category = "food", kind = ItemKind.Food, output = "berry_tart", woodCount = 0,
                          needs = new[] { ("berries", 4), ("forest_mushroom", 1) }, description = "bake a filling tart (fills a lot of food)" },

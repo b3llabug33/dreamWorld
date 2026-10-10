@@ -305,7 +305,7 @@ namespace DreamWorld.World
                             shotFired = true;
                             Vector3 from = transform.position + Vector3.up * 1.2f + actionDir * 0.5f;
                             Vector3 aim = LockTarget != null ? (LockTarget.Body.position + Vector3.up * 0.6f - from).normalized : actionDir;
-                            var pebble = new Color(1f, 0.85f, 0.55f);
+                            var pebble = weapon.id == "moonbow" ? new Color(0.85f, 0.8f, 1f) : new Color(1f, 0.85f, 0.55f);   // moonlight arrows / pebbles
                             if (heavy)
                                 foreach (var a in new[] { -9f, 0f, 9f })
                                     Projectile.Fire(gameObject, from, Quaternion.AngleAxis(a, Vector3.up) * aim, 22f, dmg / 2f, pebble, 0.16f);

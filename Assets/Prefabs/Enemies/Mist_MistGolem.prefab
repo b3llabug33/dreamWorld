@@ -228,6 +228,7 @@ MonoBehaviour:
   probeUp: 3
   probeDown: 8
   smoothing: 14
+  maxStep: 0.6
 --- !u!114 &6332021799477163898
 MonoBehaviour:
   m_ObjectHideFlags: 0
