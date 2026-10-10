@@ -33,26 +33,32 @@ ONE = [(0.0, 1.0), (2.0, 1.0)]
 
 # per shape: torso width / front depth / back depth by height, arm and leg thickness, neck
 SHAPES = {
+    # every woman's body type gets Fem: a cinched waist, rounded hips and seat, and a bust
+    "Fem": dict(
+        width=[(0.62, 1.0), (0.72, 1.06), (0.84, 1.2), (0.92, 1.1), (0.99, 0.9), (1.07, 0.94), (1.15, 1.02), (1.30, 1.0)],
+        front=[(0.6, 1.0), (0.84, 1.04), (0.99, 0.96), (1.08, 1.0), (1.3, 1.0)],
+        back=[(0.6, 1.0), (0.80, 1.24), (0.88, 1.12), (0.99, 0.98), (1.3, 1.0)],
+        arm=1.0, leg=1.06, neck=0.97, bust=0.03),
     "Slim": dict(
         width=[(0.62, 1.0), (0.76, 0.84), (0.99, 0.84), (1.29, 0.86), (1.34, 1.0)],
         front=[(0.62, 1.0), (0.76, 0.84), (1.29, 0.84), (1.34, 1.0)],
         back=[(0.62, 1.0), (0.76, 0.86), (1.29, 0.86), (1.34, 1.0)],
         arm=0.78, leg=0.8, neck=0.9),
-    "Curvy": dict(
-        width=[(0.5, 1.0), (0.66, 1.12), (0.84, 1.32), (0.92, 1.14), (0.99, 0.96), (1.07, 1.02), (1.15, 1.1), (1.3, 1.0)],
-        front=[(0.6, 1.0), (0.84, 1.1), (0.99, 1.0), (1.08, 1.12), (1.155, 1.42), (1.24, 1.05), (1.3, 1.0)],
-        back=[(0.6, 1.0), (0.80, 1.3), (0.9, 1.12), (0.99, 1.0), (1.3, 1.0)],
-        arm=1.08, leg=1.24, neck=1.0),
+    "Curvy": dict(   # on top of Fem: even more hourglass
+        width=[(0.62, 1.0), (0.72, 1.08), (0.84, 1.18), (0.92, 1.08), (0.99, 0.96), (1.15, 1.06), (1.3, 1.0)],
+        front=[(0.6, 1.0), (0.84, 1.06), (1.3, 1.0)],
+        back=[(0.6, 1.0), (0.80, 1.2), (0.9, 1.08), (0.99, 1.0), (1.3, 1.0)],
+        arm=1.06, leg=1.18, neck=1.0, bust=0.022),
     "Plus": dict(
         width=[(0.45, 1.0), (0.62, 1.22), (0.84, 1.42), (0.99, 1.55), (1.10, 1.45), (1.24, 1.3), (1.30, 1.22), (1.35, 1.0)],
         front=[(0.5, 1.0), (0.80, 1.35), (0.95, 1.85), (1.04, 1.75), (1.155, 1.45), (1.28, 1.18), (1.34, 1.0)],
         back=[(0.5, 1.0), (0.84, 1.38), (1.0, 1.32), (1.28, 1.18), (1.34, 1.0)],
-        arm=1.5, leg=1.45, neck=1.32),
-    "Muscle": dict(
-        width=[(0.66, 1.0), (0.84, 1.02), (0.99, 1.12), (1.15, 1.26), (1.23, 1.36), (1.29, 1.4), (1.34, 1.0)],
-        front=[(0.7, 1.0), (0.99, 1.06), (1.10, 1.2), (1.2, 1.34), (1.28, 1.18), (1.34, 1.0)],
-        back=[(0.7, 1.0), (1.0, 1.08), (1.2, 1.28), (1.30, 1.1), (1.34, 1.0)],
-        arm=1.7, leg=1.3, neck=1.4),
+        arm=1.5, leg=1.45, neck=1.32, bust=0.012),
+    "Muscle": dict(   # balanced: a strong chest and arms, not a triangle
+        width=[(0.66, 1.0), (0.84, 1.02), (0.99, 1.08), (1.15, 1.12), (1.23, 1.15), (1.29, 1.16), (1.34, 1.0)],
+        front=[(0.7, 1.0), (0.99, 1.05), (1.10, 1.14), (1.2, 1.22), (1.28, 1.1), (1.34, 1.0)],
+        back=[(0.7, 1.0), (1.0, 1.06), (1.2, 1.18), (1.30, 1.06), (1.34, 1.0)],
+        arm=1.55, leg=1.25, neck=1.3),
 }
 
 
@@ -61,9 +67,10 @@ def make_field(sp):
         x, y, z = p.x, p.y, p.z
         if z > 1.36:                                   # head and hair above the chin: untouched
             return Vector((x, y, z))
-        sx = interp(sp["width"], z)
-        sf = interp(sp["front"], z)
-        sb = interp(sp["back"], z)
+        hip = smooth((z - 0.70) / 0.09)                # torso shaping fades out at the top of the legs
+        sx = 1 + (interp(sp["width"], z) - 1) * hip
+        sf = 1 + (interp(sp["front"], z) - 1) * hip
+        sb = 1 + (interp(sp["back"], z) - 1) * hip
         nx, ny, nz = x, y, z
         if abs(x) <= TORSO_HALF or z < 1.12:
             nx = x * sx
@@ -78,10 +85,17 @@ def make_field(sp):
         if z < 0.80:
             leg = smooth((0.80 - z) / 0.08) * smooth((z - 0.03) / 0.06) * smooth((0.16 - abs(x)) / 0.05)
             if leg > 0:
-                cx = math.copysign(0.066 * interp(sp["width"], 0.8), x)
+                cx = math.copysign(0.066, x) * (1 + (sx - 1))   # each leg's own center (only shifted where the hips are)
                 s = 1 + (sp["leg"] - 1) * leg
                 nx = cx + (nx - cx) * s
                 ny = ny * s
+        # bust: two rounded forms on the front of the chest (clothes over it get the same push, so they fit)
+        if sp.get("bust") and y < 0.02 and 1.03 < z < 1.28 and abs(x) < 0.15:
+            ax = abs(x)
+            g = math.exp(-((ax - 0.05) ** 2) / (2 * 0.03 ** 2) - ((z - 1.15) ** 2) / (2 * 0.036 ** 2))
+            front = smooth((-y + 0.02) / 0.05)
+            ny = ny - sp["bust"] * g * front
+            nz = nz - sp["bust"] * 0.25 * g * front      # a little natural weight
         # neck below the chin
         neck = smooth((1.36 - z) / 0.02) * smooth((z - 1.29) / 0.02) * smooth((0.05 - abs(x)) / 0.02)
         if neck > 0:

@@ -220,7 +220,7 @@ namespace DreamWorld.CharacterCreation
 
         // Body type: a woman's or man's body, a type (slim / average / curvy or muscle / plus) and a height.
         // Every body, clothing and hair mesh carries the same blend shapes (Masc, Slim, Curvy, Plus, Muscle; see
-        // ArtSource/build_dreamer.py + body_shapes.py), so every outfit stays fitted on every body.
+        // ArtSource/build_dreamer.py + body_shapes.py; Fem goes on every woman's body), so outfits fit every body.
         public void SetBody(int sex, int type, float height)
         {
             bodySex = Mathf.Clamp(sex, 0, 1);
@@ -230,13 +230,14 @@ namespace DreamWorld.CharacterCreation
             Changed?.Invoke();
         }
 
-        static readonly string[] ShapeNames = { "Masc", "Slim", "Curvy", "Plus", "Muscle" };
+        static readonly string[] ShapeNames = { "Masc", "Slim", "Curvy", "Plus", "Muscle", "Fem" };
 
         void ApplyBody()
         {
             string type = BodyTypeName;
             var weights = new float[ShapeNames.Length];
             weights[0] = bodySex == 1 ? 100f : 0f;
+            weights[5] = bodySex == 1 ? 0f : 100f;   // every woman's body: waist, hips, bust
             if (type == "slim") weights[1] = 100f;
             else if (type == "curvy") weights[2] = 100f;
             else if (type == "plus") weights[3] = 100f;

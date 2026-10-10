@@ -1772,8 +1772,8 @@ def _interp(table, z):
 
 
 # torso width factor by height: narrower hips, a fuller waist, broad shoulders
-MASC_WIDTH = [(0.66, 1.0), (0.84, 0.92), (0.92, 1.06), (0.99, 1.30), (1.07, 1.24), (1.15, 1.18),
-              (1.23, 1.26), (1.29, 1.30), (1.34, 1.0)]
+MASC_WIDTH = [(0.70, 1.0), (0.84, 0.95), (0.92, 1.06), (0.99, 1.18), (1.07, 1.15), (1.15, 1.12),
+              (1.23, 1.13), (1.29, 1.14), (1.34, 1.0)]   # even, not a triangle: a fuller waist, modest shoulders
 TORSO_HALF = 0.105   # past this |x| (arms, hands) points shift out with the shoulder instead of scaling
 
 
